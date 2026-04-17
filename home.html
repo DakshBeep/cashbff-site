@@ -265,8 +265,7 @@
 
   <script>
     // ── Config ───────────────────────────────────────
-    const API_BASE = 'https://sms-service-sope.onrender.com';
-    const TOKEN_KEY = 'cbff_token';
+    const API_BASE = 'https://api.cashbff.com';
     const NAME_KEY = 'cbff_first_name';
 
     // ── Phone pill ──────────────────────────────────
@@ -312,10 +311,7 @@
     // ── Sign out ─────────────────────────────────────
     document.getElementById('signout').addEventListener('click', async () => {
       try {
-        const token = localStorage.getItem(TOKEN_KEY);
-        const headers = {};
-        if (token) headers['Authorization'] = `Bearer ${token}`;
-        await fetch(`${API_BASE}/api/logout`, { method: 'POST', headers, credentials: 'include' });
+        await fetch(`${API_BASE}/api/logout`, { method: 'POST', credentials: 'include' });
       } catch (_) { /* we're leaving anyway */ }
       localStorage.clear();
       location.href = 'index.html';
@@ -330,12 +326,9 @@
       const restAmountEl = document.getElementById('rest-amount');
       const errEl = document.getElementById('err');
 
-      const token = localStorage.getItem(TOKEN_KEY);
-      if (!token) { location.href = 'index.html'; return; }
-
       try {
         const res = await fetch(`${API_BASE}/api/home`, {
-          headers: { 'Authorization': `Bearer ${token}` },
+          headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
         });
         if (res.status === 401) { localStorage.clear(); location.href = 'index.html'; return; }

@@ -399,8 +399,7 @@
 
   <script>
     // ── Config ────────────────────────────────────────
-    const API_BASE = 'https://sms-service-sope.onrender.com';
-    const TOKEN_KEY = 'cbff_token';
+    const API_BASE = 'https://api.cashbff.com';
     const NAME_KEY = 'cbff_first_name';
     const LAST_KEY = 'cbff_last_name';
     const STATS_KEY = 'cbff_stats';
@@ -480,13 +479,9 @@
       btn.textContent = 'saving…';
 
       try {
-        const token = localStorage.getItem(TOKEN_KEY);
-        const headers = { 'Content-Type': 'application/json' };
-        if (token) headers['Authorization'] = `Bearer ${token}`;
-
         const res = await fetch(`${API_BASE}/api/profile`, {
           method: 'POST',
-          headers,
+          headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
           body: JSON.stringify(body),
         });

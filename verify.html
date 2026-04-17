@@ -295,8 +295,7 @@
     otpInputs[0].focus();
 
     // ── Config ───────────────────────────────────────
-    const API_BASE = 'https://sms-service-sope.onrender.com';
-    const TOKEN_KEY = 'cbff_token';
+    const API_BASE = 'https://api.cashbff.com';
     const NAME_KEY = 'cbff_first_name';
     const LAST_KEY = 'cbff_last_name';
     const STATS_KEY = 'cbff_stats';
@@ -366,8 +365,7 @@
           return;
         }
 
-        // Store token + name + stats for later requests / welcome-back page.
-        if (data.token)      localStorage.setItem(TOKEN_KEY, data.token);
+        // Store name + stats for later requests / welcome-back page.
         if (data.first_name) localStorage.setItem(NAME_KEY, data.first_name);
         if (data.last_name)  localStorage.setItem(LAST_KEY, data.last_name);
         if (data.stats)      localStorage.setItem(STATS_KEY, JSON.stringify(data.stats));
