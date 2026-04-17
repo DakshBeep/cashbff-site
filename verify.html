@@ -367,10 +367,10 @@
         }
 
         // Store token + name + stats for later requests / welcome-back page.
-        if (data.token)      sessionStorage.setItem(TOKEN_KEY, data.token);
-        if (data.first_name) sessionStorage.setItem(NAME_KEY, data.first_name);
-        if (data.last_name)  sessionStorage.setItem(LAST_KEY, data.last_name);
-        if (data.stats)      sessionStorage.setItem(STATS_KEY, JSON.stringify(data.stats));
+        if (data.token)      localStorage.setItem(TOKEN_KEY, data.token);
+        if (data.first_name) localStorage.setItem(NAME_KEY, data.first_name);
+        if (data.last_name)  localStorage.setItem(LAST_KEY, data.last_name);
+        if (data.stats)      localStorage.setItem(STATS_KEY, JSON.stringify(data.stats));
 
         // Route: returning user without email → welcome-back page.
         // Otherwise continue the standard new-user flow.

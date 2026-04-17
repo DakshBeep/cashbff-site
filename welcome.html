@@ -412,8 +412,8 @@
     document.getElementById('skip-link').href = nextUrl;
 
     // ── Greet by name ─────────────────────────────────
-    const firstName = sessionStorage.getItem(NAME_KEY);
-    const lastName  = sessionStorage.getItem(LAST_KEY);
+    const firstName = localStorage.getItem(NAME_KEY);
+    const lastName  = localStorage.getItem(LAST_KEY);
     const nameTail = document.getElementById('name-tail');
     if (firstName && firstName.trim()) {
       const safe = firstName.replace(/[<>&"]/g, '');
@@ -438,7 +438,7 @@
     }
 
     try {
-      const raw = sessionStorage.getItem(STATS_KEY);
+      const raw = localStorage.getItem(STATS_KEY);
       if (raw) {
         const stats = JSON.parse(raw);
         const accts = Number(stats.accounts || 0);
@@ -480,7 +480,7 @@
       btn.textContent = 'saving…';
 
       try {
-        const token = sessionStorage.getItem(TOKEN_KEY);
+        const token = localStorage.getItem(TOKEN_KEY);
         const headers = { 'Content-Type': 'application/json' };
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
@@ -499,9 +499,9 @@
           return;
         }
 
-        // Update sessionStorage so home sees the latest name
-        if (body.first_name) sessionStorage.setItem(NAME_KEY, body.first_name);
-        if (body.last_name)  sessionStorage.setItem(LAST_KEY, body.last_name);
+        // Update localStorage so home sees the latest name
+        if (body.first_name) localStorage.setItem(NAME_KEY, body.first_name);
+        if (body.last_name)  localStorage.setItem(LAST_KEY, body.last_name);
 
         location.href = nextUrl;
       } catch (_) {

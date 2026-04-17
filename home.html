@@ -279,8 +279,8 @@
       pill.textContent = `+1 (${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`;
     }
 
-    // ── Greeting: pull first name from sessionStorage, fallback "there" ─
-    const firstName = (sessionStorage.getItem(NAME_KEY) || '').trim();
+    // ── Greeting: pull first name from localStorage, fallback "there" ─
+    const firstName = (localStorage.getItem(NAME_KEY) || '').trim();
     if (firstName) {
       document.getElementById('name-slot').textContent =
         firstName.replace(/[<>&"]/g, '').toLowerCase();
@@ -312,12 +312,12 @@
     // ── Sign out ─────────────────────────────────────
     document.getElementById('signout').addEventListener('click', async () => {
       try {
-        const token = sessionStorage.getItem(TOKEN_KEY);
+        const token = localStorage.getItem(TOKEN_KEY);
         const headers = {};
         if (token) headers['Authorization'] = `Bearer ${token}`;
         await fetch(`${API_BASE}/api/logout`, { method: 'POST', headers, credentials: 'include' });
       } catch (_) { /* we're leaving anyway */ }
-      sessionStorage.clear();
+      localStorage.clear();
       location.href = 'index.html';
     });
 
@@ -330,7 +330,7 @@
       const restAmountEl = document.getElementById('rest-amount');
       const errEl = document.getElementById('err');
 
-      const token = sessionStorage.getItem(TOKEN_KEY);
+      const token = localStorage.getItem(TOKEN_KEY);
       if (!token) { location.href = 'index.html'; return; }
 
       try {
@@ -338,7 +338,7 @@
           headers: { 'Authorization': `Bearer ${token}` },
           credentials: 'include',
         });
-        if (res.status === 401) { sessionStorage.clear(); location.href = 'index.html'; return; }
+        if (res.status === 401) { localStorage.clear(); location.href = 'index.html'; return; }
         if (!res.ok) throw new Error('bad response');
 
         const data = await res.json();
