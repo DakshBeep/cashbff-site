@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>connect your bank · cash bff</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
+
+  <!-- Plaid Link (real flow; mock falls back gracefully if unreachable) -->
+  <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
+
+  <style>
+    @font-face {
+      font-family: 'Greed Condensed';
+      src: url('fonts/GreedCondensed-Bold.woff2') format('woff2');
+      font-weight: 700; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Greed Condensed';
+      src: url('fonts/GreedCondensed-Medium.woff2') format('woff2');
+      font-weight: 500; font-display: swap;
+    }
+    :root {
+      --cash-green: #014751;
+      --electric-green: #D3FFB4;
+      --periwinkle: #C5B6F1;
+      --off-black: #1A1717;
+      --vanilla: #FCFAF2;
+      --font-display: 'Greed Condensed', 'Archivo Narrow', 'Arial Narrow', Impact, sans-serif;
+      --font-body: 'Instrument Sans', system-ui, -apple-system, sans-serif;
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font-body);
+      background: var(--vanilla);
+      color: var(--off-black);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      line-height: 1.5;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { font-family: inherit; cursor: pointer; border: none; background: none; }
+
+    /* ── Top bar ────────────────────────────────────── */
+    .bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.75rem 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-weight: 700; font-size: 1.5rem;
+      letter-spacing: -0.02em;
+      color: var(--cash-green);
+    }
+    .bar__right {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      font-size: 0.82rem;
+    }
+    .pill-phone {
+      background: rgba(1,71,81,0.08);
+      color: var(--cash-green);
+      padding: 0.45rem 0.85rem;
+      border-radius: 100px;
+      font-weight: 500;
+      font-size: 0.78rem;
+      letter-spacing: 0.01em;
+    }
+    .signout {
+      opacity: 0.55;
+      font-weight: 500;
+    }
+    .signout:hover { opacity: 1; color: var(--cash-green); }
+
+    /* ── Main layout ────────────────────────────────── */
+    main {
+      max-width: 580px;
+      margin: 0 auto;
+      padding: 2rem 2rem 5rem;
+    }
+    .step-lbl {
+      font-size: 0.7rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      opacity: 0.5;
+      font-weight: 600;
+      margin-bottom: 0.85rem;
+      text-align: center;
+    }
+    .title {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: clamp(2.25rem, 6vw, 3.25rem);
+      text-transform: uppercase;
+      letter-spacing: -0.015em;
+      line-height: 1;
+      color: var(--off-black);
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+    .intro {
+      font-size: 1rem;
+      opacity: 0.7;
+      margin: 0 auto 2.5rem;
+      line-height: 1.6;
+      max-width: 32rem;
+      text-align: center;
+    }
+
+    /* ── Trust card (periwinkle) ─────────────────────── */
+    .trust {
+      background: var(--periwinkle);
+      color: var(--off-black);
+      border-radius: 18px;
+      padding: 1.5rem 1.5rem;
+      margin-bottom: 2.25rem;
+    }
+    .trust-h {
+      font-size: 0.72rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      opacity: 0.55;
+      font-weight: 700;
+      margin-bottom: 1rem;
+    }
+    .trust-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.85rem;
+      padding: 0.55rem 0;
+      font-size: 0.95rem;
+      line-height: 1.45;
+    }
+    .trust-row + .trust-row {
+      border-top: 1px solid rgba(26,23,23,0.1);
+    }
+    .trust-glyph {
+      flex-shrink: 0;
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: var(--vanilla);
+      display: grid;
+      place-items: center;
+      margin-top: 0.1rem;
+    }
+    .trust-glyph svg {
+      width: 14px; height: 14px;
+      stroke: var(--cash-green);
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    /* ── CTA ─────────────────────────────────────────── */
+    .cta-wrap { text-align: center; margin-bottom: 2rem; }
+    .cta-btn {
+      width: 100%;
+      background: var(--cash-green);
+      color: var(--vanilla);
+      padding: 1.2rem;
+      font-weight: 700;
+      font-size: 1.05rem;
+      border-radius: 100px;
+      transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.25s ease, opacity 0.2s ease;
+    }
+    .cta-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 40px rgba(1,71,81,0.2);
+    }
+    .cta-btn:disabled {
+      opacity: 0.6;
+      cursor: progress;
+      transform: none;
+      box-shadow: none;
+    }
+    .cta-fine {
+      margin-top: 0.85rem;
+      font-size: 0.8rem;
+      opacity: 0.55;
+      font-style: italic;
+    }
+
+    /* ── Skip ────────────────────────────────────────── */
+    .skip-wrap {
+      text-align: center;
+      padding: 0.5rem 0 1rem;
+    }
+    .skip-link {
+      color: var(--off-black);
+      opacity: 0.55;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: opacity 0.2s ease;
+      display: inline-block;
+      padding: 0.5rem;
+    }
+    .skip-link:hover { opacity: 1; color: var(--cash-green); }
+    .skip-hint {
+      margin-top: 0.3rem;
+      font-size: 0.78rem;
+      opacity: 0;
+      font-style: italic;
+      transition: opacity 0.2s ease;
+      min-height: 1.1em;
+    }
+    .skip-wrap:hover .skip-hint { opacity: 0.55; }
+
+    /* ── Status area ─────────────────────────────────── */
+    .status {
+      display: none;
+      margin-top: 1rem;
+      background: rgba(1,71,81,0.05);
+      border-radius: 18px;
+      padding: 1.5rem 1.5rem;
+      text-align: center;
+      animation: fadeUp 0.4s ease-out;
+    }
+    .status.show { display: block; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .status-loading .status-msg::after {
+      content: '';
+      display: inline-block;
+      width: 1.2em;
+      text-align: left;
+      animation: dots 1.3s steps(4, end) infinite;
+    }
+    @keyframes dots {
+      0%   { content: ''; }
+      25%  { content: '.'; }
+      50%  { content: '..'; }
+      75%  { content: '...'; }
+      100% { content: ''; }
+    }
+    .status-msg {
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: 1.35rem;
+      color: var(--cash-green);
+      text-transform: uppercase;
+      letter-spacing: -0.01em;
+    }
+    .status-sub {
+      margin-top: 0.5rem;
+      font-size: 0.9rem;
+      opacity: 0.65;
+    }
+    .status-pulse {
+      width: 48px;
+      height: 6px;
+      margin: 0.85rem auto 0;
+      border-radius: 100px;
+      background: linear-gradient(90deg,
+        rgba(1,71,81,0.15) 0%,
+        var(--cash-green) 50%,
+        rgba(1,71,81,0.15) 100%);
+      background-size: 200% 100%;
+      animation: slide 1.6s linear infinite;
+    }
+    @keyframes slide {
+      from { background-position: 200% 0; }
+      to   { background-position: -200% 0; }
+    }
+    .status-tick {
+      font-family: var(--font-display);
+      font-weight: 700;
+      color: var(--cash-green);
+      font-size: 2.25rem;
+      line-height: 1;
+      margin-bottom: 0.35rem;
+    }
+    .retry-btn {
+      margin-top: 1rem;
+      background: var(--cash-green);
+      color: var(--vanilla);
+      padding: 0.7rem 1.5rem;
+      font-weight: 600;
+      font-size: 0.9rem;
+      border-radius: 100px;
+    }
+    .retry-btn:hover { opacity: 0.92; }
+
+    /* ── Footer ─────────────────────────────────────── */
+    .page-foot {
+      display: flex;
+      justify-content: center;
+      gap: 1.25rem;
+      font-size: 0.72rem;
+      opacity: 0.35;
+      padding: 1.5rem 2rem 2rem;
+    }
+    .page-foot a:hover { opacity: 1; color: var(--cash-green); }
+
+    @media (max-width: 640px) {
+      .bar { padding: 1.25rem 1.25rem; }
+      main { padding: 1.25rem 1.25rem 3rem; }
+      .pill-phone { font-size: 0.72rem; padding: 0.4rem 0.7rem; }
+      .trust { padding: 1.25rem 1.15rem; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+      .status-pulse { background: var(--cash-green); }
+    }
+  </style>
+</head>
+<body>
+  <header class="bar">
+    <a href="index.html" class="wordmark">cash bff</a>
+    <div class="bar__right">
+      <span class="pill-phone" id="phone-pill">+1 signed in</span>
+      <a href="index.html" class="signout">sign out</a>
+    </div>
+  </header>
+
+  <main>
+    <section id="intro-view">
+      <div class="step-lbl">step · connect</div>
+      <h1 class="title">make the numbers real.</h1>
+      <p class="intro">we'll pull your balances directly from the bank — so the plan stays honest every week. read-only. your password never touches us.</p>
+
+      <div class="trust">
+        <div class="trust-h">what this actually is</div>
+
+        <div class="trust-row">
+          <span class="trust-glyph" aria-hidden="true">
+            <!-- lock -->
+            <svg viewBox="0 0 24 24">
+              <rect x="5" y="11" width="14" height="10" rx="2"></rect>
+              <path d="M8 11V7a4 4 0 1 1 8 0v4"></path>
+            </svg>
+          </span>
+          <span>read-only access. we can't move money, period.</span>
+        </div>
+
+        <div class="trust-row">
+          <span class="trust-glyph" aria-hidden="true">
+            <!-- eye -->
+            <svg viewBox="0 0 24 24">
+              <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"></path>
+              <circle cx="12" cy="12" r="2.5"></circle>
+            </svg>
+          </span>
+          <span>your login goes to plaid, not us. we just see balances and transactions.</span>
+        </div>
+
+        <div class="trust-row">
+          <span class="trust-glyph" aria-hidden="true">
+            <!-- bank -->
+            <svg viewBox="0 0 24 24">
+              <path d="M3 10l9-6 9 6"></path>
+              <path d="M5 10v9M19 10v9M9 10v9M15 10v9"></path>
+              <path d="M3 21h18"></path>
+            </svg>
+          </span>
+          <span>disconnect any time — one tap, done.</span>
+        </div>
+      </div>
+
+      <div class="cta-wrap">
+        <button class="cta-btn" id="connect-btn">connect with plaid</button>
+        <div class="cta-fine">plaid works with 12,000+ banks.</div>
+      </div>
+
+      <div class="skip-wrap">
+        <a href="#" class="skip-link" id="skip-link">i'll do this later →</a>
+        <div class="skip-hint">manual balances work fine — you'll just have to update them yourself.</div>
+      </div>
+
+      <!-- Status: loading / success / error ─────────── -->
+      <div class="status" id="status">
+        <div id="status-content"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="page-foot">
+    <a href="privacy.html">privacy</a>
+    <span>·</span>
+    <a href="mailto:hi@cashbff.com">hi@cashbff.com</a>
+  </footer>
+
+  <script>
+    // ── Config ──────────────────────────────────────
+    // TODO: wire real Plaid Link once OTP auth lands.
+    // When MOCK_MODE = false, the page will hit the real backend:
+    //   POST /api/create-link-token   { user_id, link_token }
+    //   POST /api/exchange-token      { user_id, public_token }
+    // For now we simulate the flow so Maya can continue to home.html.
+    const MOCK_MODE = true;
+    const API_BASE  = 'https://sms-service-sope.onrender.com';
+
+    // ── Phone parsing ───────────────────────────────
+    const params   = new URLSearchParams(location.search);
+    const rawPhone = params.get('phone') || '';
+    const digits   = rawPhone.replace(/\D/g, '');
+    const phoneDigits = digits.slice(-10);
+    const userId  = phoneDigits ? ('user_' + phoneDigits) : 'user_anon';
+    const pill    = document.getElementById('phone-pill');
+    if (phoneDigits.length === 10) {
+      pill.textContent = `+1 (${phoneDigits.slice(0,3)}) ${phoneDigits.slice(3,6)}-${phoneDigits.slice(6)}`;
+    }
+
+    // Skip link passes phone through
+    const skipLink = document.getElementById('skip-link');
+    skipLink.href = 'home.html' + (phoneDigits ? ('?phone=' + phoneDigits) : '');
+
+    // ── Status renderers ────────────────────────────
+    const statusEl = document.getElementById('status');
+    const statusContent = document.getElementById('status-content');
+    const connectBtn = document.getElementById('connect-btn');
+
+    function showLoading(msg) {
+      statusEl.classList.add('show', 'status-loading');
+      statusEl.classList.remove('status-error', 'status-success');
+      statusContent.innerHTML = `
+        <div class="status-msg">${msg || 'connecting'}</div>
+        <div class="status-sub">this usually takes a few seconds</div>
+        <div class="status-pulse" aria-hidden="true"></div>
+      `;
+    }
+
+    function showSuccess(institution) {
+      statusEl.classList.remove('status-loading', 'status-error');
+      statusEl.classList.add('show', 'status-success');
+      const name = institution ? escapeHtml(institution) : 'your bank';
+      statusContent.innerHTML = `
+        <div class="status-tick">✓ linked</div>
+        <div class="status-sub">${name} connected — taking you home…</div>
+      `;
+    }
+
+    function showError(msg) {
+      statusEl.classList.remove('status-loading', 'status-success');
+      statusEl.classList.add('show', 'status-error');
+      statusContent.innerHTML = `
+        <div class="status-msg" style="font-size:1.15rem">hm, that didn't work</div>
+        <div class="status-sub">${escapeHtml(msg || "try again in a sec")}</div>
+        <button class="retry-btn" id="retry-btn">try again</button>
+      `;
+      document.getElementById('retry-btn').addEventListener('click', () => {
+        statusEl.classList.remove('show');
+        connectBtn.disabled = false;
+      });
+      connectBtn.disabled = false;
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
+    }
+
+    function goHome() {
+      const href = 'home.html' + (phoneDigits ? ('?phone=' + phoneDigits) : '');
+      setTimeout(() => { location.href = href; }, 1500);
+    }
+
+    // ── Real Plaid flow (used when MOCK_MODE = false) ──
+    async function realPlaidFlow() {
+      showLoading('connecting');
+      connectBtn.disabled = true;
+
+      let linkToken;
+      try {
+        const res = await fetch(API_BASE + '/api/create-link-token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: userId, link_token: null }),
+        });
+        if (!res.ok) throw new Error('link-token request failed');
+        const data = await res.json();
+        linkToken = data.link_token || data.linkToken;
+        if (!linkToken) throw new Error('no link_token returned');
+      } catch (err) {
+        showError("couldn't reach the bank service — give it a moment.");
+        return;
+      }
+
+      if (!window.Plaid || !window.Plaid.create) {
+        showError("plaid didn't load — check your connection.");
+        return;
+      }
+
+      const handler = window.Plaid.create({
+        token: linkToken,
+        onSuccess: async (public_token, metadata) => {
+          showLoading('saving');
+          try {
+            const r = await fetch(API_BASE + '/api/exchange-token', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                user_id: userId,
+                public_token: public_token,
+                link_token: linkToken,
+              }),
+            });
+            if (!r.ok) throw new Error('exchange failed');
+            const inst = metadata && metadata.institution && metadata.institution.name;
+            showSuccess(inst);
+            goHome();
+          } catch (e) {
+            showError("we connected but couldn't save it — one more try?");
+          }
+        },
+        onExit: (err) => {
+          if (err) {
+            showError("plaid closed before we finished — try again whenever.");
+          } else {
+            // User cancelled quietly — hide status, re-enable button
+            statusEl.classList.remove('show');
+            connectBtn.disabled = false;
+          }
+        },
+      });
+      handler.open();
+    }
+
+    // ── Mock flow (proto-grade) ─────────────────────
+    function mockPlaidFlow() {
+      connectBtn.disabled = true;
+      showLoading('connecting');
+      setTimeout(() => {
+        showSuccess('your bank');
+        goHome();
+      }, 2000);
+    }
+
+    // ── Wire the button ─────────────────────────────
+    connectBtn.addEventListener('click', () => {
+      if (MOCK_MODE) {
+        mockPlaidFlow();
+      } else {
+        realPlaidFlow();
+      }
+    });
+  </script>
+</body>
+</html>

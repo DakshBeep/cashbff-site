@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>verify · cash bff</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
+
+  <style>
+    @font-face {
+      font-family: 'Greed Condensed';
+      src: url('fonts/GreedCondensed-Bold.woff2') format('woff2');
+      font-weight: 700; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Greed Condensed';
+      src: url('fonts/GreedCondensed-Medium.woff2') format('woff2');
+      font-weight: 500; font-display: swap;
+    }
+    :root {
+      --cash-green: #014751;
+      --electric-green: #D3FFB4;
+      --periwinkle: #C5B6F1;
+      --off-black: #1A1717;
+      --vanilla: #FCFAF2;
+      --font-display: 'Greed Condensed', 'Archivo Narrow', 'Arial Narrow', Impact, sans-serif;
+      --font-body: 'Instrument Sans', system-ui, -apple-system, sans-serif;
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: var(--font-body);
+      background: var(--vanilla);
+      color: var(--off-black);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      line-height: 1.5;
+      min-height: 100dvh;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { font-family: inherit; cursor: pointer; border: none; background: none; }
+
+    .stage {
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      padding: 1.75rem 2rem 2rem;
+    }
+    .bar {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-weight: 700; font-size: 1.5rem;
+      letter-spacing: -0.02em;
+      color: var(--cash-green);
+    }
+    .bar__right {
+      font-size: 0.72rem;
+      opacity: 0.45;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .center {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      max-width: 32rem;
+      margin: 0 auto;
+      width: 100%;
+      text-align: center;
+      padding: 1rem 0;
+    }
+
+    .step {
+      font-size: 0.7rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      opacity: 0.5;
+      font-weight: 600;
+      margin-bottom: 0.85rem;
+    }
+    .title {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: clamp(2.25rem, 6vw, 3.5rem);
+      text-transform: uppercase;
+      letter-spacing: -0.015em;
+      line-height: 1;
+      color: var(--off-black);
+      margin-bottom: 0.85rem;
+    }
+    .sub {
+      font-size: 1rem;
+      opacity: 0.7;
+      margin-bottom: 2rem;
+      line-height: 1.55;
+    }
+    .sub strong {
+      color: var(--cash-green);
+      font-weight: 600;
+    }
+
+    .otp {
+      display: flex;
+      gap: 0.6rem;
+      justify-content: center;
+      margin-bottom: 1.75rem;
+    }
+    .otp input {
+      width: 3rem;
+      height: 3.5rem;
+      border: 1px solid rgba(26,23,23,0.18);
+      border-radius: 12px;
+      background: #fff;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.4rem;
+      color: var(--off-black);
+      text-align: center;
+      outline: none;
+      transition: border-color 0.15s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .otp input:focus {
+      border-color: var(--cash-green);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(1,71,81,0.12);
+    }
+    .otp input.filled {
+      background: var(--cash-green);
+      color: var(--electric-green);
+      border-color: var(--cash-green);
+    }
+
+    .verify-btn {
+      background: var(--cash-green);
+      color: var(--vanilla);
+      font-weight: 700;
+      font-size: 1rem;
+      padding: 1rem 2rem;
+      border-radius: 100px;
+      min-width: 15rem;
+      transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.25s ease, opacity 0.2s ease;
+    }
+    .verify-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 40px rgba(1,71,81,0.22);
+    }
+    .verify-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .hint {
+      margin-top: 0.9rem;
+      font-size: 0.78rem;
+      opacity: 0.45;
+      font-style: italic;
+    }
+
+    .meta-row {
+      margin-top: 1.75rem;
+      display: flex;
+      gap: 1.75rem;
+      justify-content: center;
+      font-size: 0.82rem;
+    }
+    .meta-row a, .meta-row button {
+      opacity: 0.6;
+      text-decoration: underline;
+      padding: 0;
+      color: var(--off-black);
+      font-size: 0.82rem;
+      transition: opacity 0.15s ease, color 0.15s ease;
+    }
+    .meta-row a:hover, .meta-row button:hover {
+      opacity: 1;
+      color: var(--cash-green);
+    }
+
+    .page-foot {
+      flex-shrink: 0;
+      display: flex;
+      justify-content: center;
+      gap: 1.25rem;
+      font-size: 0.72rem;
+      opacity: 0.35;
+      padding-top: 1rem;
+    }
+    .page-foot a:hover { opacity: 1; color: var(--cash-green); }
+
+    @media (max-width: 480px) {
+      .stage { padding: 1.25rem 1.25rem 1.5rem; }
+      .otp { gap: 0.4rem; }
+      .otp input { width: 2.5rem; height: 3rem; font-size: 1.2rem; }
+      .meta-row { gap: 1.25rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <header class="bar">
+      <a href="index.html" class="wordmark">cash bff</a>
+      <div class="bar__right">verifying</div>
+    </header>
+
+    <main class="center">
+      <div class="step">step · verify</div>
+      <h1 class="title">check your texts.</h1>
+      <p class="sub">we sent a 6-digit code to <strong id="phone-display">your number</strong>.</p>
+
+      <form class="otp" id="otp-form" autocomplete="off">
+        <input type="text" inputmode="numeric" maxlength="1" pattern="\d*" aria-label="digit 1">
+        <input type="text" inputmode="numeric" maxlength="1" pattern="\d*" aria-label="digit 2">
+        <input type="text" inputmode="numeric" maxlength="1" pattern="\d*" aria-label="digit 3">
+        <input type="text" inputmode="numeric" maxlength="1" pattern="\d*" aria-label="digit 4">
+        <input type="text" inputmode="numeric" maxlength="1" pattern="\d*" aria-label="digit 5">
+        <input type="text" inputmode="numeric" maxlength="1" pattern="\d*" aria-label="digit 6">
+      </form>
+
+      <button class="verify-btn" id="verify-btn" disabled>verify &amp; continue →</button>
+      <p class="hint">demo mode — any 6 digits work.</p>
+
+      <div class="meta-row">
+        <a href="index.html">← edit number</a>
+        <button id="resend" type="button">resend code</button>
+      </div>
+    </main>
+
+    <footer class="page-foot">
+      <a href="privacy.html">privacy</a>
+      <span>·</span>
+      <a href="mailto:hi@cashbff.com">hi@cashbff.com</a>
+    </footer>
+  </div>
+
+  <script>
+    // ── Display phone from query ──────────────────────
+    const params = new URLSearchParams(location.search);
+    const rawPhone = params.get('phone') || '';
+    const digits = rawPhone.replace(/\D/g, '');
+    const display = document.getElementById('phone-display');
+    if (digits.length >= 10) {
+      const d = digits.slice(-10);
+      display.textContent = `+1 (${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`;
+    } else if (digits.length > 0) {
+      display.textContent = '+1 ' + digits;
+    }
+
+    // ── OTP inputs ────────────────────────────────────
+    const otpInputs = document.querySelectorAll('.otp input');
+    const verifyBtn = document.getElementById('verify-btn');
+
+    function checkComplete() {
+      const filled = Array.from(otpInputs).every(i => /^\d$/.test(i.value));
+      verifyBtn.disabled = !filled;
+    }
+
+    otpInputs.forEach((input, idx) => {
+      input.addEventListener('input', (e) => {
+        const v = e.target.value.replace(/\D/g, '').slice(0, 1);
+        e.target.value = v;
+        input.classList.toggle('filled', !!v);
+        if (v && idx < otpInputs.length - 1) otpInputs[idx + 1].focus();
+        checkComplete();
+      });
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Backspace' && !input.value && idx > 0) {
+          otpInputs[idx - 1].focus();
+        }
+        if (e.key === 'Enter' && !verifyBtn.disabled) verifyBtn.click();
+      });
+      input.addEventListener('paste', (e) => {
+        e.preventDefault();
+        const paste = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '').slice(0, 6);
+        paste.split('').forEach((d, i) => {
+          if (otpInputs[i]) {
+            otpInputs[i].value = d;
+            otpInputs[i].classList.add('filled');
+          }
+        });
+        checkComplete();
+        const nextIdx = Math.min(paste.length, 5);
+        otpInputs[nextIdx].focus();
+      });
+    });
+
+    otpInputs[0].focus();
+
+    // ── Verify → plan page ────────────────────────────
+    verifyBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (verifyBtn.disabled) return;
+      location.href = `plan.html?phone=${encodeURIComponent(rawPhone)}`;
+    });
+
+    // ── Resend (mock) ─────────────────────────────────
+    document.getElementById('resend').addEventListener('click', () => {
+      const el = document.getElementById('resend');
+      const orig = el.textContent;
+      el.textContent = 'new code sent ✓';
+      el.style.opacity = '0.9';
+      setTimeout(() => {
+        el.textContent = orig;
+        el.style.opacity = '';
+      }, 2500);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>start your 7 days · cash bff</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
+
+  <style>
+    @font-face {
+      font-family: 'Greed Condensed';
+      src: url('fonts/GreedCondensed-Bold.woff2') format('woff2');
+      font-weight: 700; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Greed Condensed';
+      src: url('fonts/GreedCondensed-Medium.woff2') format('woff2');
+      font-weight: 500; font-display: swap;
+    }
+    :root {
+      --cash-green: #014751;
+      --electric-green: #D3FFB4;
+      --periwinkle: #C5B6F1;
+      --off-black: #1A1717;
+      --vanilla: #FCFAF2;
+      --font-display: 'Greed Condensed', 'Archivo Narrow', 'Arial Narrow', Impact, sans-serif;
+      --font-body: 'Instrument Sans', system-ui, -apple-system, sans-serif;
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font-body);
+      background: var(--vanilla);
+      color: var(--off-black);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      line-height: 1.5;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { font-family: inherit; cursor: pointer; border: none; background: none; }
+
+    /* ── Top bar ────────────────────────────────────── */
+    .bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.75rem 2rem;
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      flex-shrink: 0;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-weight: 700; font-size: 1.5rem;
+      letter-spacing: -0.02em;
+      color: var(--cash-green);
+    }
+    .bar__right {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      font-size: 0.82rem;
+    }
+    .pill-phone {
+      background: rgba(1,71,81,0.08);
+      color: var(--cash-green);
+      padding: 0.45rem 0.85rem;
+      border-radius: 100px;
+      font-weight: 500;
+      font-size: 0.78rem;
+      letter-spacing: 0.01em;
+    }
+    .signout {
+      opacity: 0.55;
+      font-weight: 500;
+    }
+    .signout:hover { opacity: 1; color: var(--cash-green); }
+
+    /* ── Layout ─────────────────────────────────────── */
+    main {
+      flex: 1;
+      max-width: 34rem;
+      margin: 0 auto;
+      padding: 1.5rem 1.75rem 2.5rem;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 2rem;
+    }
+
+    /* ── Hero ───────────────────────────────────────── */
+    .hero { text-align: center; }
+    .step-lbl {
+      font-size: 0.7rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      opacity: 0.5;
+      font-weight: 600;
+      margin-bottom: 0.85rem;
+    }
+    .title {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: clamp(2.25rem, 6vw, 3.25rem);
+      text-transform: uppercase;
+      letter-spacing: -0.015em;
+      line-height: 0.95;
+      color: var(--off-black);
+      margin-bottom: 0.85rem;
+    }
+    .title .period { color: var(--cash-green); }
+    .hero-sub {
+      font-size: 1rem;
+      opacity: 0.7;
+      margin: 0 auto;
+      line-height: 1.55;
+      max-width: 26rem;
+    }
+
+    /* ── Pricing card ───────────────────────────────── */
+    .pcard {
+      background: var(--periwinkle);
+      color: var(--cash-green);
+      border-radius: 22px;
+      padding: 1.75rem 1.6rem 1.5rem;
+      box-shadow:
+        0 20px 50px -20px rgba(26,23,23,0.22),
+        0 8px 20px -10px rgba(1,71,81,0.18);
+    }
+    .pcard__lbl {
+      font-size: 0.68rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      font-weight: 700;
+      opacity: 0.65;
+      text-align: center;
+      margin-bottom: 0.5rem;
+    }
+    .pcard__price {
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 0.25rem;
+      margin-bottom: 1.1rem;
+    }
+    .pcard__amt {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: clamp(3.25rem, 10vw, 4.25rem);
+      line-height: 1;
+      letter-spacing: -0.02em;
+    }
+    .pcard__per {
+      font-family: var(--font-body);
+      font-weight: 600;
+      font-size: 1.05rem;
+      opacity: 0.7;
+    }
+    .pcard__list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+    }
+    .pcard__list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.6rem;
+      font-size: 0.92rem;
+      line-height: 1.4;
+    }
+    .check {
+      flex-shrink: 0;
+      width: 1.1rem; height: 1.1rem;
+      border-radius: 50%;
+      background: var(--cash-green);
+      color: var(--periwinkle);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      font-weight: 700;
+      margin-top: 0.15rem;
+    }
+
+    /* ── CTA ────────────────────────────────────────── */
+    .cta-wrap { text-align: center; }
+    .cta {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.55rem;
+      width: 100%;
+      max-width: 24rem;
+      background: var(--cash-green);
+      color: var(--vanilla);
+      font-weight: 700;
+      font-size: 1.05rem;
+      padding: 1.15rem 1.5rem;
+      border-radius: 100px;
+      transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1),
+                  box-shadow 0.25s ease;
+    }
+    .cta:hover {
+      transform: translateY(-2px);
+      box-shadow:
+        0 16px 40px rgba(1,71,81,0.22),
+        0 0 40px rgba(211,255,180,0.15);
+    }
+    .cta__arrow { transition: transform 0.25s ease; }
+    .cta:hover .cta__arrow { transform: translateX(3px); }
+
+    .cta-micro {
+      margin-top: 0.85rem;
+      font-size: 0.8rem;
+      opacity: 0.55;
+      line-height: 1.5;
+      max-width: 24rem;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* ── Fine print + back ──────────────────────────── */
+    .fine {
+      text-align: center;
+      font-size: 0.75rem;
+      opacity: 0.5;
+      font-style: italic;
+    }
+    .fine a { text-decoration: underline; }
+    .fine a:hover { opacity: 1; color: var(--cash-green); }
+
+    .back-row {
+      text-align: center;
+      margin-top: 0.25rem;
+    }
+    .back-link {
+      display: inline-block;
+      font-size: 0.88rem;
+      opacity: 0.55;
+      font-weight: 500;
+      padding: 0.4rem 0.6rem;
+      transition: opacity 0.15s ease, color 0.15s ease;
+    }
+    .back-link:hover { opacity: 1; color: var(--cash-green); }
+
+    /* ── Footer ─────────────────────────────────────── */
+    .page-foot {
+      display: flex;
+      justify-content: center;
+      gap: 1.25rem;
+      font-size: 0.72rem;
+      opacity: 0.35;
+      padding: 1rem 2rem 1.5rem;
+      flex-shrink: 0;
+    }
+    .page-foot a:hover { opacity: 1; color: var(--cash-green); }
+
+    /* ── Responsive ─────────────────────────────────── */
+    @media (max-width: 640px) {
+      .bar { padding: 1.25rem 1.25rem; }
+      main { padding: 1rem 1.25rem 2rem; gap: 1.5rem; }
+      .pill-phone { font-size: 0.72rem; padding: 0.4rem 0.7rem; }
+      .pcard { padding: 1.5rem 1.25rem 1.25rem; }
+    }
+
+    /* ── Reduced motion ─────────────────────────────── */
+    @media (prefers-reduced-motion: reduce) {
+      .cta, .cta__arrow { transition: none !important; }
+      .cta:hover { transform: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Top bar ────────────────────────────────────── -->
+  <header class="bar">
+    <a href="index.html" class="wordmark" id="wordmark">cash bff</a>
+    <div class="bar__right">
+      <span class="pill-phone" id="phone-pill">+1 signed in</span>
+      <a href="index.html" class="signout">sign out</a>
+    </div>
+  </header>
+
+  <main>
+    <!-- ── Hero ─────────────────────────────────────── -->
+    <section class="hero">
+      <div class="step-lbl">step · start</div>
+      <h1 class="title">your 7 days<br>start now<span class="period">.</span></h1>
+      <p class="hero-sub">one sunday receipt lands this weekend. you decide after.</p>
+    </section>
+
+    <!-- ── Pricing card ─────────────────────────────── -->
+    <section class="pcard" aria-label="what happens after your 7 days">
+      <div class="pcard__lbl">after your 7 days</div>
+      <div class="pcard__price">
+        <span class="pcard__amt">$4.99</span>
+        <span class="pcard__per">/week</span>
+      </div>
+      <ul class="pcard__list">
+        <li><span class="check" aria-hidden="true">✓</span>pause anytime with one text</li>
+        <li><span class="check" aria-hidden="true">✓</span>no ads, no affiliate tricks in your plan</li>
+        <li><span class="check" aria-hidden="true">✓</span>cancel from any page — no email chains</li>
+      </ul>
+    </section>
+
+    <!-- ── CTA ──────────────────────────────────────── -->
+    <div class="cta-wrap">
+      <a href="#" class="cta" id="start-btn">
+        start my 7 days free
+        <span class="cta__arrow" aria-hidden="true">→</span>
+      </a>
+      <p class="cta-micro">we don't charge anything today. we'll remind you 48 hrs before your trial ends.</p>
+    </div>
+
+    <!-- ── Fine print + back ────────────────────────── -->
+    <p class="fine">
+      by continuing you agree to our <a href="privacy.html">privacy</a> + <a href="#" id="terms-link">terms</a>.
+    </p>
+
+    <div class="back-row">
+      <a href="#" class="back-link" id="back-link">← back to my plan</a>
+    </div>
+  </main>
+
+  <footer class="page-foot">
+    <a href="privacy.html">privacy</a>
+    <span>·</span>
+    <a href="mailto:hi@cashbff.com">hi@cashbff.com</a>
+  </footer>
+
+  <script>
+    // ── Parse phone, preserve through navigation ────
+    const params = new URLSearchParams(location.search);
+    const rawPhone = params.get('phone') || '';
+    const digits = rawPhone.replace(/\D/g, '');
+
+    const pill = document.getElementById('phone-pill');
+    if (digits.length >= 10) {
+      const d = digits.slice(-10);
+      pill.textContent = `+1 (${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`;
+    }
+
+    function withPhone(path) {
+      return rawPhone ? `${path}?phone=${encodeURIComponent(rawPhone)}` : path;
+    }
+
+    // Back to plan — preserve phone
+    document.getElementById('back-link').addEventListener('click', (e) => {
+      e.preventDefault();
+      location.href = withPhone('plan.html');
+    });
+
+    // Start trial — for this proto, straight to connect.
+    // TODO: wire Stripe checkout (create SetupIntent / Checkout Session,
+    // on success redirect to connect.html?phone=...).
+    document.getElementById('start-btn').addEventListener('click', (e) => {
+      e.preventDefault();
+      location.href = withPhone('connect.html');
+    });
+
+    // Terms placeholder
+    document.getElementById('terms-link').addEventListener('click', (e) => {
+      e.preventDefault();
+      // TODO: replace with real terms page when available.
+      alert('terms coming soon.');
+    });
+  </script>
+</body>
+</html>

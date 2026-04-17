@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>your plan · cash bff</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
+
+  <style>
+    @font-face {
+      font-family: 'Greed Condensed';
+      src: url('fonts/GreedCondensed-Bold.woff2') format('woff2');
+      font-weight: 700; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Greed Condensed';
+      src: url('fonts/GreedCondensed-Medium.woff2') format('woff2');
+      font-weight: 500; font-display: swap;
+    }
+    :root {
+      --cash-green: #014751;
+      --electric-green: #D3FFB4;
+      --periwinkle: #C5B6F1;
+      --off-black: #1A1717;
+      --vanilla: #FCFAF2;
+      --font-display: 'Greed Condensed', 'Archivo Narrow', 'Arial Narrow', Impact, sans-serif;
+      --font-body: 'Instrument Sans', system-ui, -apple-system, sans-serif;
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font-body);
+      background: var(--vanilla);
+      color: var(--off-black);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      line-height: 1.5;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { font-family: inherit; cursor: pointer; border: none; background: none; }
+
+    /* ── Top bar ────────────────────────────────────── */
+    .bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.75rem 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-weight: 700; font-size: 1.5rem;
+      letter-spacing: -0.02em;
+      color: var(--cash-green);
+    }
+    .bar__right {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      font-size: 0.82rem;
+    }
+    .pill-phone {
+      background: rgba(1,71,81,0.08);
+      color: var(--cash-green);
+      padding: 0.45rem 0.85rem;
+      border-radius: 100px;
+      font-weight: 500;
+      font-size: 0.78rem;
+      letter-spacing: 0.01em;
+    }
+    .signout {
+      opacity: 0.55;
+      font-weight: 500;
+    }
+    .signout:hover { opacity: 1; color: var(--cash-green); }
+
+    /* ── Layout ─────────────────────────────────────── */
+    main {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 2rem 2rem 5rem;
+    }
+    .step-lbl {
+      font-size: 0.7rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      opacity: 0.5;
+      font-weight: 600;
+      margin-bottom: 0.85rem;
+      text-align: center;
+    }
+    .title {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: clamp(2.25rem, 6vw, 3.25rem);
+      text-transform: uppercase;
+      letter-spacing: -0.015em;
+      line-height: 1;
+      color: var(--off-black);
+      margin-bottom: 0.85rem;
+      text-align: center;
+    }
+    .intro {
+      font-size: 1rem;
+      opacity: 0.7;
+      margin: 0 auto 2.5rem;
+      line-height: 1.6;
+      max-width: 30rem;
+      text-align: center;
+    }
+
+    /* ── Cards form ─────────────────────────────────── */
+    .card-row {
+      display: grid;
+      grid-template-columns: 1.6fr 1fr 1fr 1fr 36px;
+      gap: 0.6rem;
+      margin-bottom: 0.75rem;
+      align-items: end;
+    }
+    .field label {
+      display: block;
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      opacity: 0.55;
+      margin-bottom: 0.3rem;
+      font-weight: 600;
+    }
+    .field input {
+      width: 100%;
+      padding: 0.75rem 0.85rem;
+      border: 1px solid rgba(26,23,23,0.15);
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      background: #fff;
+      color: var(--off-black);
+      transition: border-color 0.15s ease;
+    }
+    .field input:focus {
+      outline: none;
+      border-color: var(--cash-green);
+    }
+    .remove-btn {
+      background: transparent;
+      color: var(--off-black);
+      opacity: 0.3;
+      font-size: 1.25rem;
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      transition: opacity 0.15s ease, background 0.15s ease;
+    }
+    .remove-btn:hover { opacity: 1; background: rgba(26,23,23,0.08); }
+
+    .add-btn {
+      background: transparent;
+      border: 1px dashed rgba(26,23,23,0.22);
+      color: var(--cash-green);
+      padding: 0.7rem 1.2rem;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin-top: 0.5rem;
+      margin-bottom: 2rem;
+      width: 100%;
+      transition: border-color 0.15s ease, background 0.15s ease;
+    }
+    .add-btn:hover:not(:disabled) {
+      border-color: var(--cash-green);
+      background: rgba(1,71,81,0.04);
+    }
+    .add-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    .options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    @media (max-width: 600px) {
+      .options { grid-template-columns: 1fr; }
+    }
+    .opt-group {
+      background: rgba(1,71,81,0.04);
+      padding: 1rem 1.2rem;
+      border-radius: 14px;
+    }
+    .opt-group > label {
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      opacity: 0.55;
+      font-weight: 600;
+      display: block;
+      margin-bottom: 0.75rem;
+    }
+    .strat-toggle {
+      display: flex;
+      gap: 0.3rem;
+      background: #fff;
+      padding: 0.25rem;
+      border-radius: 10px;
+    }
+    .strat-toggle button {
+      flex: 1;
+      padding: 0.6rem;
+      border-radius: 7px;
+      background: transparent;
+      color: var(--off-black);
+      font-weight: 600;
+      font-size: 0.85rem;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+    .strat-toggle button.active {
+      background: var(--cash-green);
+      color: var(--vanilla);
+    }
+    .opt-hint {
+      margin-top: 0.6rem;
+      font-size: 0.76rem;
+      opacity: 0.6;
+      font-style: italic;
+      min-height: 1.2em;
+    }
+    .monthly-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: #fff;
+      padding: 0.55rem 0.85rem;
+      border-radius: 10px;
+      border: 1px solid rgba(26,23,23,0.1);
+    }
+    .monthly-wrap span { opacity: 0.5; font-weight: 600; }
+    .monthly-wrap input {
+      border: none; outline: none;
+      width: 100%;
+      font-size: 1rem;
+      font-family: inherit;
+      color: var(--off-black);
+      font-weight: 600;
+      background: transparent;
+    }
+
+    .calc-btn {
+      width: 100%;
+      background: var(--cash-green);
+      color: var(--vanilla);
+      padding: 1.2rem;
+      font-weight: 700;
+      font-size: 1.05rem;
+      border-radius: 100px;
+      transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.25s ease;
+    }
+    .calc-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 40px rgba(1,71,81,0.2);
+    }
+    .calc-err {
+      margin-top: 0.85rem;
+      font-size: 0.85rem;
+      color: #8a2033;
+      text-align: center;
+      min-height: 1.2em;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+    .calc-err.show { opacity: 1; }
+
+    /* ── Result view ─────────────────────────────────── */
+    .result-view { display: none; animation: fadeUp 0.5s ease-out; }
+    .result-view.show { display: block; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .reveal-title {
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: clamp(1.05rem, 2.2vw, 1.35rem);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--off-black);
+      opacity: 0.5;
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    /* ── Calendar ─────────────────────────────────── */
+    .cal-wrap {
+      display: flex;
+      justify-content: center;
+      margin: 0 auto 2rem;
+      perspective: 1400px;
+    }
+    .calendar {
+      width: min(22rem, 88vw);
+      background: var(--cash-green);
+      border-radius: 1.25rem;
+      padding: 1.4rem 1.25rem 1.6rem;
+      color: var(--vanilla);
+      transform: rotate(-3deg);
+      box-shadow:
+        0 30px 60px -20px rgba(26,23,23,0.35),
+        0 12px 24px -10px rgba(1,71,81,0.35),
+        inset 0 0 0 1px rgba(213,255,180,0.08);
+      animation: cal-slide-in 0.7s cubic-bezier(0.34, 1.2, 0.64, 1) both,
+                 cal-float 7s ease-in-out 0.8s infinite;
+      position: relative;
+      overflow: hidden;
+    }
+    @keyframes cal-slide-in {
+      from { opacity: 0; transform: rotate(-3deg) translateY(40px) scale(0.94); }
+      to   { opacity: 1; transform: rotate(-3deg) translateY(0) scale(1); }
+    }
+    @keyframes cal-float {
+      0%, 100% { transform: rotate(-3deg) translateY(0); }
+      50%      { transform: rotate(-3deg) translateY(-5px); }
+    }
+    .calendar::after {
+      content: "";
+      position: absolute; inset: 0;
+      border-radius: inherit;
+      background: radial-gradient(120% 80% at 10% 0%, rgba(213,255,180,0.06), transparent 60%);
+      pointer-events: none;
+    }
+    .cal-header {
+      font-family: var(--font-display);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: -0.01em;
+      font-size: 1.3rem;
+      color: var(--electric-green);
+      margin-bottom: 0.9rem;
+      text-align: center;
+      position: relative; z-index: 1;
+    }
+    .cal-dows {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 0.2rem;
+      margin-bottom: 0.5rem;
+      font-family: var(--font-body);
+      font-size: 0.62rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      opacity: 0.5;
+      text-align: center;
+      font-weight: 600;
+      position: relative; z-index: 1;
+    }
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 0.2rem;
+      position: relative; z-index: 1;
+    }
+    .cal-day {
+      aspect-ratio: 1 / 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: 0.9rem;
+      color: var(--vanilla);
+      opacity: 0;
+      border-radius: 8px;
+      animation: cal-fade-in 0.35s ease-out both;
+      animation-delay: calc(0.5s + (var(--i, 0) * 20ms));
+    }
+    @keyframes cal-fade-in {
+      from { opacity: 0; transform: translateY(4px); }
+      to   { opacity: 0.55; transform: translateY(0); }
+    }
+    .cal-day.empty { visibility: hidden; }
+    .cal-day.target {
+      background: var(--electric-green);
+      color: var(--cash-green);
+      font-weight: 700;
+      font-size: 1rem;
+      animation:
+        cal-fade-in 0.35s ease-out both,
+        cal-target-pop 0.7s cubic-bezier(0.34, 1.6, 0.64, 1) 0.4s both,
+        cal-target-pulse 2.8s ease-in-out 2s infinite;
+    }
+    @keyframes cal-target-pop {
+      0%   { transform: scale(1); box-shadow: 0 0 0 rgba(211,255,180,0); opacity: 0.55; }
+      45%  { transform: scale(1.4); box-shadow: 0 0 30px rgba(211,255,180,0.85); opacity: 1; }
+      100% { transform: scale(1); box-shadow: 0 0 20px rgba(211,255,180,0.4); opacity: 1; }
+    }
+    @keyframes cal-target-pulse {
+      0%, 100% { box-shadow: 0 0 20px rgba(211,255,180,0.4); transform: scale(1); }
+      50%      { box-shadow: 0 0 32px rgba(211,255,180,0.75); transform: scale(1.06); }
+    }
+
+    .reveal-stat {
+      text-align: center;
+      font-size: 0.98rem;
+      color: var(--cash-green);
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+      opacity: 0;
+      animation: fadeUp 0.5s ease-out 1.4s both;
+    }
+    .reveal-stat span { font-weight: 700; }
+    .reveal-stat .sep { margin: 0 0.5rem; opacity: 0.35; font-weight: 400; }
+
+    .math-line {
+      text-align: center;
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: clamp(1.3rem, 3.5vw, 1.75rem);
+      line-height: 1.2;
+      letter-spacing: -0.01em;
+      color: var(--cash-green);
+      margin: 1.75rem auto 2.25rem;
+      max-width: 22ch;
+      opacity: 0;
+      animation: fadeUp 0.5s ease-out 1.7s both;
+    }
+
+    .reveal-cta {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.55rem;
+      width: 100%;
+      background: var(--cash-green);
+      color: var(--vanilla);
+      font-family: var(--font-body);
+      font-weight: 700;
+      font-size: 1.05rem;
+      padding: 1.15rem 2rem;
+      border-radius: 100px;
+      transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.25s ease;
+      opacity: 0;
+      animation: fadeUp 0.5s ease-out 2s both;
+    }
+    .reveal-cta:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 40px rgba(1,71,81,0.22), 0 0 40px rgba(211,255,180,0.15);
+    }
+    .reveal-cta span { transition: transform 0.25s ease; }
+    .reveal-cta:hover span { transform: translateX(4px); }
+
+    .reveal-fine {
+      margin-top: 0.7rem;
+      text-align: center;
+      font-size: 0.78rem;
+      font-style: italic;
+      color: var(--off-black);
+      opacity: 0;
+      animation: fadeUp 0.5s ease-out 2.2s both;
+    }
+    .reveal-fine strong { color: var(--cash-green); opacity: 0.9; font-weight: 600; font-style: normal; }
+
+    .details-fold {
+      margin-top: 2rem;
+      border-top: 1px solid rgba(26,23,23,0.08);
+      padding-top: 1rem;
+      opacity: 0;
+      animation: fadeUp 0.5s ease-out 2.4s both;
+    }
+    .details-fold summary {
+      cursor: pointer;
+      font-size: 0.82rem;
+      opacity: 0.5;
+      font-weight: 500;
+      padding: 0.5rem 0;
+      list-style: none;
+      user-select: none;
+      transition: opacity 0.15s ease, color 0.15s ease;
+    }
+    .details-fold summary::-webkit-details-marker { display: none; }
+    .details-fold summary::after {
+      content: "+";
+      float: right;
+      font-family: var(--font-display);
+      font-weight: 500;
+      margin-left: 0.5rem;
+      opacity: 0.6;
+    }
+    .details-fold[open] summary::after { content: "×"; }
+    .details-fold summary:hover { opacity: 1; color: var(--cash-green); }
+
+    .order-inside { padding: 0.5rem 0 0.25rem; }
+    .order-step {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.7rem 0;
+      border-bottom: 1px solid rgba(26,23,23,0.06);
+      font-size: 0.92rem;
+    }
+    .order-step:last-child { border-bottom: none; }
+    .order-step__n {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: var(--cash-green);
+      opacity: 0.4;
+      min-width: 1.5ch;
+    }
+    .order-step__name { flex: 1; font-weight: 500; }
+    .order-step__when {
+      font-size: 0.82rem;
+      opacity: 0.55;
+      font-style: italic;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .calendar, .cal-day, .cal-day.target,
+      .reveal-stat, .math-line, .reveal-cta, .reveal-fine, .details-fold {
+        animation: none !important;
+        opacity: 1 !important;
+      }
+      .cal-day { opacity: 0.55 !important; }
+      .cal-day.target { opacity: 1 !important; }
+      .calendar { transform: rotate(-3deg); }
+    }
+
+    .edit-row {
+      margin-top: 1.5rem;
+      text-align: center;
+    }
+    .edit-row button {
+      background: transparent;
+      color: var(--cash-green);
+      font-size: 0.9rem;
+      text-decoration: underline;
+      opacity: 0.65;
+      padding: 0.5rem;
+    }
+    .edit-row button:hover { opacity: 1; }
+
+    /* ── Footer ─────────────────────────────────────── */
+    .page-foot {
+      display: flex;
+      justify-content: center;
+      gap: 1.25rem;
+      font-size: 0.72rem;
+      opacity: 0.35;
+      padding: 1.5rem 2rem 2rem;
+    }
+    .page-foot a:hover { opacity: 1; color: var(--cash-green); }
+
+    /* ── Responsive ─────────────────────────────────── */
+    @media (max-width: 640px) {
+      .bar { padding: 1.25rem 1.25rem; }
+      main { padding: 1.25rem 1.25rem 3rem; }
+      .card-row {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+      }
+      .card-row .field:nth-child(1) { grid-column: 1 / -1; }
+      .remove-btn { justify-self: end; }
+      .pill-phone { font-size: 0.72rem; padding: 0.4rem 0.7rem; }
+    }
+  </style>
+</head>
+<body>
+  <header class="bar">
+    <a href="index.html" class="wordmark">cash bff</a>
+    <div class="bar__right">
+      <span class="pill-phone" id="phone-pill">+1 signed in</span>
+      <a href="index.html" class="signout">sign out</a>
+    </div>
+  </header>
+
+  <main>
+    <!-- ── FORM VIEW ─────────────────────────────────── -->
+    <section id="form-view">
+      <div class="step-lbl">step · add your cards</div>
+      <h1 class="title">tell me about your cards.</h1>
+      <p class="intro">just nickname, balance, APR, and minimum. three max for now. no bank login, nothing to download.</p>
+
+      <div id="cards-list"></div>
+      <button type="button" class="add-btn" id="add-btn">+ add another card</button>
+
+      <div class="options">
+        <div class="opt-group">
+          <label for="monthly">monthly payment</label>
+          <div class="monthly-wrap">
+            <span>$</span>
+            <input type="number" id="monthly" inputmode="numeric" value="300" min="0">
+          </div>
+          <div class="opt-hint" id="monthly-hint">we'll set a sensible default — adjust up if you can.</div>
+        </div>
+
+        <div class="opt-group">
+          <label>strategy</label>
+          <div class="strat-toggle" role="tablist">
+            <button type="button" class="active" data-strat="avalanche" role="tab">avalanche</button>
+            <button type="button" data-strat="snowball" role="tab">snowball</button>
+          </div>
+          <div class="opt-hint" id="strat-hint">saves the most money — attacks highest rate first.</div>
+        </div>
+      </div>
+
+      <button class="calc-btn" id="calc-btn">see my debt-free date →</button>
+      <div class="calc-err" id="calc-err"></div>
+    </section>
+
+    <!-- ── RESULT VIEW ───────────────────────────────── -->
+    <section id="result-view" class="result-view">
+      <div class="step-lbl">your plan</div>
+      <h2 class="reveal-title">you're debt-free on</h2>
+
+      <div class="cal-wrap">
+        <div class="calendar" role="img" aria-label="calendar showing debt-free date">
+          <div class="cal-header" id="cal-header">—</div>
+          <div class="cal-dows" aria-hidden="true">
+            <span>s</span><span>m</span><span>t</span><span>w</span><span>t</span><span>f</span><span>s</span>
+          </div>
+          <div class="cal-grid" id="cal-grid"></div>
+        </div>
+      </div>
+
+      <div class="reveal-stat">
+        <span id="reveal-saved">—</span> saved in interest
+        <span class="sep">·</span>
+        <span id="reveal-months">—</span> months from today
+      </div>
+
+      <div class="math-line">your debt is math, not a character flaw.</div>
+
+      <a href="paywall.html" id="continue-btn" class="reveal-cta">
+        start my 7 days free
+        <span aria-hidden="true">→</span>
+      </a>
+      <div class="reveal-fine">next: <strong>choose your plan</strong> → then connect your cards</div>
+
+      <details class="details-fold">
+        <summary>see your payoff order</summary>
+        <div id="order-list" class="order-inside"></div>
+      </details>
+
+      <div class="edit-row">
+        <button type="button" id="edit-btn">← edit my cards</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="page-foot">
+    <a href="privacy.html">privacy</a>
+    <span>·</span>
+    <a href="mailto:hi@cashbff.com">hi@cashbff.com</a>
+  </footer>
+
+  <script>
+    // ── Phone pill ───────────────────────────────────
+    const params = new URLSearchParams(location.search);
+    const rawPhone = params.get('phone') || '';
+    const digits = rawPhone.replace(/\D/g, '');
+    const pill = document.getElementById('phone-pill');
+    if (digits.length >= 10) {
+      const d = digits.slice(-10);
+      pill.textContent = `+1 (${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`;
+    }
+
+    // ── State ────────────────────────────────────────
+    const state = {
+      strategy: 'avalanche',
+      cards: [],
+    };
+    const MAX_CARDS = 3;
+
+    function newCard() {
+      return { id: Math.random().toString(36).slice(2, 9), nickname: '', balance: '', apr: '', min: '' };
+    }
+
+    // ── Card form rendering ──────────────────────────
+    const cardsList = document.getElementById('cards-list');
+    const addBtn = document.getElementById('add-btn');
+
+    function renderCards() {
+      cardsList.innerHTML = '';
+      state.cards.forEach((card, idx) => {
+        const row = document.createElement('div');
+        row.className = 'card-row';
+        row.innerHTML = `
+          <div class="field">
+            <label for="nick-${card.id}">nickname</label>
+            <input id="nick-${card.id}" type="text" data-k="nickname" value="${escapeAttr(card.nickname)}" placeholder="${idx === 0 ? 'chase sapphire' : idx === 1 ? 'capital one' : 'amex'}">
+          </div>
+          <div class="field">
+            <label for="bal-${card.id}">balance ($)</label>
+            <input id="bal-${card.id}" type="number" inputmode="decimal" data-k="balance" value="${escapeAttr(card.balance)}" placeholder="3200">
+          </div>
+          <div class="field">
+            <label for="apr-${card.id}">APR (%)</label>
+            <input id="apr-${card.id}" type="number" inputmode="decimal" step="0.01" data-k="apr" value="${escapeAttr(card.apr)}" placeholder="22.9">
+          </div>
+          <div class="field">
+            <label for="min-${card.id}">minimum ($)</label>
+            <input id="min-${card.id}" type="number" inputmode="decimal" data-k="min" value="${escapeAttr(card.min)}" placeholder="55">
+          </div>
+          <button type="button" class="remove-btn" aria-label="remove card" ${state.cards.length === 1 ? 'style="visibility:hidden"' : ''}>×</button>
+        `;
+        row.querySelectorAll('input').forEach(input => {
+          input.addEventListener('input', (e) => {
+            card[e.target.dataset.k] = e.target.value;
+            updateMonthlyHint();
+          });
+        });
+        row.querySelector('.remove-btn').addEventListener('click', () => {
+          state.cards = state.cards.filter(c => c.id !== card.id);
+          renderCards();
+          updateAddBtn();
+          updateMonthlyHint();
+        });
+        cardsList.appendChild(row);
+      });
+    }
+
+    function escapeAttr(s) {
+      return String(s).replace(/"/g, '&quot;');
+    }
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+    }
+
+    function updateAddBtn() {
+      addBtn.disabled = state.cards.length >= MAX_CARDS;
+      addBtn.textContent = state.cards.length >= MAX_CARDS ? '(three cards max for now)' : '+ add another card';
+    }
+
+    addBtn.addEventListener('click', () => {
+      if (state.cards.length >= MAX_CARDS) return;
+      state.cards.push(newCard());
+      renderCards();
+      updateAddBtn();
+    });
+
+    // Seed
+    state.cards.push(newCard());
+    renderCards();
+    updateAddBtn();
+
+    // ── Strategy toggle ──────────────────────────────
+    const stratBtns = document.querySelectorAll('.strat-toggle button');
+    const stratHint = document.getElementById('strat-hint');
+    stratBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        stratBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.strategy = btn.dataset.strat;
+        stratHint.textContent = state.strategy === 'avalanche'
+          ? 'saves the most money — attacks highest rate first.'
+          : 'fastest wins — attacks smallest balance first.';
+      });
+    });
+
+    // ── Monthly hint ─────────────────────────────────
+    const monthlyInput = document.getElementById('monthly');
+    const monthlyHint = document.getElementById('monthly-hint');
+    function updateMonthlyHint() {
+      const totalMin = state.cards.reduce((s, c) => s + (Number(c.min) || 0), 0);
+      const monthly = Number(monthlyInput.value) || 0;
+      if (totalMin <= 0) {
+        monthlyHint.textContent = "we'll set a sensible default — adjust up if you can.";
+        return;
+      }
+      if (monthly < totalMin) {
+        monthlyHint.textContent = `minimum total is $${totalMin.toFixed(0)}/mo. pushing extra in gets you there faster.`;
+      } else {
+        const extra = monthly - totalMin;
+        monthlyHint.textContent = extra === 0
+          ? `that covers minimums. add even $20 and you'll be surprised.`
+          : `$${extra.toFixed(0)}/mo over minimums. that's where the magic is.`;
+      }
+    }
+    monthlyInput.addEventListener('input', updateMonthlyHint);
+    updateMonthlyHint();
+
+    // ── Payoff math ──────────────────────────────────
+    function simulate(cards, strategy, monthlyPayment) {
+      const MAX_MONTHS = 600;
+      const remaining = cards.map(c => ({ ...c }));
+      let months = 0;
+      let totalInterest = 0;
+      const payoffOrder = [];
+
+      while (remaining.some(c => c.balance > 0.005) && months < MAX_MONTHS) {
+        remaining.forEach(c => {
+          if (c.balance > 0) {
+            const interest = c.balance * (c.apr / 100 / 12);
+            c.balance += interest;
+            totalInterest += interest;
+          }
+        });
+
+        const active = remaining.filter(c => c.balance > 0);
+        const sorted = [...active].sort((a, b) => {
+          return strategy === 'avalanche' ? (b.apr - a.apr) : (a.balance - b.balance);
+        });
+
+        let pot = monthlyPayment;
+        active.forEach(c => {
+          const pay = Math.min(c.min, c.balance, pot);
+          c.balance -= pay;
+          pot -= pay;
+        });
+        for (const c of sorted) {
+          if (pot <= 0) break;
+          if (c.balance <= 0) continue;
+          const pay = Math.min(pot, c.balance);
+          c.balance -= pay;
+          pot -= pay;
+        }
+
+        remaining.forEach(c => {
+          if (c.balance <= 0.005 && !payoffOrder.find(p => p.id === c.id)) {
+            payoffOrder.push({ id: c.id, nickname: c.nickname, month: months + 1 });
+          }
+        });
+
+        months++;
+      }
+
+      return { months, totalInterest, payoffOrder, maxedOut: months >= MAX_MONTHS };
+    }
+
+    // ── Calculate handler ────────────────────────────
+    const calcBtn = document.getElementById('calc-btn');
+    const calcErr = document.getElementById('calc-err');
+    const formView = document.getElementById('form-view');
+    const resultView = document.getElementById('result-view');
+
+    calcBtn.addEventListener('click', () => {
+      calcErr.classList.remove('show');
+      calcErr.textContent = '';
+
+      const parsed = state.cards.map(c => ({
+        id: c.id,
+        nickname: c.nickname.trim() || 'card',
+        balance: Number(c.balance),
+        apr: Number(c.apr),
+        min: Number(c.min),
+      })).filter(c => c.balance > 0);
+
+      if (parsed.length === 0) {
+        calcErr.textContent = 'add at least one card with a balance.';
+        calcErr.classList.add('show');
+        return;
+      }
+      if (parsed.some(c => !isFinite(c.apr) || c.apr < 0 || c.apr > 100)) {
+        calcErr.textContent = 'APR looks off — check those rates.';
+        calcErr.classList.add('show');
+        return;
+      }
+      if (parsed.some(c => !isFinite(c.min) || c.min < 0)) {
+        calcErr.textContent = 'minimum payment missing or invalid.';
+        calcErr.classList.add('show');
+        return;
+      }
+
+      const monthly = Number(monthlyInput.value);
+      const totalMin = parsed.reduce((s, c) => s + c.min, 0);
+      if (!isFinite(monthly) || monthly < totalMin) {
+        calcErr.textContent = `monthly payment needs to cover minimums ($${totalMin.toFixed(0)}/mo).`;
+        calcErr.classList.add('show');
+        return;
+      }
+
+      const yourPlan = simulate(parsed, state.strategy, monthly);
+      const minsOnly = simulate(parsed, state.strategy, totalMin);
+
+      if (yourPlan.maxedOut) {
+        calcErr.textContent = "math doesn't converge — try a higher monthly payment.";
+        calcErr.classList.add('show');
+        return;
+      }
+
+      const saved = Math.max(0, minsOnly.totalInterest - yourPlan.totalInterest);
+      const debtFreeDate = addMonths(new Date(), yourPlan.months);
+
+      renderCalendar(debtFreeDate);
+      document.getElementById('reveal-saved').textContent = '$' + Math.round(saved).toLocaleString();
+      document.getElementById('reveal-months').textContent = yourPlan.months;
+
+      const orderEl = document.getElementById('order-list');
+      orderEl.innerHTML = '';
+      yourPlan.payoffOrder.forEach((p, i) => {
+        const step = document.createElement('div');
+        step.className = 'order-step';
+        const whenDate = addMonths(new Date(), p.month);
+        step.innerHTML = `
+          <span class="order-step__n">${i + 1}</span>
+          <span class="order-step__name">${escapeHtml(p.nickname)}</span>
+          <span class="order-step__when">paid off ${formatMonth(whenDate)}</span>
+        `;
+        orderEl.appendChild(step);
+      });
+
+      formView.style.display = 'none';
+      resultView.classList.add('show');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    document.getElementById('edit-btn').addEventListener('click', () => {
+      resultView.classList.remove('show');
+      formView.style.display = '';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    // Preserve phone through flow when continuing to paywall
+    document.getElementById('continue-btn').addEventListener('click', (e) => {
+      e.preventDefault();
+      location.href = `paywall.html?phone=${encodeURIComponent(rawPhone)}`;
+    });
+
+    function addMonths(d, n) {
+      const r = new Date(d);
+      r.setMonth(r.getMonth() + n);
+      return r;
+    }
+    function formatMonth(d) {
+      return d.toLocaleString('en-US', { month: 'short', year: 'numeric' });
+    }
+
+    // ── Calendar renderer ────────────────────────────
+    function renderCalendar(date) {
+      const year = date.getFullYear();
+      const month = date.getMonth();
+      const targetDay = date.getDate();
+
+      const header = document.getElementById('cal-header');
+      header.textContent = date.toLocaleString('en-US', { month: 'long', year: 'numeric' }).toUpperCase();
+
+      const firstDayOfWeek = new Date(year, month, 1).getDay(); // 0 = Sun
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+      const grid = document.getElementById('cal-grid');
+      grid.innerHTML = '';
+      let i = 0;
+
+      for (let e = 0; e < firstDayOfWeek; e++) {
+        const cell = document.createElement('div');
+        cell.className = 'cal-day empty';
+        cell.style.setProperty('--i', i++);
+        grid.appendChild(cell);
+      }
+      for (let d = 1; d <= daysInMonth; d++) {
+        const cell = document.createElement('div');
+        cell.className = 'cal-day';
+        if (d === targetDay) cell.classList.add('target');
+        cell.textContent = d;
+        cell.style.setProperty('--i', i++);
+        grid.appendChild(cell);
+      }
+    }
+  </script>
+</body>
+</html>
