@@ -226,7 +226,7 @@
       </form>
 
       <button class="verify-btn" id="verify-btn" disabled>verify &amp; continue →</button>
-      <p class="hint">demo mode — any 6 digits work.</p>
+      <p class="hint" id="hint">hang tight — we're sending your code…</p>
 
       <div class="meta-row">
         <a href="index.html">← edit number</a>
@@ -294,23 +294,108 @@
 
     otpInputs[0].focus();
 
-    // ── Verify → plan page ────────────────────────────
-    verifyBtn.addEventListener('click', (e) => {
+    // ── Config ───────────────────────────────────────
+    const API_BASE = 'https://sms-service-sope.onrender.com';
+    const TOKEN_KEY = 'cbff_token';
+    const NAME_KEY = 'cbff_first_name';
+    const hint = document.getElementById('hint');
+
+    function e164(raw) {
+      const d = raw.replace(/\D/g, '');
+      if (d.length === 10) return '+1' + d;
+      if (d.length === 11 && d.startsWith('1')) return '+' + d;
+      if (d.length >= 8) return '+' + d;
+      return null;
+    }
+
+    // ── Send the real OTP on page load ───────────────
+    async function sendOtp() {
+      const phone = e164(rawPhone);
+      if (!phone) {
+        hint.textContent = "that number doesn't look right — try again?";
+        hint.style.color = '#7a1f2a';
+        return;
+      }
+      try {
+        const res = await fetch(`${API_BASE}/api/otp/send`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone }),
+        });
+        if (res.status === 429) {
+          hint.textContent = 'slow down — too many codes. try again in a bit.';
+          return;
+        }
+        hint.textContent = 'sent. should land in a few seconds.';
+      } catch (_) {
+        hint.textContent = 'network hiccup. tap "resend code" to try again.';
+      }
+    }
+    sendOtp();
+
+    // ── Verify the code ──────────────────────────────
+    verifyBtn.addEventListener('click', async (e) => {
       e.preventDefault();
       if (verifyBtn.disabled) return;
-      location.href = `plan.html?phone=${encodeURIComponent(rawPhone)}`;
+      const code = Array.from(otpInputs).map(i => i.value).join('');
+      const phone = e164(rawPhone);
+      if (!phone || !/^\d{6}$/.test(code)) return;
+
+      verifyBtn.disabled = true;
+      const originalLabel = verifyBtn.textContent;
+      verifyBtn.textContent = 'verifying…';
+
+      try {
+        const res = await fetch(`${API_BASE}/api/otp/verify`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ phone, code }),
+        });
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok || !data.ok) {
+          hint.textContent = data.error || "that code didn't match. try again?";
+          hint.style.color = '#7a1f2a';
+          verifyBtn.disabled = false;
+          verifyBtn.textContent = originalLabel;
+          otpInputs.forEach(i => { i.value = ''; i.classList.remove('filled'); });
+          otpInputs[0].focus();
+          return;
+        }
+
+        // Store token + name for later requests (Bearer fallback to the cookie)
+        if (data.token) sessionStorage.setItem(TOKEN_KEY, data.token);
+        if (data.first_name) sessionStorage.setItem(NAME_KEY, data.first_name);
+
+        // Route: returning user without email → welcome-back page.
+        // Otherwise continue the standard new-user flow.
+        const query = `?phone=${encodeURIComponent(rawPhone)}`;
+        if (data.is_returning && !data.has_email) {
+          location.href = 'welcome.html' + query;
+        } else if (data.is_returning) {
+          // Returning user who already gave us an email — straight to home.
+          location.href = 'home.html' + query;
+        } else {
+          location.href = 'plan.html' + query;
+        }
+      } catch (_) {
+        hint.textContent = 'network hiccup. try again in a sec.';
+        hint.style.color = '#7a1f2a';
+        verifyBtn.disabled = false;
+        verifyBtn.textContent = originalLabel;
+      }
     });
 
-    // ── Resend (mock) ─────────────────────────────────
-    document.getElementById('resend').addEventListener('click', () => {
+    // ── Resend ───────────────────────────────────────
+    document.getElementById('resend').addEventListener('click', async () => {
       const el = document.getElementById('resend');
       const orig = el.textContent;
+      el.textContent = 'sending…';
+      el.style.opacity = '0.7';
+      await sendOtp();
       el.textContent = 'new code sent ✓';
-      el.style.opacity = '0.9';
-      setTimeout(() => {
-        el.textContent = orig;
-        el.style.opacity = '';
-      }, 2500);
+      setTimeout(() => { el.textContent = orig; el.style.opacity = ''; }, 2500);
     });
   </script>
 </body>

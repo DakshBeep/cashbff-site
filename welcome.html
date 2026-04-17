@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>welcome back · cash bff</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
+
+  <style>
+    @font-face {
+      font-family: 'Greed Condensed';
+      src: url('fonts/GreedCondensed-Bold.woff2') format('woff2');
+      font-weight: 700; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Greed Condensed';
+      src: url('fonts/GreedCondensed-Medium.woff2') format('woff2');
+      font-weight: 500; font-display: swap;
+    }
+    :root {
+      --cash-green: #014751;
+      --electric-green: #D3FFB4;
+      --periwinkle: #C5B6F1;
+      --off-black: #1A1717;
+      --vanilla: #FCFAF2;
+      --font-display: 'Greed Condensed', 'Archivo Narrow', 'Arial Narrow', Impact, sans-serif;
+      --font-body: 'Instrument Sans', system-ui, -apple-system, sans-serif;
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: var(--font-body);
+      background: var(--vanilla);
+      color: var(--off-black);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      line-height: 1.5;
+      min-height: 100dvh;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { font-family: inherit; cursor: pointer; border: none; background: none; }
+
+    .stage {
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      padding: 1.75rem 2rem 2rem;
+    }
+    .bar {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-weight: 700; font-size: 1.5rem;
+      letter-spacing: -0.02em;
+      color: var(--cash-green);
+    }
+    .bar__right {
+      font-size: 0.72rem;
+      opacity: 0.45;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .center {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      max-width: 36rem;
+      margin: 0 auto;
+      width: 100%;
+      text-align: center;
+      padding: 2rem 0;
+    }
+
+    .step {
+      font-size: 0.7rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      opacity: 0.5;
+      font-weight: 600;
+      margin-bottom: 1.25rem;
+      color: var(--cash-green);
+    }
+    .title {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: clamp(2.5rem, 7vw, 4.25rem);
+      text-transform: uppercase;
+      letter-spacing: -0.015em;
+      line-height: 0.92;
+      color: var(--off-black);
+      margin-bottom: 1rem;
+    }
+    .title .period { color: var(--cash-green); }
+    .sub {
+      font-size: 1.05rem;
+      opacity: 0.72;
+      max-width: 34ch;
+      margin: 0 auto 2.25rem;
+      line-height: 1.6;
+    }
+    .sub em { font-style: italic; color: var(--cash-green); opacity: 1; font-weight: 500; }
+
+    .email-form {
+      display: flex;
+      gap: 0.5rem;
+      max-width: 28rem;
+      width: 100%;
+      margin: 0 auto;
+      background: rgba(1, 71, 81, 0.05);
+      border: 1px solid rgba(1, 71, 81, 0.12);
+      border-radius: 100px;
+      padding: 0.35rem;
+      transition: border-color 0.2s ease, background 0.2s ease;
+    }
+    .email-form:focus-within {
+      border-color: var(--cash-green);
+      background: rgba(1, 71, 81, 0.08);
+    }
+    .email-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--off-black);
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 500;
+      padding: 0.85rem 1rem;
+      min-width: 0;
+      letter-spacing: 0.01em;
+    }
+    .email-input::placeholder { color: rgba(26, 23, 23, 0.35); }
+    .email-btn {
+      background: var(--cash-green);
+      color: var(--vanilla);
+      font-weight: 700;
+      font-size: 0.92rem;
+      padding: 0.85rem 1.4rem;
+      border-radius: 100px;
+      white-space: nowrap;
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+                  box-shadow 0.25s ease, opacity 0.2s ease;
+    }
+    .email-btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 30px rgba(1, 71, 81, 0.22);
+    }
+    .email-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .err {
+      margin-top: 1rem;
+      min-height: 1.2em;
+      font-size: 0.85rem;
+      color: #7a1f2a;
+      font-style: italic;
+    }
+
+    .fine {
+      margin-top: 1.5rem;
+      font-size: 0.78rem;
+      opacity: 0.5;
+      font-style: italic;
+      max-width: 30ch;
+    }
+
+    .skip {
+      margin-top: 1.5rem;
+      font-size: 0.82rem;
+      opacity: 0.55;
+      text-decoration: underline;
+      transition: opacity 0.2s ease, color 0.2s ease;
+    }
+    .skip:hover { opacity: 1; color: var(--cash-green); }
+
+    .page-foot {
+      flex-shrink: 0;
+      display: flex;
+      justify-content: center;
+      gap: 1.25rem;
+      font-size: 0.72rem;
+      opacity: 0.35;
+      padding-top: 1rem;
+    }
+    .page-foot a:hover { opacity: 1; color: var(--cash-green); }
+
+    @media (max-width: 480px) {
+      .stage { padding: 1.25rem 1.25rem 1.5rem; }
+      .email-form { flex-direction: column; border-radius: 20px; padding: 0.5rem; }
+      .email-btn { width: 100%; padding: 0.95rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <header class="bar">
+      <a href="index.html" class="wordmark">cash bff</a>
+      <div class="bar__right">welcome back</div>
+    </header>
+
+    <main class="center">
+      <div class="step">new here — on the web</div>
+      <h1 class="title" id="title">
+        welcome back<span class="period">.</span>
+      </h1>
+      <p class="sub">
+        we've had your back in texts. now on the web too. drop an email so we know where to send <em>receipts</em> &amp; the occasional important thing. we won't verify it, we won't spam, you can change it anytime.
+      </p>
+
+      <form class="email-form" id="email-form" autocomplete="off">
+        <input
+          type="email"
+          class="email-input"
+          id="email-input"
+          placeholder="you@example.com"
+          autocomplete="email"
+          inputmode="email"
+          required
+          aria-label="email address"
+        >
+        <button class="email-btn" type="submit" id="email-btn">
+          save &amp; continue →
+        </button>
+      </form>
+
+      <div class="err" id="err" role="alert"></div>
+
+      <a href="home.html" class="skip" id="skip-link">skip for now</a>
+    </main>
+
+    <footer class="page-foot">
+      <a href="privacy.html">privacy</a>
+      <span>·</span>
+      <a href="mailto:hi@cashbff.com">hi@cashbff.com</a>
+    </footer>
+  </div>
+
+  <script>
+    // ── Config ────────────────────────────────────────
+    const API_BASE = 'https://sms-service-sope.onrender.com';
+    const TOKEN_KEY = 'cbff_token';
+    const NAME_KEY = 'cbff_first_name';
+
+    // ── Greet by first name if we have it ─────────────
+    const firstName = sessionStorage.getItem(NAME_KEY);
+    if (firstName && firstName.trim()) {
+      const titleEl = document.getElementById('title');
+      titleEl.innerHTML = 'welcome back, <span class="period">' +
+        firstName.replace(/[<>]/g, '') +
+        '</span>.';
+    }
+
+    // ── Preserve phone through navigation ─────────────
+    const params = new URLSearchParams(location.search);
+    const phone = params.get('phone') || '';
+    const nextUrl = `home.html${phone ? '?phone=' + encodeURIComponent(phone) : ''}`;
+    document.getElementById('skip-link').href = nextUrl;
+
+    // ── Email submit ──────────────────────────────────
+    const form = document.getElementById('email-form');
+    const input = document.getElementById('email-input');
+    const btn = document.getElementById('email-btn');
+    const err = document.getElementById('err');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      err.textContent = '';
+      const email = input.value.trim().toLowerCase();
+      if (!email) return;
+
+      btn.disabled = true;
+      const originalLabel = btn.textContent;
+      btn.textContent = 'saving…';
+
+      try {
+        const token = sessionStorage.getItem(TOKEN_KEY);
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const res = await fetch(`${API_BASE}/api/email`, {
+          method: 'POST',
+          headers,
+          credentials: 'include',
+          body: JSON.stringify({ email }),
+        });
+
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          err.textContent = data.error || 'something went wrong. try again.';
+          btn.disabled = false;
+          btn.textContent = originalLabel;
+          return;
+        }
+
+        location.href = nextUrl;
+      } catch (_) {
+        err.textContent = 'network hiccup. try again in a sec.';
+        btn.disabled = false;
+        btn.textContent = originalLabel;
+      }
+    });
+
+    // Focus the input on load so user can just start typing
+    input.focus();
+  </script>
+</body>
+</html>
