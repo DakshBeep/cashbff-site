@@ -42,14 +42,19 @@
     a { color: inherit; text-decoration: none; }
     button { font-family: inherit; cursor: pointer; border: none; background: none; }
 
+    /* ── Stage ─────────────────────────────────────── */
     .stage {
       min-height: 100dvh;
       display: flex;
       flex-direction: column;
-      padding: 1.75rem 2rem 2rem;
     }
+
     .bar {
       display: flex; align-items: center; justify-content: space-between;
+      padding: 1.75rem 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
       flex-shrink: 0;
     }
     .wordmark {
@@ -61,125 +66,224 @@
     .bar__right {
       font-size: 0.72rem;
       opacity: 0.45;
-      letter-spacing: 0.1em;
+      letter-spacing: 0.14em;
       text-transform: uppercase;
       font-weight: 600;
     }
 
-    .center {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      max-width: 36rem;
+    /* ── Hero ──────────────────────────────────────── */
+    .hero {
+      max-width: 44rem;
       margin: 0 auto;
+      padding: 2rem 2rem 1.5rem;
       width: 100%;
       text-align: center;
-      padding: 2rem 0;
     }
 
     .step {
+      display: inline-block;
       font-size: 0.7rem;
       letter-spacing: 0.16em;
       text-transform: uppercase;
       opacity: 0.5;
       font-weight: 600;
-      margin-bottom: 1.25rem;
       color: var(--cash-green);
+      margin-bottom: 1.1rem;
+      animation: fadeUp 0.6s ease-out 0.1s both;
     }
-    .title {
+
+    .headline {
       font-family: var(--font-display);
       font-weight: 700;
-      font-size: clamp(2.5rem, 7vw, 4.25rem);
+      font-size: clamp(2.75rem, 8vw, 5rem);
       text-transform: uppercase;
-      letter-spacing: -0.015em;
-      line-height: 0.92;
+      letter-spacing: -0.02em;
+      line-height: 0.88;
       color: var(--off-black);
-      margin-bottom: 1rem;
+      margin-bottom: 1.1rem;
+      animation: fadeUp 0.7s cubic-bezier(0.34, 1.2, 0.64, 1) 0.2s both;
     }
-    .title .period { color: var(--cash-green); }
+    .headline .accent { color: var(--cash-green); }
+    .headline .name { color: var(--periwinkle); }
+
     .sub {
       font-size: 1.05rem;
       opacity: 0.72;
-      max-width: 34ch;
-      margin: 0 auto 2.25rem;
-      line-height: 1.6;
-    }
-    .sub em { font-style: italic; color: var(--cash-green); opacity: 1; font-weight: 500; }
-
-    .email-form {
-      display: flex;
-      gap: 0.5rem;
-      max-width: 28rem;
-      width: 100%;
+      max-width: 36ch;
       margin: 0 auto;
-      background: rgba(1, 71, 81, 0.05);
-      border: 1px solid rgba(1, 71, 81, 0.12);
-      border-radius: 100px;
-      padding: 0.35rem;
-      transition: border-color 0.2s ease, background 0.2s ease;
+      line-height: 1.6;
+      animation: fadeUp 0.6s ease-out 0.4s both;
     }
-    .email-form:focus-within {
-      border-color: var(--cash-green);
-      background: rgba(1, 71, 81, 0.08);
-    }
-    .email-input {
-      flex: 1;
-      background: transparent;
-      border: none;
-      outline: none;
-      color: var(--off-black);
-      font-family: inherit;
-      font-size: 1rem;
+    .sub em {
+      color: var(--cash-green);
+      font-style: italic;
       font-weight: 500;
-      padding: 0.85rem 1rem;
-      min-width: 0;
-      letter-spacing: 0.01em;
+      opacity: 1;
     }
-    .email-input::placeholder { color: rgba(26, 23, 23, 0.35); }
-    .email-btn {
+
+    /* ── Continuity card ──────────────────────────── */
+    .stats {
+      max-width: 40rem;
+      width: calc(100% - 3rem);
+      margin: 2rem auto 0;
+      background: var(--periwinkle);
+      color: var(--cash-green);
+      border-radius: 20px;
+      padding: 1.4rem 1.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      animation: fadeUp 0.6s ease-out 0.6s both,
+                 floaty 6.5s ease-in-out 1.2s infinite;
+      position: relative;
+    }
+    @keyframes floaty {
+      0%, 100% { transform: translateY(0); }
+      50%      { transform: translateY(-3px); }
+    }
+    .stats::before {
+      content: "→";
+      position: absolute;
+      left: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      font-family: var(--font-display);
+      font-weight: 700;
+      opacity: 0.25;
+      font-size: 1.5rem;
+    }
+    .stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      min-width: 6rem;
+    }
+    .stat__val {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.6rem;
+      line-height: 1;
+      letter-spacing: -0.01em;
+    }
+    .stat__lbl {
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      opacity: 0.6;
+      font-weight: 600;
+      margin-top: 0.35rem;
+    }
+    .stat__sep {
+      width: 3px; height: 3px;
+      border-radius: 50%;
+      background: var(--cash-green);
+      opacity: 0.25;
+      flex-shrink: 0;
+    }
+
+    /* ── Form ─────────────────────────────────────── */
+    .form-wrap {
+      max-width: 30rem;
+      margin: 2.25rem auto 0;
+      padding: 0 2rem;
+      animation: fadeUp 0.6s ease-out 0.8s both;
+    }
+
+    .form-label {
+      font-size: 0.7rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      opacity: 0.5;
+      font-weight: 600;
+      margin-bottom: 0.95rem;
+      text-align: center;
+      color: var(--cash-green);
+    }
+
+    .form-grid {
+      display: grid;
+      gap: 0.75rem;
+    }
+    .form-row-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+    }
+    .field label {
+      font-size: 0.68rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      opacity: 0.55;
+      margin-bottom: 0.35rem;
+      font-weight: 600;
+    }
+    .field input {
+      width: 100%;
+      padding: 0.85rem 1rem;
+      border: 1px solid rgba(1, 71, 81, 0.15);
+      border-radius: 12px;
+      font-size: 0.98rem;
+      font-family: inherit;
+      font-weight: 500;
+      background: #fff;
+      color: var(--off-black);
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .field input:focus {
+      outline: none;
+      border-color: var(--cash-green);
+      box-shadow: 0 4px 14px rgba(1, 71, 81, 0.1);
+    }
+    .field input::placeholder { color: rgba(26, 23, 23, 0.3); }
+
+    .submit-btn {
+      margin-top: 1.5rem;
+      width: 100%;
       background: var(--cash-green);
       color: var(--vanilla);
+      font-family: var(--font-body);
       font-weight: 700;
-      font-size: 0.92rem;
-      padding: 0.85rem 1.4rem;
+      font-size: 1rem;
+      padding: 1.1rem 2rem;
       border-radius: 100px;
-      white-space: nowrap;
-      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
-                  box-shadow 0.25s ease, opacity 0.2s ease;
+      transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.25s ease, opacity 0.2s ease;
     }
-    .email-btn:hover:not(:disabled) {
-      transform: translateY(-1px);
-      box-shadow: 0 10px 30px rgba(1, 71, 81, 0.22);
+    .submit-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 40px rgba(1, 71, 81, 0.22),
+                  0 0 40px rgba(197, 182, 241, 0.2);
     }
-    .email-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
     .err {
-      margin-top: 1rem;
+      margin-top: 0.9rem;
       min-height: 1.2em;
       font-size: 0.85rem;
       color: #7a1f2a;
       font-style: italic;
-    }
-
-    .fine {
-      margin-top: 1.5rem;
-      font-size: 0.78rem;
-      opacity: 0.5;
-      font-style: italic;
-      max-width: 30ch;
+      text-align: center;
     }
 
     .skip {
-      margin-top: 1.5rem;
+      display: block;
+      margin-top: 1.25rem;
+      text-align: center;
       font-size: 0.82rem;
-      opacity: 0.55;
+      opacity: 0.5;
       text-decoration: underline;
       transition: opacity 0.2s ease, color 0.2s ease;
     }
     .skip:hover { opacity: 1; color: var(--cash-green); }
 
+    /* ── Footer ────────────────────────────────────── */
     .page-foot {
       flex-shrink: 0;
       display: flex;
@@ -187,14 +291,33 @@
       gap: 1.25rem;
       font-size: 0.72rem;
       opacity: 0.35;
-      padding-top: 1rem;
+      padding: 2rem 2rem;
+      margin-top: auto;
     }
     .page-foot a:hover { opacity: 1; color: var(--cash-green); }
 
-    @media (max-width: 480px) {
-      .stage { padding: 1.25rem 1.25rem 1.5rem; }
-      .email-form { flex-direction: column; border-radius: 20px; padding: 0.5rem; }
-      .email-btn { width: 100%; padding: 0.95rem; }
+    /* ── Animations ───────────────────────────────── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 520px) {
+      .bar { padding: 1.25rem; }
+      .hero { padding: 1.25rem 1.25rem 1rem; }
+      .form-wrap { padding: 0 1.25rem; }
+      .stats { padding: 1.1rem 1rem; gap: 1rem; }
+      .stats::before { left: 0.5rem; font-size: 1.2rem; }
+      .form-row-2 { grid-template-columns: 1fr; }
+      .stat { min-width: 4.5rem; }
+      .stat__val { font-size: 1.35rem; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .step, .headline, .sub, .stats, .form-wrap {
+        animation: none !important;
+        opacity: 1 !important;
+      }
     }
   </style>
 </head>
@@ -205,34 +328,66 @@
       <div class="bar__right">welcome back</div>
     </header>
 
-    <main class="center">
-      <div class="step">new here — on the web</div>
-      <h1 class="title" id="title">
-        welcome back<span class="period">.</span>
-      </h1>
-      <p class="sub">
-        we've had your back in texts. now on the web too. drop an email so we know where to send <em>receipts</em> &amp; the occasional important thing. we won't verify it, we won't spam, you can change it anytime.
-      </p>
+    <main>
+      <section class="hero">
+        <div class="step">day-one · it's you</div>
+        <h1 class="headline" id="headline">
+          <span>welcome</span><br>
+          <span class="accent">back</span><span class="name" id="name-tail">.</span>
+        </h1>
+        <p class="sub">
+          you've been here since the first text. now there's a web app too. round out your profile so we can send you <em>receipts</em>, personalize things, and keep it consistent across threads.
+        </p>
+      </section>
 
-      <form class="email-form" id="email-form" autocomplete="off">
-        <input
-          type="email"
-          class="email-input"
-          id="email-input"
-          placeholder="you@example.com"
-          autocomplete="email"
-          inputmode="email"
-          required
-          aria-label="email address"
-        >
-        <button class="email-btn" type="submit" id="email-btn">
-          save &amp; continue →
-        </button>
-      </form>
+      <aside class="stats" id="stats" hidden>
+        <div class="stat">
+          <div class="stat__val" id="stat-accts">—</div>
+          <div class="stat__lbl">accounts</div>
+        </div>
+        <span class="stat__sep" aria-hidden="true"></span>
+        <div class="stat">
+          <div class="stat__val" id="stat-txns">—</div>
+          <div class="stat__lbl">transactions</div>
+        </div>
+        <span class="stat__sep" aria-hidden="true"></span>
+        <div class="stat">
+          <div class="stat__val" id="stat-since">—</div>
+          <div class="stat__lbl">with us</div>
+        </div>
+      </aside>
 
-      <div class="err" id="err" role="alert"></div>
+      <div class="form-wrap">
+        <div class="form-label">fill the gaps · none of this is verified</div>
 
-      <a href="home.html" class="skip" id="skip-link">skip for now</a>
+        <form class="form-grid" id="profile-form" autocomplete="on">
+          <div class="form-row-2">
+            <div class="field">
+              <label for="first_name">first name</label>
+              <input type="text" id="first_name" name="first_name" placeholder="daksh" autocomplete="given-name" maxlength="64">
+            </div>
+            <div class="field">
+              <label for="last_name">last name</label>
+              <input type="text" id="last_name" name="last_name" placeholder="khanna" autocomplete="family-name" maxlength="64">
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="email">email</label>
+            <input type="email" id="email" name="email" placeholder="you@example.com" autocomplete="email" inputmode="email" maxlength="254">
+          </div>
+
+          <div class="field">
+            <label for="dob">date of birth</label>
+            <input type="date" id="dob" name="dob" autocomplete="bday">
+          </div>
+
+          <button class="submit-btn" type="submit" id="submit-btn">save &amp; continue →</button>
+          <div class="err" id="err" role="alert"></div>
+        </form>
+
+        <a href="home.html" class="skip" id="skip-link">skip for now</a>
+      </div>
     </main>
 
     <footer class="page-foot">
@@ -247,15 +402,8 @@
     const API_BASE = 'https://sms-service-sope.onrender.com';
     const TOKEN_KEY = 'cbff_token';
     const NAME_KEY = 'cbff_first_name';
-
-    // ── Greet by first name if we have it ─────────────
-    const firstName = sessionStorage.getItem(NAME_KEY);
-    if (firstName && firstName.trim()) {
-      const titleEl = document.getElementById('title');
-      titleEl.innerHTML = 'welcome back, <span class="period">' +
-        firstName.replace(/[<>]/g, '') +
-        '</span>.';
-    }
+    const LAST_KEY = 'cbff_last_name';
+    const STATS_KEY = 'cbff_stats';
 
     // ── Preserve phone through navigation ─────────────
     const params = new URLSearchParams(location.search);
@@ -263,17 +411,69 @@
     const nextUrl = `home.html${phone ? '?phone=' + encodeURIComponent(phone) : ''}`;
     document.getElementById('skip-link').href = nextUrl;
 
-    // ── Email submit ──────────────────────────────────
-    const form = document.getElementById('email-form');
-    const input = document.getElementById('email-input');
-    const btn = document.getElementById('email-btn');
+    // ── Greet by name ─────────────────────────────────
+    const firstName = sessionStorage.getItem(NAME_KEY);
+    const lastName  = sessionStorage.getItem(LAST_KEY);
+    const nameTail = document.getElementById('name-tail');
+    if (firstName && firstName.trim()) {
+      const safe = firstName.replace(/[<>&"]/g, '');
+      nameTail.innerHTML = ', <span class="name">' + safe.toLowerCase() + '</span>.';
+    }
+
+    // Pre-fill form with known values
+    if (firstName) document.getElementById('first_name').value = firstName;
+    if (lastName)  document.getElementById('last_name').value  = lastName;
+
+    // ── Continuity stats ──────────────────────────────
+    function humanSince(iso) {
+      if (!iso) return null;
+      const then = new Date(iso).getTime();
+      const now = Date.now();
+      const days = Math.max(1, Math.floor((now - then) / 86_400_000));
+      if (days < 30) return `${days}d`;
+      const months = Math.floor(days / 30);
+      if (months < 12) return `${months}mo`;
+      const years = (days / 365).toFixed(1);
+      return `${years}y`;
+    }
+
+    try {
+      const raw = sessionStorage.getItem(STATS_KEY);
+      if (raw) {
+        const stats = JSON.parse(raw);
+        const accts = Number(stats.accounts || 0);
+        const txns  = Number(stats.txns || 0);
+        const since = humanSince(stats.joined_at);
+        if (accts > 0 || txns > 0 || since) {
+          document.getElementById('stat-accts').textContent = accts.toLocaleString();
+          document.getElementById('stat-txns').textContent  = txns.toLocaleString();
+          document.getElementById('stat-since').textContent = since || '—';
+          document.getElementById('stats').hidden = false;
+        }
+      }
+    } catch (_) { /* no stats — show the empty shell */ }
+
+    // ── Form submit ──────────────────────────────────
+    const form = document.getElementById('profile-form');
+    const btn = document.getElementById('submit-btn');
     const err = document.getElementById('err');
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       err.textContent = '';
-      const email = input.value.trim().toLowerCase();
-      if (!email) return;
+
+      const body = {
+        first_name: document.getElementById('first_name').value.trim(),
+        last_name:  document.getElementById('last_name').value.trim(),
+        email:      document.getElementById('email').value.trim().toLowerCase(),
+        dob:        document.getElementById('dob').value,
+      };
+
+      // At least one field must have changed — keep it friendly, don't block.
+      if (!body.first_name && !body.last_name && !body.email && !body.dob) {
+        location.href = nextUrl;
+        return;
+      }
 
       btn.disabled = true;
       const originalLabel = btn.textContent;
@@ -284,20 +484,24 @@
         const headers = { 'Content-Type': 'application/json' };
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
-        const res = await fetch(`${API_BASE}/api/email`, {
+        const res = await fetch(`${API_BASE}/api/profile`, {
           method: 'POST',
           headers,
           credentials: 'include',
-          body: JSON.stringify({ email }),
+          body: JSON.stringify(body),
         });
 
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
-          err.textContent = data.error || 'something went wrong. try again.';
+          err.textContent = data.error || 'something went wrong. try again?';
           btn.disabled = false;
           btn.textContent = originalLabel;
           return;
         }
+
+        // Update sessionStorage so home sees the latest name
+        if (body.first_name) sessionStorage.setItem(NAME_KEY, body.first_name);
+        if (body.last_name)  sessionStorage.setItem(LAST_KEY, body.last_name);
 
         location.href = nextUrl;
       } catch (_) {
@@ -306,9 +510,6 @@
         btn.textContent = originalLabel;
       }
     });
-
-    // Focus the input on load so user can just start typing
-    input.focus();
   </script>
 </body>
 </html>

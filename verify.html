@@ -298,6 +298,8 @@
     const API_BASE = 'https://sms-service-sope.onrender.com';
     const TOKEN_KEY = 'cbff_token';
     const NAME_KEY = 'cbff_first_name';
+    const LAST_KEY = 'cbff_last_name';
+    const STATS_KEY = 'cbff_stats';
     const hint = document.getElementById('hint');
 
     function e164(raw) {
@@ -364,9 +366,11 @@
           return;
         }
 
-        // Store token + name for later requests (Bearer fallback to the cookie)
-        if (data.token) sessionStorage.setItem(TOKEN_KEY, data.token);
+        // Store token + name + stats for later requests / welcome-back page.
+        if (data.token)      sessionStorage.setItem(TOKEN_KEY, data.token);
         if (data.first_name) sessionStorage.setItem(NAME_KEY, data.first_name);
+        if (data.last_name)  sessionStorage.setItem(LAST_KEY, data.last_name);
+        if (data.stats)      sessionStorage.setItem(STATS_KEY, JSON.stringify(data.stats));
 
         // Route: returning user without email → welcome-back page.
         // Otherwise continue the standard new-user flow.
