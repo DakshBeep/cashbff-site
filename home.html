@@ -42,7 +42,7 @@
     a { color: inherit; text-decoration: none; }
     button { font-family: inherit; cursor: pointer; border: none; background: none; }
 
-    /* ── Top bar (shared pattern) ─────────────────── */
+    /* ── Top bar ───────────────────────────────────── */
     .bar {
       display: flex;
       align-items: center;
@@ -79,77 +79,159 @@
     }
     .signout:hover { opacity: 1; color: var(--cash-green); }
 
-    /* ── Hero — the single moment ─────────────────── */
+    /* ── The single artifact ──────────────────────── */
     main {
-      max-width: 40rem;
-      margin: 0 auto;
-      padding: 4rem 2rem 6rem;
-      text-align: center;
-    }
-
-    .label {
-      font-size: 0.98rem;
-      opacity: 0.55;
-      font-weight: 500;
-      margin-bottom: 1.25rem;
-      letter-spacing: 0.005em;
-      animation: fadeUp 0.5s ease-out 0.1s both;
-    }
-
-    .amount {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: clamp(4.5rem, 14vw, 9rem);
-      line-height: 0.92;
-      letter-spacing: -0.035em;
-      color: var(--cash-green);
-      margin: 0 auto;
-      min-height: 1em;
-      animation: fadeUp 0.7s cubic-bezier(0.34, 1.2, 0.64, 1) 0.2s both;
-    }
-    .amount.loading { opacity: 0.25; }
-    .amount .cents {
-      font-size: 0.5em;
-      opacity: 0.6;
-      letter-spacing: -0.01em;
-      font-weight: 500;
-    }
-    .amount .stop {
-      /* The full stop — "that's it, that's the page." */
-      color: var(--periwinkle);
-      font-size: 0.5em;
-      margin-left: 0.02em;
-      opacity: 0.9;
-    }
-
-    .context {
-      margin-top: 1.5rem;
-      font-size: 0.95rem;
-      opacity: 0.65;
-      line-height: 1.6;
-      animation: fadeUp 0.5s ease-out 0.45s both;
-      display: inline-flex;
+      min-height: calc(100dvh - 7rem - 4rem);
+      display: flex;
       align-items: center;
-      gap: 0.5em;
+      justify-content: center;
+      padding: 2rem 1.5rem 3rem;
     }
-    .context .live-dot {
-      width: 6px; height: 6px;
-      border-radius: 50%;
-      background: var(--electric-green);
-      box-shadow: 0 0 8px rgba(211, 255, 180, 0.5);
-      animation: livePulse 2.4s ease-in-out infinite;
+
+    .card-wrap {
+      perspective: 1400px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .card {
+      width: min(30rem, 90vw);
+      aspect-ratio: 1.586 / 1;
+      background: var(--cash-green);
+      border-radius: 1.25rem;
+      color: var(--vanilla);
+      transform: rotate(-3deg);
+      box-shadow:
+        0 30px 60px -20px rgba(26, 23, 23, 0.35),
+        0 12px 24px -10px rgba(1, 71, 81, 0.35),
+        inset 0 0 0 1px rgba(213, 255, 180, 0.08);
+      animation:
+        cardIn 0.8s cubic-bezier(0.34, 1.2, 0.64, 1) both,
+        cardFloat 7s ease-in-out 1s infinite;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    @keyframes cardIn {
+      from { opacity: 0; transform: rotate(-3deg) translateY(28px) scale(0.96); }
+      to   { opacity: 1; transform: rotate(-3deg) translateY(0) scale(1); }
+    }
+    @keyframes cardFloat {
+      0%, 100% { transform: rotate(-3deg) translateY(0); }
+      50%      { transform: rotate(-3deg) translateY(-5px); }
+    }
+    .card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: radial-gradient(120% 80% at 10% 0%, rgba(213, 255, 180, 0.07), transparent 60%);
+      pointer-events: none;
+    }
+
+    /* Magstripe — the card-back signature */
+    .magstripe {
+      width: 100%;
+      height: 22%;
+      margin-top: 9%;
+      background:
+        linear-gradient(to bottom,
+          rgba(0,0,0,0.85) 0%,
+          var(--off-black) 35%,
+          var(--off-black) 65%,
+          rgba(0,0,0,0.88) 100%);
+      position: relative;
       flex-shrink: 0;
     }
-    @keyframes livePulse {
-      0%, 100% { opacity: 1;    transform: scale(1);   }
-      50%      { opacity: 0.4;  transform: scale(0.8); }
+    .magstripe::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        90deg,
+        transparent 0px,
+        transparent 3px,
+        rgba(255, 255, 255, 0.02) 3px,
+        rgba(255, 255, 255, 0.02) 4px
+      );
+      pointer-events: none;
     }
-    .context.err {
-      color: var(--off-black);
+
+    .card__body {
+      flex: 1;
+      padding: 1.25rem 1.5rem 1.35rem;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      z-index: 1;
+    }
+
+    .card__label {
+      font-family: var(--font-body);
+      font-weight: 600;
+      font-size: 0.62rem;
+      letter-spacing: 0.26em;
+      text-transform: uppercase;
+      color: var(--electric-green);
+      opacity: 0.85;
+      margin-top: 0.35rem;
+    }
+
+    .card__amount {
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: clamp(2.5rem, 6.5vw, 3.75rem);
+      line-height: 1;
+      letter-spacing: -0.015em;
+      color: var(--vanilla);
+      margin: auto 0;
+      transition: opacity 0.3s ease;
+    }
+    .card__amount.loading { opacity: 0.25; }
+    .card__amount .cents {
+      font-size: 0.55em;
       opacity: 0.55;
-      font-style: italic;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+      margin-left: 0.05em;
     }
-    .context.err .live-dot { display: none; }
+    .card__amount .stop {
+      color: var(--periwinkle);
+      font-size: 0.55em;
+      opacity: 0.85;
+      margin-left: 0.02em;
+    }
+
+    .card__meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 1rem;
+    }
+    .card__brand {
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: 0.92rem;
+      letter-spacing: -0.01em;
+      opacity: 0.92;
+    }
+    .card__across {
+      font-family: var(--font-body);
+      font-size: 0.7rem;
+      letter-spacing: 0.01em;
+      opacity: 0.55;
+      font-weight: 500;
+    }
+
+    /* Error state — quiet, no red */
+    .card__amount.err {
+      font-size: clamp(1.1rem, 2.5vw, 1.4rem);
+      opacity: 0.6;
+      font-style: italic;
+      font-weight: 500;
+    }
 
     /* ── Footer ────────────────────────────────────── */
     .page-foot {
@@ -158,27 +240,27 @@
       gap: 1.25rem;
       font-size: 0.72rem;
       opacity: 0.35;
-      padding: 2rem 2rem 2.25rem;
+      padding: 1.5rem 2rem 2rem;
     }
     .page-foot a:hover { opacity: 1; color: var(--cash-green); }
 
-    /* ── Animations ───────────────────────────────── */
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(14px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
     @media (max-width: 640px) {
       .bar { padding: 1.25rem; }
-      main { padding: 2.5rem 1.25rem 4rem; }
+      main { padding: 1rem 1rem 2rem; }
+      .card { transform: rotate(-2deg); }
+      @keyframes cardIn {
+        from { opacity: 0; transform: rotate(-2deg) translateY(24px) scale(0.96); }
+        to   { opacity: 1; transform: rotate(-2deg) translateY(0) scale(1); }
+      }
+      @keyframes cardFloat {
+        0%, 100% { transform: rotate(-2deg) translateY(0); }
+        50%      { transform: rotate(-2deg) translateY(-4px); }
+      }
       .pill-phone { font-size: 0.72rem; padding: 0.4rem 0.7rem; }
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .label, .amount, .context, .context .live-dot {
-        animation: none !important;
-        opacity: 1 !important;
-      }
+      .card { animation: none !important; }
     }
   </style>
 </head>
@@ -192,11 +274,19 @@
   </header>
 
   <main>
-    <div class="label" id="label">your cards</div>
-    <div class="amount loading" id="amount">$—</div>
-    <div class="context" id="context">&nbsp;</div>
-
-    <!-- Quiet placeholder — future modules drop in here one by one. -->
+    <div class="card-wrap">
+      <div class="card" role="img" aria-label="your cash bff card showing your total balance">
+        <div class="magstripe" aria-hidden="true"></div>
+        <div class="card__body">
+          <div class="card__label">balance</div>
+          <div class="card__amount loading" id="amount">—</div>
+          <div class="card__meta">
+            <span class="card__brand">cash bff</span>
+            <span class="card__across" id="across"></span>
+          </div>
+        </div>
+      </div>
+    </div>
   </main>
 
   <footer class="page-foot">
@@ -209,7 +299,6 @@
     // ── Config ───────────────────────────────────────
     const API_BASE = 'https://sms-service-sope.onrender.com';
     const TOKEN_KEY = 'cbff_token';
-    const NAME_KEY = 'cbff_first_name';
 
     // ── Phone pill ──────────────────────────────────
     const params = new URLSearchParams(location.search);
@@ -226,35 +315,10 @@
       const rounded = Math.round(n * 100) / 100;
       const dollars = Math.floor(rounded);
       const cents = Math.round((rounded - dollars) * 100);
-      const dollarsStr = dollars.toLocaleString('en-US');
-      const centsStr = String(cents).padStart(2, '0');
-      return { dollars: '$' + dollarsStr, cents: '.' + centsStr };
-    }
-
-    function humanAgo(iso) {
-      if (!iso) return null;
-      const then = new Date(iso).getTime();
-      const now = Date.now();
-      const diff = Math.max(0, now - then);
-      const s = Math.floor(diff / 1000);
-      if (s < 60)  return 'just now';
-      const m = Math.floor(s / 60);
-      if (m < 60)  return m === 1 ? 'a minute ago' : `${m} minutes ago`;
-      const h = Math.floor(m / 60);
-      if (h < 24)  return h === 1 ? 'an hour ago' : `${h} hours ago`;
-      const d = Math.floor(h / 24);
-      if (d < 7)   return d === 1 ? 'yesterday' : `${d} days ago`;
-      const w = Math.floor(d / 7);
-      if (w < 5)   return w === 1 ? 'a week ago' : `${w} weeks ago`;
-      const mo = Math.floor(d / 30);
-      return mo === 1 ? 'a month ago' : `${mo} months ago`;
-    }
-
-    // ── Personalize the label with first name (falls back to "your cards") ──
-    const firstName = sessionStorage.getItem(NAME_KEY);
-    if (firstName && firstName.trim()) {
-      const safe = firstName.replace(/[<>&"]/g, '').toLowerCase();
-      document.getElementById('label').textContent = `${safe}'s cards`;
+      return {
+        dollars: '$' + dollars.toLocaleString('en-US'),
+        cents: '.' + String(cents).padStart(2, '0'),
+      };
     }
 
     // ── Sign out ─────────────────────────────────────
@@ -268,19 +332,18 @@
           headers,
           credentials: 'include',
         });
-      } catch (_) { /* ignore — we're leaving anyway */ }
+      } catch (_) { /* we're leaving anyway */ }
       sessionStorage.clear();
       location.href = 'index.html';
     });
 
-    // ── Fetch the home snapshot ─────────────────────
+    // ── Fetch and render ────────────────────────────
     async function loadHome() {
       const amountEl = document.getElementById('amount');
-      const contextEl = document.getElementById('context');
+      const acrossEl = document.getElementById('across');
 
       const token = sessionStorage.getItem(TOKEN_KEY);
       if (!token) {
-        // No auth yet — send them through the front door.
         location.href = 'index.html';
         return;
       }
@@ -306,16 +369,15 @@
           '<span class="cents">' + cents + '</span>' +
           '<span class="stop">.</span>';
 
-        // Single line of context — live-dot + when we last synced.
-        const when = humanAgo(data.last_updated);
-        contextEl.innerHTML =
-          '<span class="live-dot" aria-hidden="true"></span>' +
-          (when ? `updated ${when}` : 'live');
+        const n = Number(data.card_count || 0);
+        acrossEl.textContent = n > 0
+          ? (n === 1 ? 'across 1 card' : `across ${n} cards`)
+          : '';
       } catch (_) {
         amountEl.classList.remove('loading');
-        amountEl.textContent = '—';
-        contextEl.classList.add('err');
-        contextEl.textContent = "couldn't load right now — try again in a sec";
+        amountEl.classList.add('err');
+        amountEl.textContent = 'give us a sec…';
+        acrossEl.textContent = '';
       }
     }
 
