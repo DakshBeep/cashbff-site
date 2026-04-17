@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>your sunday receipt · cash bff</title>
+  <title>home · cash bff</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -30,7 +30,6 @@
       --font-body: 'Instrument Sans', system-ui, -apple-system, sans-serif;
     }
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
     body {
       font-family: var(--font-body);
       background: var(--vanilla);
@@ -38,11 +37,12 @@
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
       line-height: 1.5;
+      min-height: 100dvh;
     }
     a { color: inherit; text-decoration: none; }
-    button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+    button { font-family: inherit; cursor: pointer; border: none; background: none; }
 
-    /* ── Top bar ────────────────────────────────────── */
+    /* ── Top bar (shared pattern) ─────────────────── */
     .bar {
       display: flex;
       align-items: center;
@@ -75,379 +75,110 @@
     .signout {
       opacity: 0.55;
       font-weight: 500;
+      transition: opacity 0.15s ease, color 0.15s ease;
     }
     .signout:hover { opacity: 1; color: var(--cash-green); }
 
-    /* ── Layout ─────────────────────────────────────── */
+    /* ── Hero — the single moment ─────────────────── */
     main {
-      max-width: 640px;
+      max-width: 40rem;
       margin: 0 auto;
-      padding: 1rem 2rem 4rem;
-    }
-
-    /* ── THE RECEIPT ────────────────────────────────── */
-    .receipt {
-      position: relative;
-      background: var(--vanilla);
-      border: 1.5px solid rgba(1,71,81,0.22);
-      border-radius: 22px;
-      padding: 3.5rem 2rem 2.75rem;
+      padding: 4rem 2rem 6rem;
       text-align: center;
-      box-shadow:
-        0 1px 0 rgba(1,71,81,0.04),
-        0 24px 48px -24px rgba(1,71,81,0.22),
-        0 4px 14px -6px rgba(1,71,81,0.08);
-      overflow: hidden;
-      margin-bottom: 2.5rem;
-      animation: rise 0.6s cubic-bezier(0.2,0.8,0.2,1) both;
     }
-    @keyframes rise {
-      from { opacity: 0; transform: translateY(14px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-    /* Receipt perforation top + bottom (subtle, not a gimmick) */
-    .receipt::before, .receipt::after {
-      content: "";
-      position: absolute;
-      left: 0; right: 0;
-      height: 10px;
-      background-image: radial-gradient(circle at 6px 5px, rgba(1,71,81,0.18) 1.5px, transparent 2px);
-      background-size: 12px 10px;
-      background-repeat: repeat-x;
-      opacity: 0.6;
-    }
-    .receipt::before { top: 0; }
-    .receipt::after { bottom: 0; }
 
-    .receipt__stamp {
-      position: absolute;
-      top: 1.15rem;
-      right: 1.25rem;
-      font-size: 0.62rem;
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
-      opacity: 0.45;
-      font-weight: 600;
-      border: 1px solid rgba(1,71,81,0.25);
-      border-radius: 100px;
-      padding: 0.3rem 0.65rem;
-      color: var(--cash-green);
-    }
-    .receipt__label {
-      font-size: 0.7rem;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
+    .label {
+      font-size: 0.98rem;
       opacity: 0.55;
-      font-weight: 600;
-      margin-bottom: 1.1rem;
-    }
-    .receipt__headline {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: clamp(2.5rem, 8.5vw, 4.25rem);
-      text-transform: uppercase;
-      letter-spacing: -0.02em;
-      line-height: 0.95;
-      color: var(--off-black);
-      margin: 0 auto 1.25rem;
-      max-width: 14ch;
-    }
-    .receipt__headline .amt {
-      color: var(--cash-green);
-      position: relative;
-      display: inline-block;
-    }
-    .receipt__headline .amt::after {
-      content: "";
-      position: absolute;
-      left: -0.05em; right: -0.05em;
-      bottom: 0.05em;
-      height: 0.28em;
-      background: var(--electric-green);
-      z-index: -1;
-      border-radius: 2px;
-    }
-    .receipt__sub {
-      font-size: 1rem;
-      opacity: 0.7;
-      margin: 0 auto;
-      line-height: 1.55;
-      max-width: 28ch;
-    }
-    .receipt__divider {
-      margin: 1.75rem auto 0;
-      width: 42px; height: 2px;
-      background: var(--cash-green);
-      opacity: 0.18;
-      border-radius: 2px;
-    }
-
-    /* ── Countdown ──────────────────────────────────── */
-    .countdown {
-      text-align: center;
-      margin-bottom: 2.5rem;
-    }
-    .kicker {
-      font-size: 0.7rem;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      opacity: 0.5;
-      font-weight: 600;
-      margin-bottom: 0.55rem;
-    }
-    .countdown__date {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: clamp(3rem, 9vw, 4.75rem);
-      line-height: 1;
-      letter-spacing: -0.02em;
-      text-transform: uppercase;
-      color: var(--cash-green);
-      margin-bottom: 0.65rem;
-    }
-    .countdown__delta {
-      font-size: 0.9rem;
-      opacity: 0.7;
       font-weight: 500;
       margin-bottom: 1.25rem;
-    }
-    .countdown__delta .arrow {
-      color: var(--cash-green);
-      font-weight: 700;
-    }
-    .progress {
-      position: relative;
-      height: 3px;
-      background: rgba(197,182,241,0.35);
-      border-radius: 100px;
-      overflow: hidden;
-      max-width: 360px;
-      margin: 0 auto;
-    }
-    .progress__fill {
-      position: absolute;
-      inset: 0 auto 0 0;
-      width: 12%; /* mock — 12% to goal */
-      background: var(--periwinkle);
-      border-radius: 100px;
-      animation: fill 1.1s cubic-bezier(0.2,0.8,0.2,1) 0.2s both;
-    }
-    @keyframes fill {
-      from { width: 0%; }
-      to   { width: 12%; }
-    }
-    .progress__meta {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.66rem;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      opacity: 0.45;
-      font-weight: 600;
-      max-width: 360px;
-      margin: 0.55rem auto 0;
+      letter-spacing: 0.005em;
+      animation: fadeUp 0.5s ease-out 0.1s both;
     }
 
-    /* ── Stat strip ────────────────────────────────── */
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 0.6rem;
-      margin-bottom: 2rem;
-    }
-    .stat {
-      background: rgba(1,71,81,0.05);
-      padding: 1rem 0.5rem;
-      border-radius: 14px;
-      text-align: center;
-    }
-    .stat-val {
+    .amount {
       font-family: var(--font-display);
       font-weight: 700;
-      font-size: clamp(1.35rem, 4vw, 1.7rem);
+      font-size: clamp(4.5rem, 14vw, 9rem);
+      line-height: 0.92;
+      letter-spacing: -0.035em;
       color: var(--cash-green);
-      line-height: 1;
-      margin-bottom: 0.35rem;
-    }
-    .stat-lbl {
-      font-size: 0.66rem;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      opacity: 0.55;
-      font-weight: 600;
-    }
-
-    /* ── Next move card ─────────────────────────────── */
-    .move {
-      background: rgba(1,71,81,0.04);
-      border: 1px solid rgba(1,71,81,0.08);
-      border-radius: 20px;
-      padding: 1.35rem 1.25rem 1.5rem;
-      margin-bottom: 1.25rem;
-    }
-    .move__lbl {
-      font-size: 0.68rem;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      opacity: 0.55;
-      font-weight: 600;
-      margin-bottom: 0.85rem;
-      text-align: center;
-    }
-    .move__cta {
-      width: 100%;
-      background: var(--cash-green);
-      color: var(--vanilla);
-      padding: 1.15rem 1.2rem;
-      font-weight: 700;
-      font-size: 1.02rem;
-      border-radius: 100px;
-      transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.25s ease;
-      letter-spacing: -0.005em;
-    }
-    .move__cta:hover:not(:disabled) {
-      transform: translateY(-2px);
-      box-shadow: 0 16px 40px rgba(1,71,81,0.22);
-    }
-    .move__cta.locked {
-      background: rgba(1,71,81,0.15);
-      color: var(--cash-green);
-      cursor: default;
-    }
-    .move__cta.locked:hover { transform: none; box-shadow: none; }
-    .move__fine {
-      text-align: center;
-      font-size: 0.85rem;
-      opacity: 0.65;
-      margin-top: 0.85rem;
-      line-height: 1.45;
-    }
-    .move__nudge {
-      display: block;
-      margin: 0.9rem auto 0;
-      background: transparent;
-      border: 1px dashed rgba(1,71,81,0.25);
-      color: var(--cash-green);
-      padding: 0.55rem 1.1rem;
-      border-radius: 100px;
-      font-weight: 600;
-      font-size: 0.82rem;
-      transition: border-color 0.15s ease, background 0.15s ease;
-    }
-    .move__nudge:hover {
-      border-color: var(--cash-green);
-      background: rgba(1,71,81,0.06);
-    }
-    .move__nudge.bumped {
-      background: var(--electric-green);
-      border-color: var(--electric-green);
-      color: var(--off-black);
-    }
-
-    /* ── Skip week ─────────────────────────────────── */
-    .skip {
-      text-align: center;
-      margin: 1.5rem 0 2rem;
-    }
-    .skip__btn {
-      font-size: 0.88rem;
-      opacity: 0.55;
-      font-style: italic;
-      padding: 0.5rem 1rem;
-      transition: opacity 0.15s ease;
-    }
-    .skip__btn:hover { opacity: 1; }
-    .skip__panel {
-      max-height: 0;
-      overflow: hidden;
-      transition: max-height 0.3s ease, margin-top 0.3s ease;
-      margin-top: 0;
-    }
-    .skip__panel.open {
-      max-height: 220px;
-      margin-top: 0.85rem;
-    }
-    .skip__panel-inner {
-      background: rgba(197,182,241,0.18);
-      border-radius: 14px;
-      padding: 1rem 1.2rem;
-      font-size: 0.9rem;
-      line-height: 1.55;
-      max-width: 36ch;
       margin: 0 auto;
-      color: var(--off-black);
-      opacity: 0.85;
+      min-height: 1em;
+      animation: fadeUp 0.7s cubic-bezier(0.34, 1.2, 0.64, 1) 0.2s both;
     }
-    .skip__panel-inner strong { font-weight: 600; color: var(--cash-green); }
-    .skip__confirm {
-      margin-top: 0.75rem;
-      font-weight: 600;
-      color: var(--cash-green);
-      font-size: 0.88rem;
-      padding: 0.4rem 0.9rem;
-      border-radius: 100px;
-      background: rgba(1,71,81,0.08);
+    .amount.loading { opacity: 0.25; }
+    .amount .cents {
+      font-size: 0.5em;
+      opacity: 0.6;
+      letter-spacing: -0.01em;
+      font-weight: 500;
     }
-    .skip__confirm:hover { background: rgba(1,71,81,0.14); }
+    .amount .stop {
+      /* The full stop — "that's it, that's the page." */
+      color: var(--periwinkle);
+      font-size: 0.5em;
+      margin-left: 0.02em;
+      opacity: 0.9;
+    }
 
-    /* ── Streak ────────────────────────────────────── */
-    .streak {
-      text-align: center;
-      margin-bottom: 2.5rem;
-    }
-    .streak__pill {
+    .context {
+      margin-top: 1.5rem;
+      font-size: 0.95rem;
+      opacity: 0.65;
+      line-height: 1.6;
+      animation: fadeUp 0.5s ease-out 0.45s both;
       display: inline-flex;
       align-items: center;
-      gap: 0.45rem;
-      background: rgba(197,182,241,0.35);
+      gap: 0.5em;
+    }
+    .context .live-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--electric-green);
+      box-shadow: 0 0 8px rgba(211, 255, 180, 0.5);
+      animation: livePulse 2.4s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+    @keyframes livePulse {
+      0%, 100% { opacity: 1;    transform: scale(1);   }
+      50%      { opacity: 0.4;  transform: scale(0.8); }
+    }
+    .context.err {
       color: var(--off-black);
-      padding: 0.4rem 0.85rem;
-      border-radius: 100px;
-      font-size: 0.8rem;
-      font-weight: 500;
+      opacity: 0.55;
+      font-style: italic;
     }
-    .streak__pill span.emoji { font-size: 0.95rem; }
+    .context.err .live-dot { display: none; }
 
-    /* ── Footer ─────────────────────────────────────── */
-    .edit-row {
-      text-align: center;
-      margin-top: 1.25rem;
-    }
-    .edit-row a {
-      font-size: 0.85rem;
-      text-decoration: underline;
-      opacity: 0.5;
-      color: var(--cash-green);
-    }
-    .edit-row a:hover { opacity: 1; }
+    /* ── Footer ────────────────────────────────────── */
     .page-foot {
       display: flex;
       justify-content: center;
       gap: 1.25rem;
       font-size: 0.72rem;
-      opacity: 0.4;
-      padding: 1.5rem 2rem 2rem;
+      opacity: 0.35;
+      padding: 2rem 2rem 2.25rem;
     }
     .page-foot a:hover { opacity: 1; color: var(--cash-green); }
 
-    /* ── Responsive ─────────────────────────────────── */
-    @media (max-width: 640px) {
-      .bar { padding: 1.25rem 1.25rem; }
-      main { padding: 0.5rem 1.1rem 3rem; }
-      .receipt { padding: 3rem 1.25rem 2.25rem; border-radius: 18px; }
-      .receipt__stamp { top: 0.9rem; right: 0.9rem; font-size: 0.58rem; padding: 0.28rem 0.55rem; }
-      .pill-phone { font-size: 0.72rem; padding: 0.4rem 0.7rem; }
-      .stats { gap: 0.45rem; }
-      .stat { padding: 0.85rem 0.4rem; }
+    /* ── Animations ───────────────────────────────── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
 
-    /* ── Reduced motion ─────────────────────────────── */
+    @media (max-width: 640px) {
+      .bar { padding: 1.25rem; }
+      main { padding: 2.5rem 1.25rem 4rem; }
+      .pill-phone { font-size: 0.72rem; padding: 0.4rem 0.7rem; }
+    }
+
     @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after {
+      .label, .amount, .context, .context .live-dot {
         animation: none !important;
-        transition: none !important;
+        opacity: 1 !important;
       }
-      .progress__fill { width: 12%; }
     }
   </style>
 </head>
@@ -456,90 +187,16 @@
     <a href="index.html" class="wordmark">cash bff</a>
     <div class="bar__right">
       <span class="pill-phone" id="phone-pill">+1 signed in</span>
-      <a href="index.html" class="signout">sign out</a>
+      <button type="button" class="signout" id="signout">sign out</button>
     </div>
   </header>
 
   <main>
-    <!-- ── 1. THE RECEIPT ────────────────────────────── -->
-    <!-- MOCK DATA: amount $47, card "chase", date "sunday · apr 19, 2026" -->
-    <section class="receipt" aria-label="this week's receipt">
-      <div class="receipt__stamp">sunday · apr 19, 2026</div>
-      <div class="receipt__label">this week</div>
-      <h1 class="receipt__headline">
-        you knocked <span class="amt">$47</span> off chase.
-      </h1>
-      <p class="receipt__sub">we see you. that's your third week in a row.</p>
-      <div class="receipt__divider" aria-hidden="true"></div>
-    </section>
+    <div class="label" id="label">your cards</div>
+    <div class="amount loading" id="amount">$—</div>
+    <div class="context" id="context">&nbsp;</div>
 
-    <!-- ── 2. Debt-free countdown ────────────────────── -->
-    <!-- MOCK DATA: debt-free date aug 14, 2027; 6 days closer this month; 12% to goal -->
-    <section class="countdown" aria-label="debt-free countdown">
-      <div class="kicker">debt-free on</div>
-      <div class="countdown__date">aug 14, 2027</div>
-      <div class="countdown__delta"><span class="arrow">↓</span> 6 days closer this month</div>
-      <div class="progress" role="progressbar" aria-valuenow="12" aria-valuemin="0" aria-valuemax="100" aria-label="progress to debt-free">
-        <div class="progress__fill"></div>
-      </div>
-      <div class="progress__meta">
-        <span>today</span>
-        <span>12% there</span>
-        <span>done</span>
-      </div>
-    </section>
-
-    <!-- ── 3. Current plan stats ─────────────────────── -->
-    <!-- MOCK DATA: $7,923 remaining, 12% paid, $250/mo -->
-    <section class="stats" aria-label="your plan summary">
-      <div class="stat">
-        <div class="stat-val">$7,923</div>
-        <div class="stat-lbl">remaining</div>
-      </div>
-      <div class="stat">
-        <div class="stat-val">12%</div>
-        <div class="stat-lbl">paid down</div>
-      </div>
-      <div class="stat">
-        <div class="stat-val">$250<span style="font-size:0.7em;opacity:0.6">/mo</span></div>
-        <div class="stat-lbl">your plan</div>
-      </div>
-    </section>
-
-    <!-- ── 4. Next move ──────────────────────────────── -->
-    <section class="move" aria-label="next week's move">
-      <div class="move__lbl">next move · week of apr 21</div>
-      <button type="button" class="move__cta" id="lock-btn">lock in next week's move →</button>
-      <p class="move__fine" id="move-fine">same $250, same strategy. tap to confirm — or nudge it up $5.</p>
-      <button type="button" class="move__nudge" id="nudge-btn">nudge up +$5</button>
-    </section>
-
-    <!-- ── 5. Skip week (subtle, kind) ───────────────── -->
-    <section class="skip">
-      <button type="button" class="skip__btn" id="skip-btn" aria-expanded="false" aria-controls="skip-panel">life happens — skip this week?</button>
-      <div class="skip__panel" id="skip-panel" role="region">
-        <div class="skip__panel-inner">
-          <strong>no guilt, no penalty.</strong> your plan just shifts by a week. we'll check in sunday.
-          <div>
-            <button type="button" class="skip__confirm" id="skip-confirm">ok, skip this week</button>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ── 6. Streak ─────────────────────────────────── -->
-    <!-- MOCK DATA: 4 sundays showing up (NOT paying) -->
-    <section class="streak">
-      <span class="streak__pill">
-        <span class="emoji" aria-hidden="true">🌱</span>
-        <span id="streak-txt">4 sundays in a row</span>
-      </span>
-    </section>
-
-    <!-- ── 7. Back to edit ───────────────────────────── -->
-    <div class="edit-row">
-      <a href="plan.html" id="edit-link">edit my cards</a>
-    </div>
+    <!-- Quiet placeholder — future modules drop in here one by one. -->
   </main>
 
   <footer class="page-foot">
@@ -549,7 +206,12 @@
   </footer>
 
   <script>
-    // ── Phone pill (same pattern as plan.html / verify.html) ──
+    // ── Config ───────────────────────────────────────
+    const API_BASE = 'https://sms-service-sope.onrender.com';
+    const TOKEN_KEY = 'cbff_token';
+    const NAME_KEY = 'cbff_first_name';
+
+    // ── Phone pill ──────────────────────────────────
     const params = new URLSearchParams(location.search);
     const rawPhone = params.get('phone') || '';
     const digits = rawPhone.replace(/\D/g, '');
@@ -558,56 +220,106 @@
       const d = digits.slice(-10);
       pill.textContent = `+1 (${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`;
     }
-    // Preserve phone on the edit-cards link
-    const editLink = document.getElementById('edit-link');
-    if (rawPhone) {
-      editLink.href = `plan.html?phone=${encodeURIComponent(rawPhone)}`;
+
+    // ── Helpers ─────────────────────────────────────
+    function formatMoney(n) {
+      const rounded = Math.round(n * 100) / 100;
+      const dollars = Math.floor(rounded);
+      const cents = Math.round((rounded - dollars) * 100);
+      const dollarsStr = dollars.toLocaleString('en-US');
+      const centsStr = String(cents).padStart(2, '0');
+      return { dollars: '$' + dollarsStr, cents: '.' + centsStr };
     }
 
-    // ── Nudge up +$5 (mock: flips label, bumps fine-print) ──
-    const nudgeBtn = document.getElementById('nudge-btn');
-    const moveFine = document.getElementById('move-fine');
-    let nudged = false;
-    nudgeBtn.addEventListener('click', () => {
-      nudged = !nudged;
-      if (nudged) {
-        nudgeBtn.classList.add('bumped');
-        nudgeBtn.textContent = '✓ bumped to $255';
-        moveFine.textContent = "$255 this week. small move, big compound. tap lock when ready.";
-      } else {
-        nudgeBtn.classList.remove('bumped');
-        nudgeBtn.textContent = 'nudge up +$5';
-        moveFine.textContent = "same $250, same strategy. tap to confirm — or nudge it up $5.";
+    function humanAgo(iso) {
+      if (!iso) return null;
+      const then = new Date(iso).getTime();
+      const now = Date.now();
+      const diff = Math.max(0, now - then);
+      const s = Math.floor(diff / 1000);
+      if (s < 60)  return 'just now';
+      const m = Math.floor(s / 60);
+      if (m < 60)  return m === 1 ? 'a minute ago' : `${m} minutes ago`;
+      const h = Math.floor(m / 60);
+      if (h < 24)  return h === 1 ? 'an hour ago' : `${h} hours ago`;
+      const d = Math.floor(h / 24);
+      if (d < 7)   return d === 1 ? 'yesterday' : `${d} days ago`;
+      const w = Math.floor(d / 7);
+      if (w < 5)   return w === 1 ? 'a week ago' : `${w} weeks ago`;
+      const mo = Math.floor(d / 30);
+      return mo === 1 ? 'a month ago' : `${mo} months ago`;
+    }
+
+    // ── Personalize the label with first name (falls back to "your cards") ──
+    const firstName = sessionStorage.getItem(NAME_KEY);
+    if (firstName && firstName.trim()) {
+      const safe = firstName.replace(/[<>&"]/g, '').toLowerCase();
+      document.getElementById('label').textContent = `${safe}'s cards`;
+    }
+
+    // ── Sign out ─────────────────────────────────────
+    document.getElementById('signout').addEventListener('click', async () => {
+      try {
+        const token = sessionStorage.getItem(TOKEN_KEY);
+        const headers = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        await fetch(`${API_BASE}/api/logout`, {
+          method: 'POST',
+          headers,
+          credentials: 'include',
+        });
+      } catch (_) { /* ignore — we're leaving anyway */ }
+      sessionStorage.clear();
+      location.href = 'index.html';
+    });
+
+    // ── Fetch the home snapshot ─────────────────────
+    async function loadHome() {
+      const amountEl = document.getElementById('amount');
+      const contextEl = document.getElementById('context');
+
+      const token = sessionStorage.getItem(TOKEN_KEY);
+      if (!token) {
+        // No auth yet — send them through the front door.
+        location.href = 'index.html';
+        return;
       }
-    });
 
-    // ── Lock in move (mock confirm state) ──
-    const lockBtn = document.getElementById('lock-btn');
-    lockBtn.addEventListener('click', () => {
-      if (lockBtn.classList.contains('locked')) return;
-      lockBtn.classList.add('locked');
-      lockBtn.textContent = `✓ locked — ${nudged ? '$255' : '$250'} on monday`;
-      moveFine.textContent = "done. we'll text sunday with next week's move.";
-    });
+      try {
+        const res = await fetch(`${API_BASE}/api/home`, {
+          headers: { 'Authorization': `Bearer ${token}` },
+          credentials: 'include',
+        });
 
-    // ── Skip panel expand ──
-    const skipBtn = document.getElementById('skip-btn');
-    const skipPanel = document.getElementById('skip-panel');
-    skipBtn.addEventListener('click', () => {
-      const open = skipPanel.classList.toggle('open');
-      skipBtn.setAttribute('aria-expanded', String(open));
-    });
+        if (res.status === 401) {
+          sessionStorage.clear();
+          location.href = 'index.html';
+          return;
+        }
+        if (!res.ok) throw new Error('bad response');
 
-    const skipConfirm = document.getElementById('skip-confirm');
-    skipConfirm.addEventListener('click', () => {
-      skipPanel.classList.remove('open');
-      skipBtn.setAttribute('aria-expanded', 'false');
-      skipBtn.textContent = "skipped — see you sunday.";
-      skipBtn.disabled = true;
-      skipBtn.style.opacity = '0.8';
-      // Streak still grows — showing-up streak, not paying streak.
-      document.getElementById('streak-txt').textContent = '5 sundays in a row';
-    });
+        const data = await res.json();
+        const { dollars, cents } = formatMoney(Number(data.total_balance || 0));
+        amountEl.classList.remove('loading');
+        amountEl.innerHTML =
+          dollars +
+          '<span class="cents">' + cents + '</span>' +
+          '<span class="stop">.</span>';
+
+        // Single line of context — live-dot + when we last synced.
+        const when = humanAgo(data.last_updated);
+        contextEl.innerHTML =
+          '<span class="live-dot" aria-hidden="true"></span>' +
+          (when ? `updated ${when}` : 'live');
+      } catch (_) {
+        amountEl.classList.remove('loading');
+        amountEl.textContent = '—';
+        contextEl.classList.add('err');
+        contextEl.textContent = "couldn't load right now — try again in a sec";
+      }
+    }
+
+    loadHome();
   </script>
 </body>
 </html>
