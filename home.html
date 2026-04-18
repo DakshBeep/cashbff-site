@@ -3,6 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <!-- Sentry browser SDK: forwards JS errors + unhandled rejections to our Sentry project. -->
+  <script
+    src="https://js.sentry-cdn.com/2d45e7a7cdc726451c61d775aa22fbf2.min.js"
+    crossorigin="anonymous"
+  ></script>
+  <script>
+    // Lazy-configure Sentry once it's loaded (the loader script exposes window.Sentry).
+    window.sentryOnLoad = function () {
+      Sentry.init({
+        dsn: "https://2d45e7a7cdc726451c61d775aa22fbf2@o4511234298937344.ingest.us.sentry.io/4511234305949696",
+        // Minimal config — no session replay, no tracing, just error capture.
+        tracesSampleRate: 0,
+      });
+    };
+  </script>
   <title>home · cash bff</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
