@@ -9,11 +9,9 @@
     crossorigin="anonymous"
   ></script>
   <script>
-    // Lazy-configure Sentry once it's loaded (the loader script exposes window.Sentry).
     window.sentryOnLoad = function () {
       Sentry.init({
         dsn: "https://2d45e7a7cdc726451c61d775aa22fbf2@o4511234298937344.ingest.us.sentry.io/4511234305949696",
-        // Minimal config — no session replay, no tracing, just error capture.
         tracesSampleRate: 0,
       });
     };
@@ -53,6 +51,7 @@
       -moz-osx-font-smoothing: grayscale;
       line-height: 1.5;
       min-height: 100dvh;
+      overflow-x: hidden;
     }
     a { color: inherit; text-decoration: none; }
     button { font-family: inherit; cursor: pointer; border: none; background: none; }
@@ -73,9 +72,7 @@
       color: var(--cash-green);
     }
     .bar__right {
-      display: flex;
-      align-items: center;
-      gap: 1.25rem;
+      display: flex; align-items: center; gap: 1.25rem;
       font-size: 0.82rem;
     }
     .pill-phone {
@@ -94,114 +91,169 @@
     }
     .signout:hover { opacity: 1; color: var(--cash-green); }
 
-    /* ── Main composition ──────────────────────────── */
+    /* ── Drift composition ─────────────────────────── */
     main {
-      max-width: 42rem;
+      max-width: 48rem;
       margin: 0 auto;
-      padding: 4rem 2rem 6rem;
+      padding: 2rem 2rem 4rem;
     }
 
-    .greeting {
-      font-family: var(--font-display);
-      font-weight: 500;
-      font-size: clamp(2rem, 5.5vw, 3rem);
-      line-height: 1.05;
-      letter-spacing: -0.01em;
-      color: var(--off-black);
-      margin-bottom: 4.5rem;
-      animation: fadeUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) 0.1s both;
+    .drift {
+      position: relative;
+      width: 100%;
+      min-height: 32rem;
     }
 
-    .eyebrow {
-      font-family: var(--font-body);
-      font-weight: 600;
-      font-size: 0.72rem;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      color: var(--cash-green);
-      opacity: 0.85;
-      margin-bottom: 1rem;
-      animation: fadeUp 0.5s ease-out 0.4s both;
-    }
-
-    .win__row {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      gap: 1rem;
-      padding-bottom: 0.4rem;
-    }
-
-    .card-label {
-      font-family: var(--font-body);
-      font-weight: 500;
-      font-size: 0.95rem;
-      color: var(--off-black);
-      opacity: 0.78;
-      flex-shrink: 0;
-      animation: fadeUp 0.5s ease-out 0.55s both;
-    }
-    .card-label.loading { opacity: 0.25; }
-
-    .amount {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: clamp(2.75rem, 8vw, 4.5rem);
-      line-height: 1;
-      letter-spacing: -0.025em;
-      color: var(--cash-green);
-      flex-shrink: 0;
-      animation: fadeUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) 1.2s both;
-    }
-    .amount.loading { opacity: 0.18; }
-    .amount .cents {
-      font-size: 0.45em;
-      opacity: 0.6;
-      font-weight: 500;
-      letter-spacing: -0.01em;
-      margin-left: 0.04em;
-    }
-
-    .horizon-line {
-      height: 1px;
-      background: var(--cash-green);
-      transform: scaleX(0);
-      transform-origin: left;
-      animation: drawLine 1.4s cubic-bezier(0.2, 0.8, 0.2, 1) 0.7s forwards;
-    }
-    @keyframes drawLine { to { transform: scaleX(1); } }
-
-    .rest {
-      margin-top: 2.25rem;
+    .empty, .err {
+      position: absolute;
+      inset: 0;
       display: flex;
       align-items: center;
-      gap: 0.75em;
-      font-family: var(--font-body);
-      font-size: 0.88rem;
-      color: var(--off-black);
-      opacity: 0;
-      animation: fadeUp 0.5s ease-out 2.1s both;
-    }
-    .rest[hidden] { display: none; }
-    .rest__text  { opacity: 0.5; }
-    .rest__leader {
-      flex: 1;
-      border-bottom: 1px dashed currentColor;
-      opacity: 0.22;
-      align-self: center;
-      height: 1px;
-      min-width: 1.5rem;
-    }
-    .rest__amount { opacity: 0.5; }
-
-    .err {
-      margin-top: 2rem;
-      font-family: var(--font-body);
-      font-size: 0.92rem;
+      justify-content: center;
+      flex-direction: column;
+      gap: 0.6rem;
       color: var(--off-black);
       opacity: 0.55;
-      font-style: italic;
-      animation: fadeUp 0.5s ease-out both;
+      font-size: 0.92rem;
+    }
+    .err { font-style: italic; }
+    .empty a {
+      color: var(--cash-green);
+      opacity: 0.9;
+      border-bottom: 1px solid currentColor;
+      padding-bottom: 1px;
+    }
+
+    /* ── Card ──────────────────────────────────────── */
+    .card {
+      position: absolute;
+      width: 10.5rem;
+      aspect-ratio: 1.586 / 1;
+      border-radius: 1rem;
+      background: var(--cash-green);
+      color: var(--vanilla);
+      padding: 0.95rem 1rem;
+      box-shadow: 0 20px 40px -16px rgba(26,23,23,0.25);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      cursor: pointer;
+      transform-origin: center;
+      will-change: transform;
+      transition: box-shadow 0.25s ease, z-index 0s;
+      opacity: 0;
+      animation: fadeIn 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+    }
+    .card:hover {
+      z-index: 50 !important;
+      box-shadow: 0 32px 60px -18px rgba(26,23,23,0.38);
+    }
+    .card.is-tapped { z-index: 60 !important; }
+
+    .card__top {
+      font-family: var(--font-body);
+      font-weight: 500;
+      font-size: 0.68rem;
+      letter-spacing: 0.01em;
+      opacity: 0.75;
+      text-transform: lowercase;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .card__balance {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.35rem;
+      line-height: 1;
+      letter-spacing: -0.02em;
+      color: var(--electric-green);
+    }
+    .card__balance .cents {
+      font-size: 0.6em; opacity: 0.7; font-weight: 500;
+      letter-spacing: -0.01em; margin-left: 0.04em;
+    }
+    .card__bottom {
+      font-family: var(--font-body);
+      font-weight: 500;
+      font-size: 0.72rem;
+      opacity: 0.78;
+      text-transform: lowercase;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Each card gets its own float animation. The inner wrapper floats
+       while the outer keeps its rotation so the two transforms don't fight. */
+    .card__inner {
+      width: 100%; height: 100%;
+      display: flex; flex-direction: column; justify-content: space-between;
+    }
+
+    /* Five unique float keyframes — each a slightly different arc so nothing syncs. */
+    @keyframes drift1 {
+      0%,100% { transform: translate(0,0) rotate(-6deg); }
+      50%     { transform: translate(6px,-10px) rotate(-5.2deg); }
+    }
+    @keyframes drift2 {
+      0%,100% { transform: translate(0,0) rotate(4deg); }
+      50%     { transform: translate(-8px,-8px) rotate(4.8deg); }
+    }
+    @keyframes drift3 {
+      0%,100% { transform: translate(0,0) rotate(-3deg); }
+      50%     { transform: translate(5px,-12px) rotate(-3.6deg); }
+    }
+    @keyframes drift4 {
+      0%,100% { transform: translate(0,0) rotate(7deg); }
+      50%     { transform: translate(-6px,-14px) rotate(6.3deg); }
+    }
+    @keyframes drift5 {
+      0%,100% { transform: translate(0,0) rotate(-5deg); }
+      50%     { transform: translate(9px,-9px) rotate(-4.2deg); }
+    }
+
+    .card[data-slot="0"] {
+      top: 8%; left: 10%; z-index: 1;
+      animation: fadeIn 0.8s cubic-bezier(0.2,0.8,0.2,1) 0.05s forwards,
+                 drift1 7.2s ease-in-out 0.8s infinite;
+    }
+    .card[data-slot="1"] {
+      top: 22%; left: 54%; z-index: 2;
+      animation: fadeIn 0.8s cubic-bezier(0.2,0.8,0.2,1) 0.18s forwards,
+                 drift2 8.4s ease-in-out 1.4s infinite;
+    }
+    .card[data-slot="2"] {
+      top: 50%; left: 18%; z-index: 3;
+      animation: fadeIn 0.8s cubic-bezier(0.2,0.8,0.2,1) 0.31s forwards,
+                 drift3 6.1s ease-in-out 0.3s infinite;
+    }
+    .card[data-slot="3"] {
+      top: 38%; left: 68%; z-index: 4;
+      animation: fadeIn 0.8s cubic-bezier(0.2,0.8,0.2,1) 0.44s forwards,
+                 drift4 9.0s ease-in-out 2.1s infinite;
+    }
+    .card[data-slot="4"] {
+      top: 68%; left: 44%; z-index: 5;
+      animation: fadeIn 0.8s cubic-bezier(0.2,0.8,0.2,1) 0.57s forwards,
+                 drift5 5.4s ease-in-out 1.0s infinite;
+    }
+
+    /* Hover: gently lift out of the float. We pause the drift animation and
+       apply a static lifted transform using the slot's base rotation. */
+    .card:hover { animation-play-state: running, paused; }
+    .card[data-slot="0"]:hover .card__inner { transform: scale(1.04); }
+    .card[data-slot="1"]:hover .card__inner { transform: scale(1.04); }
+    .card[data-slot="2"]:hover .card__inner { transform: scale(1.04); }
+    .card[data-slot="3"]:hover .card__inner { transform: scale(1.04); }
+    .card[data-slot="4"]:hover .card__inner { transform: scale(1.04); }
+    .card__inner { transition: transform 0.25s cubic-bezier(0.2,0.8,0.2,1); }
+
+    .card.is-tapped .card__inner { transform: scale(1.08); }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
     }
 
     /* ── Footer ────────────────────────────────────── */
@@ -215,29 +267,52 @@
     }
     .page-foot a:hover { opacity: 1; color: var(--cash-green); }
 
-    /* ── Animations ───────────────────────────────── */
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(10px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
+    /* ── Mobile: vertical floaty stack ─────────────── */
     @media (max-width: 640px) {
       .bar { padding: 1.25rem; }
-      main { padding: 2.5rem 1.25rem 4rem; }
-      .greeting { margin-bottom: 3rem; }
+      main { padding: 1rem 1rem 3rem; }
+      .drift { min-height: 42rem; }
       .pill-phone { font-size: 0.72rem; padding: 0.4rem 0.7rem; }
-      .win__row { align-items: flex-end; gap: 0.6rem; }
+      .card { width: 9.25rem; }
+
+      /* Re-layout into a gentle vertical column with smaller rotations. */
+      .card[data-slot="0"] { top: 2%;  left: 10%;  }
+      .card[data-slot="1"] { top: 20%; left: 42%; }
+      .card[data-slot="2"] { top: 40%; left: 8%;  }
+      .card[data-slot="3"] { top: 58%; left: 44%; }
+      .card[data-slot="4"] { top: 78%; left: 18%; }
+
+      @keyframes drift1 {
+        0%,100% { transform: translate(0,0) rotate(-3deg); }
+        50%     { transform: translate(4px,-6px) rotate(-2.4deg); }
+      }
+      @keyframes drift2 {
+        0%,100% { transform: translate(0,0) rotate(2deg); }
+        50%     { transform: translate(-4px,-5px) rotate(2.6deg); }
+      }
+      @keyframes drift3 {
+        0%,100% { transform: translate(0,0) rotate(-2deg); }
+        50%     { transform: translate(3px,-7px) rotate(-2.4deg); }
+      }
+      @keyframes drift4 {
+        0%,100% { transform: translate(0,0) rotate(3deg); }
+        50%     { transform: translate(-3px,-8px) rotate(2.6deg); }
+      }
+      @keyframes drift5 {
+        0%,100% { transform: translate(0,0) rotate(-2.5deg); }
+        50%     { transform: translate(5px,-5px) rotate(-2deg); }
+      }
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .greeting, .eyebrow, .card-label, .amount, .rest {
-        animation: none !important;
-        opacity: 1 !important;
+      .card {
+        animation: fadeIn 0.4s ease-out both !important;
       }
-      .horizon-line {
-        animation: none !important;
-        transform: scaleX(1);
-      }
+      .card[data-slot="0"] { transform: rotate(-6deg); }
+      .card[data-slot="1"] { transform: rotate(4deg);  }
+      .card[data-slot="2"] { transform: rotate(-3deg); }
+      .card[data-slot="3"] { transform: rotate(7deg);  }
+      .card[data-slot="4"] { transform: rotate(-5deg); }
     }
   </style>
 </head>
@@ -251,25 +326,7 @@
   </header>
 
   <main>
-    <h1 class="greeting">
-      hey <span id="name-slot">there</span>,<br>
-      today is a soft one.
-    </h1>
-
-    <section class="win" id="win">
-      <div class="eyebrow">next small win</div>
-      <div class="win__row">
-        <span class="card-label loading" id="card-label">—</span>
-        <span class="amount loading" id="amount">—</span>
-      </div>
-      <div class="horizon-line" aria-hidden="true"></div>
-      <div class="rest" id="rest" hidden>
-        <span class="rest__text" id="rest-text"></span>
-        <span class="rest__leader" aria-hidden="true"></span>
-        <span class="rest__amount" id="rest-amount"></span>
-      </div>
-      <div class="err" id="err" hidden></div>
-    </section>
+    <section class="drift" id="drift" aria-label="your cards"></section>
   </main>
 
   <footer class="page-foot">
@@ -282,6 +339,7 @@
     // ── Config ───────────────────────────────────────
     const API_BASE = 'https://api.cashbff.com';
     const NAME_KEY = 'cbff_first_name';
+    const MAX_SLOTS = 5;
 
     // ── Phone pill ──────────────────────────────────
     const params = new URLSearchParams(location.search);
@@ -293,12 +351,9 @@
       pill.textContent = `+1 (${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`;
     }
 
-    // ── Greeting: pull first name from localStorage, fallback "there" ─
-    const firstName = (localStorage.getItem(NAME_KEY) || '').trim();
-    if (firstName) {
-      document.getElementById('name-slot').textContent =
-        firstName.replace(/[<>&"]/g, '').toLowerCase();
-    }
+    // First name pulled from localStorage for parity with home.html, though
+    // Drift doesn't render a greeting — we still read it so other tabs stay warm.
+    (localStorage.getItem(NAME_KEY) || '').trim();
 
     // ── Helpers ─────────────────────────────────────
     function formatMoney(n) {
@@ -311,36 +366,67 @@
       };
     }
 
-    // Small-number → word for warm phrasing. Digits for bigger counts.
-    function countWord(n) {
-      const w = ['zero','one','two','three','four','five','six','seven','eight','nine','ten'];
-      return n <= 10 ? w[n] : String(n);
-    }
-
-    function cleanCardName(raw) {
-      // Plaid often returns something like "VentureOne" or "Platinum Secured".
-      // Lowercase for brand voice; trim.
-      return String(raw || '').toLowerCase().trim();
+    function cleanText(raw) {
+      return String(raw || '').toLowerCase().trim().replace(/[<>&"]/g, '');
     }
 
     // ── Sign out ─────────────────────────────────────
     document.getElementById('signout').addEventListener('click', async () => {
       try {
         await fetch(`${API_BASE}/api/logout`, { method: 'POST', credentials: 'include' });
-      } catch (_) { /* we're leaving anyway */ }
+      } catch (_) { /* leaving anyway */ }
       localStorage.clear();
       location.href = 'index.html';
     });
 
-    // ── Fetch + render ──────────────────────────────
-    async function loadHome() {
-      const amountEl = document.getElementById('amount');
-      const cardLabelEl = document.getElementById('card-label');
-      const restEl = document.getElementById('rest');
-      const restTextEl = document.getElementById('rest-text');
-      const restAmountEl = document.getElementById('rest-amount');
-      const errEl = document.getElementById('err');
+    // ── Render ──────────────────────────────────────
+    function renderCard(card, slot) {
+      const el = document.createElement('button');
+      el.type = 'button';
+      el.className = 'card';
+      el.dataset.slot = String(slot);
+      el.setAttribute('aria-label',
+        `${cleanText(card.institution)} ${cleanText(card.name)} card`);
 
+      const { dollars, cents } = formatMoney(Number(card.balance) || 0);
+      const institution = cleanText(card.institution) || cleanText(card.name) || 'card';
+      const nickname = cleanText(card.name) || 'card';
+      const maskBit = card.mask ? ` · …${card.mask}` : '';
+
+      el.innerHTML = `
+        <span class="card__inner">
+          <span class="card__top">${institution}</span>
+          <span class="card__balance">${dollars}<span class="cents">${cents}</span></span>
+          <span class="card__bottom">${nickname}${maskBit}</span>
+        </span>
+      `;
+
+      el.addEventListener('click', () => {
+        el.classList.add('is-tapped');
+        setTimeout(() => el.classList.remove('is-tapped'), 260);
+        console.log('card clicked', card.name);
+      });
+
+      return el;
+    }
+
+    function renderEmpty(container) {
+      container.innerHTML = `
+        <div class="empty">
+          <span>no cards connected yet.</span>
+          <a href="connect.html">connect one →</a>
+        </div>
+      `;
+    }
+
+    function renderError(container) {
+      container.innerHTML = `
+        <div class="err">give us a sec — trying again in a moment.</div>
+      `;
+    }
+
+    async function loadHome() {
+      const container = document.getElementById('drift');
       try {
         const res = await fetch(`${API_BASE}/api/home`, {
           headers: { 'Content-Type': 'application/json' },
@@ -351,57 +437,20 @@
 
         const data = await res.json();
         const cards = Array.isArray(data.cards) ? data.cards : [];
-        const active = cards.filter(c => Number(c.balance) > 0.005);
 
-        if (active.length === 0) {
-          amountEl.classList.remove('loading');
-          amountEl.style.fontSize = 'clamp(1.25rem, 3vw, 1.75rem)';
-          amountEl.style.fontFamily = 'var(--font-body)';
-          amountEl.style.fontWeight = '500';
-          amountEl.style.fontStyle = 'italic';
-          amountEl.textContent = "you're clean.";
-          cardLabelEl.classList.remove('loading');
-          cardLabelEl.textContent = '';
-          return;
+        // Cache first_name if the API offers one.
+        if (data.first_name) {
+          try { localStorage.setItem(NAME_KEY, String(data.first_name)); } catch (_) {}
         }
 
-        // The smallest active balance = the snowball's first domino.
-        active.sort((a, b) => a.balance - b.balance);
-        const smallest = active[0];
-        const rest = active.slice(1);
+        if (cards.length === 0) { renderEmpty(container); return; }
 
-        // Featured row
-        cardLabelEl.classList.remove('loading');
-        const name = cleanCardName(smallest.name);
-        const maskBit = smallest.mask ? ` · …${smallest.mask}` : '';
-        cardLabelEl.textContent = name + maskBit;
-
-        const { dollars, cents } = formatMoney(Number(smallest.balance));
-        amountEl.classList.remove('loading');
-        amountEl.innerHTML = dollars + '<span class="cents">' + cents + '</span>';
-
-        // Rest row (only if there's a rest)
-        if (rest.length > 0) {
-          const sum = rest.reduce((acc, c) => acc + Number(c.balance || 0), 0);
-          const restLabel = rest.length === 1
-            ? 'one more behind it'
-            : `${countWord(rest.length)} more behind it`;
-          restTextEl.textContent = restLabel;
-          const r = formatMoney(sum);
-          restAmountEl.innerHTML = r.dollars + '<span class="cents">' + r.cents + '</span>';
-          restEl.hidden = false;
-        }
+        container.innerHTML = '';
+        cards.slice(0, MAX_SLOTS).forEach((c, i) => {
+          container.appendChild(renderCard(c, i));
+        });
       } catch (_) {
-        amountEl.classList.remove('loading');
-        amountEl.style.fontSize = 'clamp(1.1rem, 2.5vw, 1.4rem)';
-        amountEl.style.fontFamily = 'var(--font-body)';
-        amountEl.style.fontWeight = '500';
-        amountEl.style.fontStyle = 'italic';
-        amountEl.textContent = '';
-        cardLabelEl.classList.remove('loading');
-        cardLabelEl.textContent = '';
-        errEl.hidden = false;
-        errEl.textContent = 'give us a sec — trying again in a moment.';
+        renderError(container);
       }
     }
 
