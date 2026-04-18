@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <!-- Sentry browser SDK: forwards JS errors + unhandled rejections to our Sentry project. -->
+  <script
+    src="https://js.sentry-cdn.com/2d45e7a7cdc726451c61d775aa22fbf2.min.js"
+    crossorigin="anonymous"
+  ></script>
+  <script>
+    window.sentryOnLoad = function () {
+      Sentry.init({
+        dsn: "https://2d45e7a7cdc726451c61d775aa22fbf2@o4511234298937344.ingest.us.sentry.io/4511234305949696",
+        tracesSampleRate: 0,
+      });
+    };
+  </script>
+  <title>home · cash bff</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
+
+  <style>
+    @font-face {
+      font-family: 'Greed Condensed';
+      src: url('fonts/GreedCondensed-Bold.woff2') format('woff2');
+      font-weight: 700; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Greed Condensed';
+      src: url('fonts/GreedCondensed-Medium.woff2') format('woff2');
+      font-weight: 500; font-display: swap;
+    }
+    :root {
+      --cash-green: #014751;
+      --electric-green: #D3FFB4;
+      --periwinkle: #C5B6F1;
+      --off-black: #1A1717;
+      --vanilla: #FCFAF2;
+      --font-display: 'Greed Condensed', 'Archivo Narrow', 'Arial Narrow', Impact, sans-serif;
+      --font-body: 'Instrument Sans', system-ui, -apple-system, sans-serif;
+      --card-shadow: 0 14px 28px -8px rgba(26,23,23,0.28), 0 6px 12px -4px rgba(26,23,23,0.18);
+      --card-shadow-lift: 0 22px 44px -10px rgba(26,23,23,0.36), 0 10px 18px -6px rgba(26,23,23,0.22);
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: var(--font-body);
+      background: var(--vanilla);
+      color: var(--off-black);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      line-height: 1.5;
+      min-height: 100dvh;
+      overflow-x: hidden;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+
+    /* ── Top bar ───────────────────────────────────── */
+    .bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.75rem 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-weight: 700; font-size: 1.5rem;
+      letter-spacing: -0.02em;
+      color: var(--cash-green);
+    }
+    .bar__right { display: flex; align-items: center; gap: 1.25rem; font-size: 0.82rem; }
+    .pill-phone {
+      background: rgba(1,71,81,0.08);
+      color: var(--cash-green);
+      padding: 0.45rem 0.85rem;
+      border-radius: 100px;
+      font-weight: 500;
+      font-size: 0.78rem;
+      letter-spacing: 0.01em;
+    }
+    .signout {
+      opacity: 0.55;
+      font-weight: 500;
+      transition: opacity 0.15s ease, color 0.15s ease;
+    }
+    .signout:hover { opacity: 1; color: var(--cash-green); }
+
+    /* ── Main composition ──────────────────────────── */
+    main {
+      max-width: 50rem;
+      margin: 0 auto;
+      padding: 3rem 2rem 4rem;
+    }
+
+    .fan {
+      position: relative;
+      width: 100%;
+      /* fan stage: wide + tall enough for rotated cards */
+      height: 26rem;
+      margin: 0 auto;
+      /* anchor point: bottom-center of the fan */
+      perspective: 1600px;
+    }
+
+    /* ── Card ──────────────────────────────────────── */
+    .card {
+      position: absolute;
+      /* 1.586 / 1 aspect */
+      width: 13rem;
+      aspect-ratio: 1.586 / 1;
+      left: 50%;
+      bottom: 2rem;
+      background: var(--cash-green);
+      color: var(--vanilla);
+      border-radius: 1rem;
+      padding: 1.15rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: var(--card-shadow);
+      transform-origin: 50% 120%;
+      /* transform is set per card via inline style using CSS vars */
+      transform: translateX(calc(-50% + var(--dx, 0rem))) rotate(var(--rot, 0deg));
+      transition:
+        transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1),
+        box-shadow 0.3s ease,
+        opacity 0.3s ease;
+      will-change: transform;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .card::after {
+      /* subtle inner sheen, a "laminate" vibe */
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: linear-gradient(135deg, rgba(252,250,242,0.06) 0%, rgba(252,250,242,0) 35%, rgba(252,250,242,0) 65%, rgba(252,250,242,0.04) 100%);
+      pointer-events: none;
+    }
+    .card__inst {
+      font-family: var(--font-body);
+      font-weight: 500;
+      font-size: 0.7rem;
+      letter-spacing: 0.02em;
+      opacity: 0.72;
+      text-transform: lowercase;
+    }
+    .card__amount {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.5rem;
+      line-height: 1;
+      letter-spacing: -0.015em;
+      color: var(--electric-green);
+      align-self: flex-start;
+      transition: font-size 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+    .card__amount .cents {
+      font-size: 0.55em;
+      opacity: 0.78;
+      font-weight: 500;
+      margin-left: 0.04em;
+    }
+    .card__foot {
+      font-family: var(--font-body);
+      font-weight: 500;
+      font-size: 0.74rem;
+      opacity: 0.78;
+      text-transform: lowercase;
+      letter-spacing: 0.01em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Hover: lift + top z-index (handled by JS) */
+    @media (hover: hover) {
+      .card:hover:not(.is-focused) {
+        transform: translateX(calc(-50% + var(--dx, 0rem))) rotate(var(--rot, 0deg)) translateY(-8px);
+        box-shadow: var(--card-shadow-lift);
+      }
+    }
+
+    /* Focused card: centered, upright, scaled */
+    .fan.has-focus .card:not(.is-focused) {
+      opacity: 0.5;
+      filter: saturate(0.85);
+    }
+    .card.is-focused {
+      z-index: 100 !important;
+      transform: translateX(-50%) translateY(-2.5rem) rotate(0deg) scale(1.12);
+      box-shadow: var(--card-shadow-lift);
+    }
+    .card.is-focused .card__amount { font-size: 2.25rem; }
+
+    /* Hint */
+    .hint {
+      text-align: center;
+      margin-top: 1.5rem;
+      font-family: var(--font-body);
+      font-style: italic;
+      font-size: 0.78rem;
+      color: var(--periwinkle);
+      opacity: 0;
+      animation: fadeUp 0.6s ease-out 0.9s both;
+    }
+    .fan.has-focus ~ .hint { opacity: 0.85; }
+
+    /* Entrance animation — cards deal in */
+    .card {
+      opacity: 0;
+      animation: dealIn 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+    @keyframes dealIn {
+      from {
+        opacity: 0;
+        transform: translateX(calc(-50% + var(--dx, 0rem))) rotate(var(--rot, 0deg)) translateY(24px) scale(0.94);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(calc(-50% + var(--dx, 0rem))) rotate(var(--rot, 0deg));
+      }
+    }
+
+    /* Empty / error states */
+    .quiet {
+      margin: 2rem auto 0;
+      max-width: 22rem;
+      text-align: center;
+      font-family: var(--font-body);
+      font-size: 0.95rem;
+      font-style: italic;
+      color: var(--off-black);
+      opacity: 0.55;
+    }
+
+    /* ── Footer ────────────────────────────────────── */
+    .page-foot {
+      display: flex;
+      justify-content: center;
+      gap: 1.25rem;
+      font-size: 0.72rem;
+      opacity: 0.35;
+      padding: 1.5rem 2rem 2rem;
+    }
+    .page-foot a:hover { opacity: 1; color: var(--cash-green); }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 0.85; transform: translateY(0); }
+    }
+
+    /* ── Mobile: vertical stagger ──────────────────── */
+    @media (max-width: 640px) {
+      .bar { padding: 1.25rem; }
+      main { padding: 1.5rem 1rem 3rem; }
+      .pill-phone { font-size: 0.72rem; padding: 0.4rem 0.7rem; }
+
+      .fan {
+        height: auto;
+        min-height: 28rem;
+        padding: 1rem 0 2rem;
+      }
+      .card {
+        position: relative;
+        left: 50%;
+        bottom: auto;
+        width: min(16rem, 78vw);
+        margin-top: -3.25rem;
+        transform-origin: 50% 50%;
+        transform: translateX(-50%) rotate(var(--rot-m, 0deg));
+      }
+      .card:first-of-type { margin-top: 0; }
+      @media (hover: hover) {
+        .card:hover:not(.is-focused) {
+          transform: translateX(-50%) rotate(var(--rot-m, 0deg)) translateY(-8px);
+        }
+      }
+      .card.is-focused {
+        transform: translateX(-50%) rotate(0deg) scale(1.06);
+      }
+      @keyframes dealIn {
+        from {
+          opacity: 0;
+          transform: translateX(-50%) rotate(var(--rot-m, 0deg)) translateY(18px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(-50%) rotate(var(--rot-m, 0deg));
+        }
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .card, .hint {
+        animation: none !important;
+        opacity: 1 !important;
+      }
+      .card { transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <header class="bar">
+    <a href="index.html" class="wordmark">cash bff</a>
+    <div class="bar__right">
+      <span class="pill-phone" id="phone-pill">+1 signed in</span>
+      <button type="button" class="signout" id="signout">sign out</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="fan" id="fan" aria-label="your cards"></div>
+    <p class="hint" id="hint">tap a card</p>
+    <p class="quiet" id="quiet" hidden></p>
+  </main>
+
+  <footer class="page-foot">
+    <a href="privacy.html">privacy</a>
+    <span>·</span>
+    <a href="mailto:hi@cashbff.com">hi@cashbff.com</a>
+  </footer>
+
+  <script>
+    // ── Config ───────────────────────────────────────
+    const API_BASE = 'https://api.cashbff.com';
+    const NAME_KEY = 'cbff_first_name';
+
+    // ── Phone pill ──────────────────────────────────
+    const params = new URLSearchParams(location.search);
+    const digits = (params.get('phone') || '').replace(/\D/g, '');
+    const pill = document.getElementById('phone-pill');
+    if (digits.length >= 10) {
+      const d = digits.slice(-10);
+      pill.textContent = `+1 (${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`;
+    }
+
+    // ── Helpers ─────────────────────────────────────
+    function formatMoney(n) {
+      const rounded = Math.round(Number(n) * 100) / 100;
+      const dollars = Math.floor(rounded);
+      const cents = Math.round((rounded - dollars) * 100);
+      return {
+        dollars: '$' + dollars.toLocaleString('en-US'),
+        cents: '.' + String(cents).padStart(2, '0'),
+      };
+    }
+    function clean(s) { return String(s || '').toLowerCase().trim(); }
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, c => ({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+      }[c]));
+    }
+
+    // ── Sign out ─────────────────────────────────────
+    document.getElementById('signout').addEventListener('click', async () => {
+      try {
+        await fetch(`${API_BASE}/api/logout`, { method: 'POST', credentials: 'include' });
+      } catch (_) { /* leaving anyway */ }
+      localStorage.clear();
+      location.href = 'index.html';
+    });
+
+    // ── Fan layout ──────────────────────────────────
+    // Pre-calculated rotations and left offsets for 5 cards (center is 0).
+    // For n cards, we fan from -15deg to +15deg, evenly spaced.
+    // Horizontal offsets use ~6rem step, centered.
+    function fanLayout(n) {
+      if (n <= 0) return [];
+      if (n === 1) return [{ rot: 0, dx: 0, rotM: 0 }];
+      const maxRot = 15;
+      const step = (2 * maxRot) / (n - 1);
+      const dxStep = 6; // rem
+      const mobileRots = [-6, -3, 0, 3, 6];
+      const out = [];
+      for (let i = 0; i < n; i++) {
+        const rot = -maxRot + step * i;
+        const dx = (i - (n - 1) / 2) * dxStep;
+        const rotM = mobileRots[i] ?? (i - (n - 1) / 2) * 3;
+        out.push({ rot, dx, rotM });
+      }
+      return out;
+    }
+
+    // ── Render ──────────────────────────────────────
+    const fanEl = document.getElementById('fan');
+    const hintEl = document.getElementById('hint');
+    const quietEl = document.getElementById('quiet');
+
+    function renderCards(cards) {
+      fanEl.innerHTML = '';
+      if (!cards.length) {
+        hintEl.hidden = true;
+        quietEl.hidden = false;
+        quietEl.textContent = 'no cards yet. quiet wallet.';
+        return;
+      }
+      const layout = fanLayout(cards.length);
+      cards.forEach((c, i) => {
+        const L = layout[i];
+        const { dollars, cents } = formatMoney(c.balance);
+        const inst = clean(c.institution) || 'bank';
+        const nick = clean(c.name) || 'card';
+        const mask = c.mask ? ` · …${escapeHtml(String(c.mask))}` : '';
+
+        const el = document.createElement('button');
+        el.type = 'button';
+        el.className = 'card';
+        el.style.setProperty('--rot', L.rot + 'deg');
+        el.style.setProperty('--dx', L.dx + 'rem');
+        el.style.setProperty('--rot-m', L.rotM + 'deg');
+        el.style.zIndex = String(10 + i);
+        el.style.animationDelay = (0.08 * i) + 's';
+        el.setAttribute('aria-label', `${nick}, ${dollars}${cents}`);
+        el.innerHTML =
+          '<div class="card__inst">' + escapeHtml(inst) + '</div>' +
+          '<div class="card__amount">' + escapeHtml(dollars) +
+            '<span class="cents">' + escapeHtml(cents) + '</span></div>' +
+          '<div class="card__foot">' + escapeHtml(nick) + mask + '</div>';
+
+        // Hover: bring to top of stack (without moving siblings)
+        el.addEventListener('mouseenter', () => {
+          if (fanEl.classList.contains('has-focus')) return;
+          // only boost z when not focused; remember original
+          el.dataset.zOrig = el.style.zIndex;
+          el.style.zIndex = '99';
+        });
+        el.addEventListener('mouseleave', () => {
+          if (el.classList.contains('is-focused')) return;
+          if (el.dataset.zOrig) el.style.zIndex = el.dataset.zOrig;
+        });
+
+        // Click: focus toggle
+        el.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          const alreadyFocused = el.classList.contains('is-focused');
+          // clear any existing focus
+          fanEl.querySelectorAll('.card.is-focused').forEach(c2 => c2.classList.remove('is-focused'));
+          if (alreadyFocused) {
+            fanEl.classList.remove('has-focus');
+          } else {
+            el.classList.add('is-focused');
+            fanEl.classList.add('has-focus');
+          }
+        });
+
+        fanEl.appendChild(el);
+      });
+    }
+
+    // Tap outside returns focused card to fan
+    document.addEventListener('click', (ev) => {
+      if (!fanEl.classList.contains('has-focus')) return;
+      if (ev.target.closest('.card')) return;
+      fanEl.querySelectorAll('.card.is-focused').forEach(c => c.classList.remove('is-focused'));
+      fanEl.classList.remove('has-focus');
+    });
+
+    // ── Fetch ───────────────────────────────────────
+    async function loadHome() {
+      try {
+        const res = await fetch(`${API_BASE}/api/home`, {
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+        });
+        if (res.status === 401) { localStorage.clear(); location.href = 'index.html'; return; }
+        if (!res.ok) throw new Error('bad response');
+
+        const data = await res.json();
+        if (data && data.first_name) {
+          try { localStorage.setItem(NAME_KEY, data.first_name); } catch (_) {}
+        }
+        const cards = Array.isArray(data.cards) ? data.cards.slice(0, 5) : [];
+        renderCards(cards);
+      } catch (_) {
+        hintEl.hidden = true;
+        quietEl.hidden = false;
+        quietEl.textContent = 'give us a sec — trying again in a moment.';
+      }
+    }
+
+    loadHome();
+  </script>
+</body>
+</html>

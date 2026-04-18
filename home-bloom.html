@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <!-- Sentry browser SDK: forwards JS errors + unhandled rejections to our Sentry project. -->
+  <script
+    src="https://js.sentry-cdn.com/2d45e7a7cdc726451c61d775aa22fbf2.min.js"
+    crossorigin="anonymous"
+  ></script>
+  <script>
+    window.sentryOnLoad = function () {
+      Sentry.init({
+        dsn: "https://2d45e7a7cdc726451c61d775aa22fbf2@o4511234298937344.ingest.us.sentry.io/4511234305949696",
+        tracesSampleRate: 0,
+      });
+    };
+  </script>
+  <title>home · cash bff</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap" rel="stylesheet">
+
+  <style>
+    @font-face {
+      font-family: 'Greed Condensed';
+      src: url('fonts/GreedCondensed-Bold.woff2') format('woff2');
+      font-weight: 700; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Greed Condensed';
+      src: url('fonts/GreedCondensed-Medium.woff2') format('woff2');
+      font-weight: 500; font-display: swap;
+    }
+    :root {
+      --cash-green: #014751;
+      --electric-green: #D3FFB4;
+      --periwinkle: #C5B6F1;
+      --off-black: #1A1717;
+      --vanilla: #FCFAF2;
+      --font-display: 'Greed Condensed', 'Archivo Narrow', 'Arial Narrow', Impact, sans-serif;
+      --font-body: 'Instrument Sans', system-ui, -apple-system, sans-serif;
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { min-height: 100dvh; }
+    body {
+      font-family: var(--font-body);
+      background: var(--vanilla);
+      color: var(--off-black);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      line-height: 1.5;
+      overflow-x: hidden;
+      position: relative;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { font-family: inherit; cursor: pointer; border: none; background: none; }
+
+    /* ── Grain overlay (SVG feTurbulence as data URL) ── */
+    .grain {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.045;
+      mix-blend-mode: multiply;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.10  0 0 0 0 0.09  0 0 0 0 0.09  0 0 0 1 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+    }
+
+    /* ── Top bar ───────────────────────────────────── */
+    .bar {
+      position: relative;
+      z-index: 3;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.75rem 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-weight: 700; font-size: 1.5rem;
+      letter-spacing: -0.02em;
+      color: var(--cash-green);
+    }
+    .bar__right {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      font-size: 0.82rem;
+    }
+    .pill-phone {
+      background: rgba(1,71,81,0.08);
+      color: var(--cash-green);
+      padding: 0.45rem 0.85rem;
+      border-radius: 100px;
+      font-weight: 500;
+      font-size: 0.78rem;
+      letter-spacing: 0.01em;
+    }
+    .signout {
+      opacity: 0.55;
+      font-weight: 500;
+      transition: opacity 0.15s ease, color 0.15s ease;
+    }
+    .signout:hover { opacity: 1; color: var(--cash-green); }
+
+    /* ── Greeting ──────────────────────────────────── */
+    .greeting-wrap {
+      position: relative;
+      z-index: 3;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 2.5rem 2.5rem 1.5rem;
+    }
+    .greeting {
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: clamp(1.6rem, 4.2vw, 2.4rem);
+      line-height: 1.05;
+      letter-spacing: -0.01em;
+      color: var(--off-black);
+      opacity: 0;
+      animation: fadeUp 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) 0.1s forwards;
+      max-width: 32rem;
+    }
+    .greeting .soft {
+      color: var(--cash-green);
+      opacity: 0.6;
+      font-style: italic;
+      font-family: var(--font-body);
+      font-size: 0.68em;
+      font-weight: 400;
+      display: block;
+      margin-top: 0.3rem;
+      letter-spacing: 0;
+    }
+
+    /* ── Still-life stage ──────────────────────────── */
+    .stage {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      max-width: 1100px;
+      margin: 0 auto;
+      height: min(70vh, 640px);
+      min-height: 480px;
+    }
+
+    .caption {
+      position: absolute;
+      right: 2.5rem;
+      bottom: 1rem;
+      z-index: 4;
+      font-family: var(--font-body);
+      font-style: italic;
+      font-size: 0.72rem;
+      opacity: 0.45;
+      color: var(--off-black);
+      letter-spacing: 0.01em;
+    }
+
+    /* ── Card (stone on a table) ───────────────────── */
+    .card {
+      position: absolute;
+      aspect-ratio: 1.586 / 1;
+      background: var(--cash-green);
+      border-radius: 1rem;
+      box-shadow: 0 24px 48px -18px rgba(1,71,81,0.22);
+      padding: 0.95rem 1rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      cursor: pointer;
+      transform-origin: center center;
+      transition: box-shadow 0.45s ease, filter 0.45s ease;
+      opacity: 0;
+      will-change: transform;
+      overflow: hidden;
+    }
+    .card::after {
+      /* faint inner sheen to give the face a lived-in quality */
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(
+        120% 80% at 30% 0%,
+        rgba(255,255,255,0.05),
+        rgba(255,255,255,0) 60%
+      );
+      pointer-events: none;
+    }
+    .card__inst {
+      font-family: var(--font-body);
+      font-weight: 500;
+      font-size: 0.65rem;
+      color: var(--vanilla);
+      opacity: 0.7;
+      letter-spacing: 0.02em;
+      text-transform: lowercase;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .card__amt {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.3rem;
+      color: var(--electric-green);
+      letter-spacing: -0.015em;
+      line-height: 1;
+    }
+    .card__amt .cents {
+      font-size: 0.7em;
+      opacity: 0.7;
+      font-weight: 500;
+    }
+    .card__foot {
+      font-family: var(--font-body);
+      font-size: 0.7rem;
+      color: var(--vanilla);
+      opacity: 0.76;
+      text-transform: lowercase;
+      letter-spacing: 0.01em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* prominence tiers */
+    .card.prom-0 { /* smallest balance -> largest + brighter */
+      filter: brightness(1.05);
+    }
+    .card.prom-last { /* biggest balance -> softest shadow, recedes */
+      box-shadow: 0 16px 32px -20px rgba(1,71,81,0.14);
+      filter: brightness(0.92) saturate(0.92);
+    }
+
+    /* hover state */
+    .card:hover {
+      z-index: 50 !important;
+      box-shadow:
+        0 0 0 1px rgba(197,182,241,0.5),
+        0 0 36px -4px rgba(197,182,241,0.55),
+        0 32px 58px -18px rgba(1,71,81,0.28);
+      filter: brightness(1.08);
+    }
+
+    /* click burst */
+    .card.poof {
+      z-index: 100 !important;
+      animation: poof 0.55s cubic-bezier(0.3, 0.8, 0.3, 1);
+    }
+    @keyframes poof {
+      0%   { transform: var(--base-transform) scale(1); }
+      35%  { transform: translate(var(--to-center-x, 0px), var(--to-center-y, 0px)) rotate(0deg) scale(1.2); }
+      100% { transform: var(--base-transform) scale(1); }
+    }
+
+    /* per-card breathing — scale only, tiny */
+    @keyframes breathe-a { 0%,100% { transform: var(--base-transform) scale(1); } 50% { transform: var(--base-transform) scale(1.015); } }
+    @keyframes breathe-b { 0%,100% { transform: var(--base-transform) scale(1); } 50% { transform: var(--base-transform) scale(1.012); } }
+    @keyframes breathe-c { 0%,100% { transform: var(--base-transform) scale(1); } 50% { transform: var(--base-transform) scale(1.014); } }
+    @keyframes breathe-d { 0%,100% { transform: var(--base-transform) scale(1); } 50% { transform: var(--base-transform) scale(1.011); } }
+    @keyframes breathe-e { 0%,100% { transform: var(--base-transform) scale(1); } 50% { transform: var(--base-transform) scale(1.013); } }
+
+    /* fade-in rise */
+    .card.settled {
+      animation: settle 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+    }
+    @keyframes settle {
+      0%   { opacity: 0; transform: var(--base-transform) scale(0.92) translateY(14px); }
+      100% { opacity: 1; transform: var(--base-transform) scale(1); }
+    }
+    /* after settle, JS swaps the animation to the breathe loop */
+    .card.breathing-a { animation: breathe-a 9.5s ease-in-out infinite; }
+    .card.breathing-b { animation: breathe-b 11s   ease-in-out infinite 0.8s; }
+    .card.breathing-c { animation: breathe-c 10s ease-in-out infinite 1.6s; }
+    .card.breathing-d { animation: breathe-d 12s   ease-in-out infinite 0.4s; }
+    .card.breathing-e { animation: breathe-e 8.5s  ease-in-out infinite 1.2s; }
+
+    /* ── Error / empty states (minimal) ────────────── */
+    .state-msg {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-family: var(--font-body);
+      font-style: italic;
+      font-size: 0.95rem;
+      opacity: 0.55;
+      text-align: center;
+      z-index: 3;
+      max-width: 22rem;
+    }
+
+    /* ── Footer ────────────────────────────────────── */
+    .page-foot {
+      position: relative;
+      z-index: 3;
+      display: flex;
+      justify-content: center;
+      gap: 1.25rem;
+      font-size: 0.72rem;
+      opacity: 0.35;
+      padding: 1.5rem 2rem 2rem;
+    }
+    .page-foot a:hover { opacity: 1; color: var(--cash-green); }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Mobile: narrower column, still organic ────── */
+    @media (max-width: 640px) {
+      .bar { padding: 1.25rem; }
+      .greeting-wrap { padding: 1.5rem 1.25rem 0.75rem; }
+      .stage {
+        height: auto;
+        min-height: 0;
+        padding: 1rem 1.25rem 4rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+        align-items: flex-start;
+      }
+      .caption {
+        position: static;
+        align-self: flex-end;
+        margin-top: 0.5rem;
+      }
+      .card {
+        position: relative;
+        top: auto !important;
+        left: auto !important;
+        width: 62vw !important;
+        max-width: 16rem;
+      }
+      /* preserve organic feel via alternating offsets */
+      .card:nth-child(odd)  { align-self: flex-start; margin-left: 4vw; }
+      .card:nth-child(even) { align-self: flex-end;   margin-right: 6vw; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .card, .greeting {
+        animation: none !important;
+        opacity: 1 !important;
+        transform: var(--base-transform, none) !important;
+      }
+      .grain { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+
+  <header class="bar">
+    <a href="index.html" class="wordmark">cash bff</a>
+    <div class="bar__right">
+      <span class="pill-phone" id="phone-pill">+1 signed in</span>
+      <button type="button" class="signout" id="signout">sign out</button>
+    </div>
+  </header>
+
+  <section class="greeting-wrap">
+    <h1 class="greeting">
+      hey <span id="name-slot">there</span>,
+      <span class="soft">here's everything, laid out.</span>
+    </h1>
+  </section>
+
+  <main class="stage" id="stage" aria-label="your cards">
+    <!-- cards inserted by JS -->
+    <span class="caption">quiet today.</span>
+  </main>
+
+  <footer class="page-foot">
+    <a href="privacy.html">privacy</a>
+    <span>·</span>
+    <a href="mailto:hi@cashbff.com">hi@cashbff.com</a>
+  </footer>
+
+  <script>
+    // ── Config ───────────────────────────────────────
+    const API_BASE = 'https://api.cashbff.com';
+    const NAME_KEY = 'cbff_first_name';
+
+    // Five pre-calculated slots. Sorted ascending by balance → assigned in order.
+    // Slot 0 is the smallest-balance (most prominent), slot 4 is largest-balance (recedes).
+    const SLOTS = [
+      { top: '12%', left: '38%', rot: -3, breathe: 'a' }, // A — smallest
+      { top: '48%', left: '15%', rot:  5, breathe: 'b' }, // B — 2nd smallest
+      { top: '58%', left: '62%', rot: -4, breathe: 'c' }, // C
+      { top: '22%', left: '68%', rot:  6, breathe: 'd' }, // D
+      { top: '72%', left: '40%', rot: -2, breathe: 'e' }, // E — largest
+    ];
+
+    // Widths in rem — smallest-balance is WIDEST, largest-balance is smallest.
+    const WIDTHS_REM = [12, 11, 10, 9, 8];
+
+    // ── Phone pill ──────────────────────────────────
+    const params = new URLSearchParams(location.search);
+    const rawPhone = params.get('phone') || '';
+    const digits = rawPhone.replace(/\D/g, '');
+    const pill = document.getElementById('phone-pill');
+    if (digits.length >= 10) {
+      const d = digits.slice(-10);
+      pill.textContent = `+1 (${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`;
+    }
+
+    // ── Greeting: first name from localStorage
+    const firstName = (localStorage.getItem(NAME_KEY) || '').trim();
+    if (firstName) {
+      document.getElementById('name-slot').textContent =
+        firstName.replace(/[<>&"]/g, '').toLowerCase();
+    }
+
+    // ── Helpers ─────────────────────────────────────
+    function formatMoney(n) {
+      const rounded = Math.round(Number(n) * 100) / 100;
+      const dollars = Math.floor(rounded);
+      const cents = Math.round((rounded - dollars) * 100);
+      return {
+        dollars: '$' + dollars.toLocaleString('en-US'),
+        cents: '.' + String(cents).padStart(2, '0'),
+      };
+    }
+    function cleanText(raw) {
+      return String(raw || '').toLowerCase().trim().replace(/[<>&"]/g, '');
+    }
+
+    // ── Sign out ─────────────────────────────────────
+    document.getElementById('signout').addEventListener('click', async () => {
+      try {
+        await fetch(`${API_BASE}/api/logout`, { method: 'POST', credentials: 'include' });
+      } catch (_) { /* leaving anyway */ }
+      localStorage.clear();
+      location.href = 'index.html';
+    });
+
+    // ── Render state (empty / error) ─────────────────
+    function renderMessage(text) {
+      const stage = document.getElementById('stage');
+      // keep caption, remove cards
+      stage.querySelectorAll('.card, .state-msg').forEach(n => n.remove());
+      const msg = document.createElement('div');
+      msg.className = 'state-msg';
+      msg.textContent = text;
+      stage.appendChild(msg);
+    }
+
+    // ── Build a card element ─────────────────────────
+    function buildCard(card, slotIdx) {
+      const slot = SLOTS[slotIdx];
+      const widthRem = WIDTHS_REM[slotIdx];
+      const el = document.createElement('article');
+      el.className = 'card';
+      if (slotIdx === 0) el.classList.add('prom-0');
+      if (slotIdx === SLOTS.length - 1) el.classList.add('prom-last');
+
+      el.style.top = slot.top;
+      el.style.left = slot.left;
+      el.style.width = widthRem + 'rem';
+      // base transform lives in a CSS var so breathe/poof can compose off it
+      const baseTransform = `translate(-50%, -50%) rotate(${slot.rot}deg)`;
+      el.style.setProperty('--base-transform', baseTransform);
+      el.style.transform = baseTransform;
+      // z-index: make smaller (further) cards sit behind prominent ones by default
+      el.style.zIndex = String(10 + (SLOTS.length - slotIdx));
+
+      const inst = cleanText(card.institution || card.name || 'account');
+      const nick = cleanText(card.name || '');
+      const mask = card.mask ? '…' + String(card.mask).replace(/\D/g, '').slice(-4) : '';
+      const { dollars, cents } = formatMoney(card.balance);
+
+      el.innerHTML = `
+        <div class="card__inst">${inst}</div>
+        <div class="card__amt">${dollars}<span class="cents">${cents}</span></div>
+        <div class="card__foot">${nick}${nick && mask ? ' · ' : ''}${mask}</div>
+      `;
+
+      // Interactions
+      el.addEventListener('click', () => {
+        // future-expansion placeholder
+        console.log('card clicked:', card.name);
+        // poof animation — compute offset to page center
+        const rect = el.getBoundingClientRect();
+        const cx = window.innerWidth / 2;
+        const cy = window.innerHeight / 2;
+        const dx = cx - (rect.left + rect.width / 2);
+        const dy = cy - (rect.top + rect.height / 2);
+        el.style.setProperty('--to-center-x', dx + 'px');
+        el.style.setProperty('--to-center-y', dy + 'px');
+        // temporarily remove breathe; play poof; then restore
+        const prev = el.className;
+        el.classList.remove('breathing-' + slot.breathe);
+        el.classList.add('poof');
+        el.addEventListener('animationend', function handler() {
+          el.classList.remove('poof');
+          el.classList.add('breathing-' + slot.breathe);
+          el.removeEventListener('animationend', handler);
+        });
+      });
+
+      // Settle, then start breathing
+      el.classList.add('settled');
+      // stagger the entrance
+      el.style.animationDelay = (0.2 + slotIdx * 0.12) + 's';
+      el.addEventListener('animationend', function settled(e) {
+        if (e.animationName === 'settle') {
+          el.classList.remove('settled');
+          el.style.animationDelay = '';
+          el.classList.add('breathing-' + slot.breathe);
+          el.removeEventListener('animationend', settled);
+        }
+      });
+
+      return el;
+    }
+
+    // ── Fetch + render ──────────────────────────────
+    async function loadHome() {
+      const stage = document.getElementById('stage');
+
+      try {
+        const res = await fetch(`${API_BASE}/api/home`, {
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+        });
+        if (res.status === 401) {
+          localStorage.clear();
+          location.href = 'index.html';
+          return;
+        }
+        if (!res.ok) throw new Error('bad response');
+
+        const data = await res.json();
+        if (data && data.first_name) {
+          try { localStorage.setItem(NAME_KEY, data.first_name); } catch (_) {}
+          document.getElementById('name-slot').textContent =
+            cleanText(data.first_name);
+        }
+
+        const cards = Array.isArray(data.cards) ? data.cards.slice() : [];
+        // Keep only cards with a real balance reading
+        const usable = cards.filter(c => c && typeof c.balance !== 'undefined');
+
+        if (usable.length === 0) {
+          renderMessage('nothing here yet. connect a card to bloom this page.');
+          return;
+        }
+
+        // Ascending by balance → slot 0 is smallest (most prominent)
+        usable.sort((a, b) => Number(a.balance) - Number(b.balance));
+        const picked = usable.slice(0, SLOTS.length);
+
+        picked.forEach((c, i) => {
+          const node = buildCard(c, i);
+          stage.appendChild(node);
+        });
+      } catch (_) {
+        renderMessage('give us a sec — trying again in a moment.');
+      }
+    }
+
+    loadHome();
+  </script>
+</body>
+</html>
