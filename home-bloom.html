@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>bloom · review · cash bff</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
+
+  <style>
+    @font-face {
+      font-family: 'Greed Condensed';
+      src: url('fonts/GreedCondensed-Bold.woff2') format('woff2');
+      font-weight: 700; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Greed Condensed';
+      src: url('fonts/GreedCondensed-Medium.woff2') format('woff2');
+      font-weight: 500; font-display: swap;
+    }
+    :root {
+      --cash-green: #014751;
+      --electric-green: #D3FFB4;
+      --periwinkle: #C5B6F1;
+      --off-black: #1A1717;
+      --vanilla: #FCFAF2;
+      --font-display: 'Greed Condensed', 'Archivo Narrow', 'Arial Narrow', Impact, sans-serif;
+      --font-body: 'Instrument Sans', system-ui, -apple-system, sans-serif;
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: var(--font-body);
+      background: var(--vanilla);
+      color: var(--off-black);
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.5;
+      min-height: 100dvh;
+      overflow-x: hidden;
+    }
+    a { color: inherit; text-decoration: none; }
+
+    .review-banner {
+      text-align: center;
+      font-size: 0.72rem;
+      color: var(--off-black);
+      opacity: 0.55;
+      padding: 0.6rem 1rem;
+      letter-spacing: 0.02em;
+      font-weight: 500;
+    }
+
+    .bar {
+      display: flex;
+      align-items: center;
+      padding: 1rem 2rem 1.75rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-weight: 700; font-size: 1.5rem;
+      letter-spacing: -0.02em;
+      color: var(--cash-green);
+    }
+
+    main {
+      max-width: 56rem;
+      margin: 0 auto;
+      padding: 1rem 2rem 4rem;
+      position: relative;
+    }
+
+    .lede {
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: 1.5rem;
+      color: var(--cash-green);
+      text-align: center;
+      margin-bottom: 0.35rem;
+      letter-spacing: -0.01em;
+    }
+    .sublede {
+      text-align: center;
+      font-size: 0.82rem;
+      opacity: 0.55;
+      margin-bottom: 2.5rem;
+      font-style: italic;
+    }
+
+    /* Bloom grid — free-form, organic. Each card sized inversely to balance. */
+    .bloom {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      grid-auto-rows: 1.5rem;
+      gap: 0.6rem;
+      min-height: 30rem;
+    }
+
+    .seed {
+      position: relative;
+      border-radius: 1.1rem;
+      padding: 1rem 1.1rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      color: var(--vanilla);
+      background: var(--cash-green);
+      cursor: pointer;
+      border: none;
+      font-family: inherit;
+      text-align: left;
+      overflow: hidden;
+      box-shadow: 0 12px 28px -14px rgba(26,23,23,0.25);
+      transform-origin: center;
+      animation: breathe 6s ease-in-out infinite;
+      transition: box-shadow 0.3s ease;
+    }
+    .seed:hover {
+      box-shadow: 0 24px 48px -16px rgba(26,23,23,0.4);
+    }
+    .seed::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 20% 15%, rgba(211,255,180,0.12), transparent 55%);
+      pointer-events: none;
+    }
+
+    /* Each seed gets its own breathing rhythm + rotation so nothing syncs. */
+    .seed[data-slot="0"] { animation-duration: 6.4s; animation-delay: 0.1s; transform: rotate(-1.5deg); }
+    .seed[data-slot="1"] { animation-duration: 5.2s; animation-delay: 0.6s; transform: rotate(1deg); }
+    .seed[data-slot="2"] { animation-duration: 7.1s; animation-delay: 0.3s; transform: rotate(-2deg); }
+    .seed[data-slot="3"] { animation-duration: 5.8s; animation-delay: 1.0s; transform: rotate(0.8deg); }
+    .seed[data-slot="4"] { animation-duration: 6.7s; animation-delay: 0.45s; transform: rotate(-0.6deg); }
+
+    @keyframes breathe {
+      0%, 100% { transform: scale(1) rotate(var(--r, 0deg)); }
+      50%      { transform: scale(1.025) rotate(var(--r, 0deg)); }
+    }
+    .seed[data-slot="0"] { --r: -1.5deg; }
+    .seed[data-slot="1"] { --r: 1deg; }
+    .seed[data-slot="2"] { --r: -2deg; }
+    .seed[data-slot="3"] { --r: 0.8deg; }
+    .seed[data-slot="4"] { --r: -0.6deg; }
+
+    /* Size & color vary inversely with balance. Smallest balance = biggest seed,
+       and gets the electric-green accent because it's the one you can actually kill. */
+    .seed.size-huge {
+      grid-column: span 8;
+      grid-row: span 10;
+      background: var(--electric-green);
+      color: var(--off-black);
+    }
+    .seed.size-huge::before {
+      background: radial-gradient(circle at 80% 20%, rgba(1,71,81,0.08), transparent 60%);
+    }
+    .seed.size-huge .seed__balance { color: var(--cash-green); }
+    .seed.size-huge .seed__top,
+    .seed.size-huge .seed__bottom { color: var(--off-black); opacity: 0.7; }
+
+    .seed.size-large {
+      grid-column: span 6;
+      grid-row: span 8;
+      background: var(--periwinkle);
+      color: var(--off-black);
+    }
+    .seed.size-large .seed__balance { color: var(--cash-green); }
+    .seed.size-large .seed__top,
+    .seed.size-large .seed__bottom { color: var(--off-black); opacity: 0.7; }
+
+    .seed.size-med {
+      grid-column: span 5;
+      grid-row: span 7;
+      background: var(--cash-green);
+    }
+    .seed.size-small {
+      grid-column: span 4;
+      grid-row: span 6;
+      background: #022d33;
+    }
+    .seed.size-tiny {
+      grid-column: span 4;
+      grid-row: span 5;
+      background: #01272d;
+      opacity: 0.85;
+    }
+
+    .seed__top {
+      font-weight: 500; font-size: 0.78rem;
+      letter-spacing: 0.02em; opacity: 0.75;
+      text-transform: lowercase;
+    }
+    .seed__balance {
+      font-family: var(--font-display);
+      font-weight: 700;
+      line-height: 0.95;
+      letter-spacing: -0.02em;
+      color: var(--electric-green);
+    }
+    .seed.size-huge  .seed__balance { font-size: 3.2rem; }
+    .seed.size-large .seed__balance { font-size: 2.4rem; }
+    .seed.size-med   .seed__balance { font-size: 1.7rem; }
+    .seed.size-small .seed__balance { font-size: 1.3rem; }
+    .seed.size-tiny  .seed__balance { font-size: 1.1rem; }
+
+    .seed__balance .cents {
+      font-size: 0.45em; opacity: 0.65; font-weight: 500;
+      margin-left: 0.08em;
+    }
+    .seed__bottom {
+      font-weight: 500; font-size: 0.78rem;
+      opacity: 0.75; text-transform: lowercase;
+    }
+    .seed__tag {
+      display: inline-block;
+      font-size: 0.7rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 100px;
+      background: rgba(26,23,23,0.15);
+      margin-top: 0.4rem;
+      font-weight: 500;
+    }
+    .seed.size-huge .seed__tag {
+      background: rgba(1,71,81,0.12);
+      color: var(--cash-green);
+    }
+
+    .page-foot {
+      display: flex; justify-content: center; gap: 1.25rem;
+      font-size: 0.72rem; opacity: 0.35;
+      padding: 1.5rem 2rem 2rem;
+    }
+
+    @media (max-width: 640px) {
+      .bar { padding: 0.75rem 1.25rem 1.25rem; }
+      main { padding: 0.5rem 1rem 3rem; }
+      .lede { font-size: 1.2rem; }
+      .bloom { grid-template-columns: repeat(6, 1fr); gap: 0.5rem; }
+      .seed.size-huge  { grid-column: span 6; grid-row: span 9; }
+      .seed.size-large { grid-column: span 6; grid-row: span 7; }
+      .seed.size-med   { grid-column: span 3; grid-row: span 6; }
+      .seed.size-small { grid-column: span 3; grid-row: span 5; }
+      .seed.size-tiny  { grid-column: span 6; grid-row: span 4; }
+      .seed.size-huge  .seed__balance { font-size: 2.4rem; }
+      .seed.size-large .seed__balance { font-size: 1.8rem; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .seed { animation: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="review-banner">review · dummy data · pick your favourite</div>
+  <header class="bar">
+    <a href="/" class="wordmark">cash bff</a>
+  </header>
+
+  <main>
+    <p class="lede">the smallest ones are closest to gone.</p>
+    <p class="sublede">size shrinks as balance grows — pay off the big ones first.</p>
+    <section class="bloom" id="bloom" aria-label="your cards"></section>
+  </main>
+
+  <footer class="page-foot">
+    <a href="home-drift">drift</a>
+    <span>·</span>
+    <a href="home-wallet">wallet</a>
+    <span>·</span>
+    <a href="home-bloom">bloom</a>
+  </footer>
+
+  <script src="/assets/js/home-bloom.js" defer></script>
+</body>
+</html>

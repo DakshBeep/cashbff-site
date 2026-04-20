@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>wallet · review · cash bff</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
+
+  <style>
+    @font-face {
+      font-family: 'Greed Condensed';
+      src: url('fonts/GreedCondensed-Bold.woff2') format('woff2');
+      font-weight: 700; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Greed Condensed';
+      src: url('fonts/GreedCondensed-Medium.woff2') format('woff2');
+      font-weight: 500; font-display: swap;
+    }
+    :root {
+      --cash-green: #014751;
+      --electric-green: #D3FFB4;
+      --periwinkle: #C5B6F1;
+      --off-black: #1A1717;
+      --vanilla: #FCFAF2;
+      --font-display: 'Greed Condensed', 'Archivo Narrow', 'Arial Narrow', Impact, sans-serif;
+      --font-body: 'Instrument Sans', system-ui, -apple-system, sans-serif;
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: var(--font-body);
+      background: var(--vanilla);
+      color: var(--off-black);
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.5;
+      min-height: 100dvh;
+      overflow-x: hidden;
+    }
+    a { color: inherit; text-decoration: none; }
+
+    .review-banner {
+      text-align: center;
+      font-size: 0.72rem;
+      color: var(--off-black);
+      opacity: 0.55;
+      padding: 0.6rem 1rem;
+      letter-spacing: 0.02em;
+      font-weight: 500;
+    }
+
+    .bar {
+      display: flex;
+      align-items: center;
+      padding: 1rem 2rem 1.75rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-weight: 700; font-size: 1.5rem;
+      letter-spacing: -0.02em;
+      color: var(--cash-green);
+    }
+
+    main {
+      max-width: 52rem;
+      margin: 0 auto;
+      padding: 2rem 2rem 4rem;
+    }
+
+    .lede {
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: 1.6rem;
+      color: var(--cash-green);
+      text-align: center;
+      margin-bottom: 3rem;
+      letter-spacing: -0.01em;
+    }
+    .lede em {
+      font-style: normal;
+      color: var(--off-black);
+      opacity: 0.5;
+      font-weight: 500;
+    }
+
+    /* The fanned hand ─────────────────────────────── */
+    .wallet {
+      position: relative;
+      width: 100%;
+      height: 26rem;
+      perspective: 1200px;
+      margin-bottom: 2rem;
+    }
+    .hand {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 18rem;
+      height: 100%;
+    }
+
+    .card {
+      position: absolute;
+      left: 50%;
+      bottom: 0;
+      width: 14rem;
+      aspect-ratio: 1.586 / 1;
+      border-radius: 1.1rem;
+      background: var(--cash-green);
+      color: var(--vanilla);
+      padding: 1.1rem 1.25rem;
+      box-shadow: 0 24px 48px -20px rgba(26,23,23,0.45), 0 2px 6px rgba(26,23,23,0.08);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      cursor: pointer;
+      transform-origin: bottom center;
+      transition: transform 0.55s cubic-bezier(0.2,0.85,0.2,1),
+                  box-shadow 0.3s ease,
+                  filter 0.4s ease;
+      border: none;
+      font-family: inherit;
+      text-align: left;
+      will-change: transform;
+    }
+
+    /* Fan layout — each card rotated + translated from a common pivot. */
+    .card[data-slot="0"] {
+      transform: translate(-50%, 0) rotate(-22deg) translateY(-0.5rem);
+      z-index: 1;
+      background: linear-gradient(135deg, #014751 0%, #02606d 100%);
+    }
+    .card[data-slot="1"] {
+      transform: translate(-50%, 0) rotate(-11deg) translateY(-1.25rem);
+      z-index: 2;
+      background: linear-gradient(135deg, #014751 0%, #055966 100%);
+    }
+    .card[data-slot="2"] {
+      transform: translate(-50%, 0) rotate(0deg)   translateY(-1.6rem);
+      z-index: 3;
+    }
+    .card[data-slot="3"] {
+      transform: translate(-50%, 0) rotate(11deg)  translateY(-1.25rem);
+      z-index: 4;
+      background: linear-gradient(135deg, #014751 0%, #055966 100%);
+    }
+    .card[data-slot="4"] {
+      transform: translate(-50%, 0) rotate(22deg)  translateY(-0.5rem);
+      z-index: 5;
+      background: linear-gradient(135deg, #014751 0%, #02606d 100%);
+    }
+
+    /* Picked: straighten, lift, scale. Others recede. */
+    .wallet.has-picked .card { filter: brightness(0.82) saturate(0.85); }
+    .wallet.has-picked .card.is-picked {
+      transform: translate(-50%, -2rem) rotate(0deg) scale(1.18);
+      z-index: 20;
+      filter: none;
+      box-shadow: 0 40px 70px -20px rgba(26,23,23,0.55);
+    }
+
+    .card:hover:not(.is-picked) {
+      filter: none;
+    }
+
+    .card__top {
+      font-weight: 500; font-size: 0.78rem;
+      letter-spacing: 0.02em; opacity: 0.8;
+      text-transform: lowercase;
+    }
+    .card__balance {
+      font-family: var(--font-display);
+      font-weight: 700; font-size: 1.7rem;
+      line-height: 1; letter-spacing: -0.02em;
+      color: var(--electric-green);
+    }
+    .card__balance .cents {
+      font-size: 0.55em; opacity: 0.7; font-weight: 500;
+      margin-left: 0.06em;
+    }
+    .card__bottom {
+      font-weight: 500; font-size: 0.82rem;
+      opacity: 0.82; text-transform: lowercase;
+      display: flex; justify-content: space-between; align-items: baseline;
+    }
+    .card__limit {
+      font-size: 0.7rem; opacity: 0.6;
+    }
+
+    .hint {
+      text-align: center;
+      font-size: 0.78rem;
+      opacity: 0.45;
+      margin-top: 1rem;
+      font-style: italic;
+    }
+
+    .page-foot {
+      display: flex; justify-content: center; gap: 1.25rem;
+      font-size: 0.72rem; opacity: 0.35;
+      padding: 1.5rem 2rem 2rem;
+    }
+
+    @media (max-width: 640px) {
+      .bar { padding: 0.75rem 1.25rem 1.25rem; }
+      main { padding: 1rem 1rem 3rem; }
+      .lede { font-size: 1.2rem; margin-bottom: 1.5rem; }
+      .wallet { height: 22rem; }
+      .hand { width: 12rem; }
+      .card { width: 11rem; padding: 0.85rem 1rem; }
+      .card[data-slot="0"] { transform: translate(-50%, 0) rotate(-16deg) translateY(-0.25rem); }
+      .card[data-slot="1"] { transform: translate(-50%, 0) rotate(-8deg)  translateY(-0.9rem); }
+      .card[data-slot="2"] { transform: translate(-50%, 0) rotate(0deg)   translateY(-1.2rem); }
+      .card[data-slot="3"] { transform: translate(-50%, 0) rotate(8deg)   translateY(-0.9rem); }
+      .card[data-slot="4"] { transform: translate(-50%, 0) rotate(16deg)  translateY(-0.25rem); }
+      .wallet.has-picked .card.is-picked {
+        transform: translate(-50%, -1rem) rotate(0deg) scale(1.1);
+      }
+      .card__balance { font-size: 1.4rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="review-banner">review · dummy data · pick your favourite</div>
+  <header class="bar">
+    <a href="/" class="wordmark">cash bff</a>
+  </header>
+
+  <main>
+    <p class="lede">your wallet, <em>fanned out.</em></p>
+    <section class="wallet" id="wallet" aria-label="your cards">
+      <div class="hand" id="hand"></div>
+    </section>
+    <p class="hint">tap a card to bring it forward</p>
+  </main>
+
+  <footer class="page-foot">
+    <a href="home-drift">drift</a>
+    <span>·</span>
+    <a href="home-wallet">wallet</a>
+    <span>·</span>
+    <a href="home-bloom">bloom</a>
+  </footer>
+
+  <script src="/assets/js/home-wallet.js" defer></script>
+</body>
+</html>

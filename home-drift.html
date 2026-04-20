@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>drift · review · cash bff</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
+
+  <style>
+    @font-face {
+      font-family: 'Greed Condensed';
+      src: url('fonts/GreedCondensed-Bold.woff2') format('woff2');
+      font-weight: 700; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Greed Condensed';
+      src: url('fonts/GreedCondensed-Medium.woff2') format('woff2');
+      font-weight: 500; font-display: swap;
+    }
+    :root {
+      --cash-green: #014751;
+      --electric-green: #D3FFB4;
+      --periwinkle: #C5B6F1;
+      --off-black: #1A1717;
+      --vanilla: #FCFAF2;
+      --font-display: 'Greed Condensed', 'Archivo Narrow', 'Arial Narrow', Impact, sans-serif;
+      --font-body: 'Instrument Sans', system-ui, -apple-system, sans-serif;
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: var(--font-body);
+      background: var(--vanilla);
+      color: var(--off-black);
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.5;
+      min-height: 100dvh;
+      overflow-x: hidden;
+    }
+    a { color: inherit; text-decoration: none; }
+
+    .review-banner {
+      text-align: center;
+      font-size: 0.72rem;
+      color: var(--off-black);
+      opacity: 0.55;
+      padding: 0.6rem 1rem;
+      letter-spacing: 0.02em;
+      font-weight: 500;
+    }
+
+    .bar {
+      display: flex;
+      align-items: center;
+      padding: 1rem 2rem 1.75rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-weight: 700; font-size: 1.5rem;
+      letter-spacing: -0.02em;
+      color: var(--cash-green);
+    }
+
+    main {
+      max-width: 48rem;
+      margin: 0 auto;
+      padding: 2rem 2rem 4rem;
+    }
+
+    .drift {
+      position: relative;
+      width: 100%;
+      min-height: 32rem;
+    }
+
+    .card {
+      position: absolute;
+      width: 10.5rem;
+      aspect-ratio: 1.586 / 1;
+      border-radius: 1rem;
+      background: var(--cash-green);
+      color: var(--vanilla);
+      padding: 0.95rem 1rem;
+      box-shadow: 0 20px 40px -16px rgba(26,23,23,0.25);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      cursor: pointer;
+      transform-origin: center;
+      will-change: transform;
+      transition: box-shadow 0.25s ease;
+      opacity: 0;
+      border: none;
+      font-family: inherit;
+      text-align: left;
+    }
+    .card:hover {
+      z-index: 50 !important;
+      box-shadow: 0 32px 60px -18px rgba(26,23,23,0.38);
+    }
+    .card.is-tapped { z-index: 60 !important; }
+
+    .card__inner {
+      width: 100%; height: 100%;
+      display: flex; flex-direction: column; justify-content: space-between;
+      transition: transform 0.25s cubic-bezier(0.2,0.8,0.2,1);
+    }
+    .card__top {
+      font-weight: 500; font-size: 0.68rem;
+      letter-spacing: 0.01em; opacity: 0.75;
+      text-transform: lowercase;
+    }
+    .card__balance {
+      font-family: var(--font-display);
+      font-weight: 700; font-size: 1.35rem;
+      line-height: 1; letter-spacing: -0.02em;
+      color: var(--electric-green);
+    }
+    .card__balance .cents {
+      font-size: 0.6em; opacity: 0.7; font-weight: 500;
+      margin-left: 0.04em;
+    }
+    .card__bottom {
+      font-weight: 500; font-size: 0.72rem;
+      opacity: 0.78; text-transform: lowercase;
+    }
+
+    @keyframes drift1 {
+      0%,100% { transform: translate(0,0) rotate(-6deg); }
+      50%     { transform: translate(6px,-10px) rotate(-5.2deg); }
+    }
+    @keyframes drift2 {
+      0%,100% { transform: translate(0,0) rotate(4deg); }
+      50%     { transform: translate(-8px,-8px) rotate(4.8deg); }
+    }
+    @keyframes drift3 {
+      0%,100% { transform: translate(0,0) rotate(-3deg); }
+      50%     { transform: translate(5px,-12px) rotate(-3.6deg); }
+    }
+    @keyframes drift4 {
+      0%,100% { transform: translate(0,0) rotate(7deg); }
+      50%     { transform: translate(-6px,-14px) rotate(6.3deg); }
+    }
+    @keyframes drift5 {
+      0%,100% { transform: translate(0,0) rotate(-5deg); }
+      50%     { transform: translate(9px,-9px) rotate(-4.2deg); }
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    .card[data-slot="0"] {
+      top: 8%; left: 10%; z-index: 1;
+      animation: fadeIn 0.8s cubic-bezier(0.2,0.8,0.2,1) 0.05s forwards,
+                 drift1 7.2s ease-in-out 0.8s infinite;
+    }
+    .card[data-slot="1"] {
+      top: 22%; left: 54%; z-index: 2;
+      animation: fadeIn 0.8s cubic-bezier(0.2,0.8,0.2,1) 0.18s forwards,
+                 drift2 8.4s ease-in-out 1.4s infinite;
+    }
+    .card[data-slot="2"] {
+      top: 50%; left: 18%; z-index: 3;
+      animation: fadeIn 0.8s cubic-bezier(0.2,0.8,0.2,1) 0.31s forwards,
+                 drift3 6.1s ease-in-out 0.3s infinite;
+    }
+    .card[data-slot="3"] {
+      top: 38%; left: 68%; z-index: 4;
+      animation: fadeIn 0.8s cubic-bezier(0.2,0.8,0.2,1) 0.44s forwards,
+                 drift4 9.0s ease-in-out 2.1s infinite;
+    }
+    .card[data-slot="4"] {
+      top: 68%; left: 44%; z-index: 5;
+      animation: fadeIn 0.8s cubic-bezier(0.2,0.8,0.2,1) 0.57s forwards,
+                 drift5 5.4s ease-in-out 1.0s infinite;
+    }
+
+    .card:hover { animation-play-state: running, paused; }
+    .card:hover .card__inner { transform: scale(1.04); }
+    .card.is-tapped .card__inner { transform: scale(1.08); }
+
+    .page-foot {
+      display: flex; justify-content: center; gap: 1.25rem;
+      font-size: 0.72rem; opacity: 0.35;
+      padding: 1.5rem 2rem 2rem;
+    }
+
+    @media (max-width: 640px) {
+      .bar { padding: 0.75rem 1.25rem 1.25rem; }
+      main { padding: 1rem 1rem 3rem; }
+      .drift { min-height: 42rem; }
+      .card { width: 9.25rem; }
+      .card[data-slot="0"] { top: 2%;  left: 10%; }
+      .card[data-slot="1"] { top: 20%; left: 42%; }
+      .card[data-slot="2"] { top: 40%; left: 8%; }
+      .card[data-slot="3"] { top: 58%; left: 44%; }
+      .card[data-slot="4"] { top: 78%; left: 18%; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .card { animation: fadeIn 0.4s ease-out both !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="review-banner">review · dummy data · pick your favourite</div>
+  <header class="bar">
+    <a href="/" class="wordmark">cash bff</a>
+  </header>
+
+  <main>
+    <section class="drift" id="drift" aria-label="your cards"></section>
+  </main>
+
+  <footer class="page-foot">
+    <a href="home-drift">drift</a>
+    <span>·</span>
+    <a href="home-wallet">wallet</a>
+    <span>·</span>
+    <a href="home-bloom">bloom</a>
+  </footer>
+
+  <script src="/assets/js/home-drift.js" defer></script>
+</body>
+</html>
