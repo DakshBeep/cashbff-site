@@ -54,7 +54,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 1.75rem 2rem;
+      padding: 1rem 2rem 1.25rem;
       max-width: 1200px;
       margin: 0 auto;
     }
@@ -84,20 +84,115 @@
     }
     .signout:hover { opacity: 1; color: var(--cash-green); }
 
-    /* ── Drift composition ─────────────────────────── */
+    /* ── Scatter canvas ────────────────────────────── */
     main {
-      max-width: 48rem;
+      max-width: 64rem;
       margin: 0 auto;
-      padding: 2rem 2rem 4rem;
+      padding: 0.5rem 2rem 4rem;
+      position: relative;
     }
 
-    .drift {
+    .scatter {
       position: relative;
       width: 100%;
-      min-height: 32rem;
+      height: 40rem;
+      margin-top: 1rem;
     }
 
-    .empty, .err {
+    /* ── Seed card ─────────────────────────────────── */
+    .seed {
+      position: absolute;
+      border-radius: 1.1rem;
+      padding: 1rem 1.1rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      color: var(--vanilla);
+      background: var(--cash-green);
+      cursor: pointer;
+      border: none;
+      font-family: inherit;
+      text-align: left;
+      overflow: hidden;
+      box-shadow: 0 14px 36px -18px rgba(26,23,23,0.35);
+      transition: box-shadow 0.3s ease, z-index 0s;
+      will-change: transform;
+      left: var(--x);
+      top: var(--y);
+      width: var(--w);
+      height: var(--h);
+      --rot: 0deg;
+      animation: drift var(--drift-dur, 9s) ease-in-out infinite;
+      animation-delay: var(--drift-delay, 0s);
+    }
+    .seed:hover {
+      box-shadow: 0 28px 60px -20px rgba(26,23,23,0.45);
+      z-index: 10;
+    }
+    .seed::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 25% 15%, rgba(211,255,180,0.12), transparent 55%);
+      pointer-events: none;
+    }
+
+    @keyframes drift {
+      0%, 100% { transform: translate(0, 0) rotate(var(--rot)); }
+      25%      { transform: translate(6px, -4px) rotate(calc(var(--rot) + 0.6deg)); }
+      50%      { transform: translate(-3px, 5px) rotate(calc(var(--rot) - 0.4deg)); }
+      75%      { transform: translate(-5px, -2px) rotate(calc(var(--rot) + 0.3deg)); }
+    }
+
+    /* Size tiers — smallest balance = biggest card. */
+    .seed.size-huge {
+      background: var(--electric-green);
+      color: var(--off-black);
+    }
+    .seed.size-huge .seed__balance { color: var(--cash-green); }
+    .seed.size-huge .seed__top,
+    .seed.size-huge .seed__bottom { color: var(--off-black); opacity: 0.7; }
+
+    .seed.size-large {
+      background: var(--periwinkle);
+      color: var(--off-black);
+    }
+    .seed.size-large .seed__balance { color: var(--cash-green); }
+    .seed.size-large .seed__top,
+    .seed.size-large .seed__bottom { color: var(--off-black); opacity: 0.7; }
+
+    .seed.size-med   { background: var(--cash-green); }
+    .seed.size-small { background: #022d33; }
+    .seed.size-tiny  { background: #01272d; opacity: 0.88; }
+
+    .seed__top {
+      font-weight: 500; font-size: 0.78rem;
+      letter-spacing: 0.02em; opacity: 0.75;
+      text-transform: lowercase;
+    }
+    .seed__balance {
+      font-family: var(--font-display);
+      font-weight: 700;
+      line-height: 0.95;
+      letter-spacing: -0.02em;
+      color: var(--electric-green);
+    }
+    .seed.size-huge  .seed__balance { font-size: 3rem; }
+    .seed.size-large .seed__balance { font-size: 2.2rem; }
+    .seed.size-med   .seed__balance { font-size: 1.65rem; }
+    .seed.size-small .seed__balance { font-size: 1.3rem; }
+    .seed.size-tiny  .seed__balance { font-size: 1.05rem; }
+    .seed__balance .cents {
+      font-size: 0.45em; opacity: 0.65; font-weight: 500;
+      margin-left: 0.08em;
+    }
+    .seed__bottom {
+      font-weight: 500; font-size: 0.78rem;
+      opacity: 0.75; text-transform: lowercase;
+    }
+
+    /* ── States ────────────────────────────────────── */
+    .state {
       position: absolute;
       inset: 0;
       display: flex;
@@ -108,204 +203,40 @@
       color: var(--off-black);
       opacity: 0.55;
       font-size: 0.92rem;
+      text-align: center;
+      padding: 2rem;
     }
-    .err { font-style: italic; }
-    .empty a {
+    .state--err { font-style: italic; }
+    .state--loading { font-style: italic; }
+    .state a {
       color: var(--cash-green);
       opacity: 0.9;
       border-bottom: 1px solid currentColor;
       padding-bottom: 1px;
     }
-
-    /* ── Card ──────────────────────────────────────── */
-    .card {
-      position: absolute;
-      width: 10.5rem;
-      aspect-ratio: 1.586 / 1;
-      border-radius: 1rem;
-      background: var(--cash-green);
-      color: var(--vanilla);
-      padding: 0.95rem 1rem;
-      box-shadow: 0 20px 40px -16px rgba(26,23,23,0.25);
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      cursor: pointer;
-      transform-origin: center;
-      will-change: transform;
-      transition: box-shadow 0.25s ease, z-index 0s;
-      opacity: 0;
-      animation: fadeIn 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+    @keyframes shimmer {
+      0%, 100% { opacity: 0.35; }
+      50%      { opacity: 0.7;  }
     }
-    .card:hover {
-      z-index: 50 !important;
-      box-shadow: 0 32px 60px -18px rgba(26,23,23,0.38);
-    }
-    .card.is-tapped { z-index: 60 !important; }
-
-    .card__top {
-      font-family: var(--font-body);
-      font-weight: 500;
-      font-size: 0.68rem;
-      letter-spacing: 0.01em;
-      opacity: 0.75;
-      text-transform: lowercase;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .card__balance {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: 1.35rem;
-      line-height: 1;
-      letter-spacing: -0.02em;
-      color: var(--electric-green);
-    }
-    .card__balance .cents {
-      font-size: 0.6em; opacity: 0.7; font-weight: 500;
-      letter-spacing: -0.01em; margin-left: 0.04em;
-    }
-    .card__bottom {
-      font-family: var(--font-body);
-      font-weight: 500;
-      font-size: 0.72rem;
-      opacity: 0.78;
-      text-transform: lowercase;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    /* Each card gets its own float animation. The inner wrapper floats
-       while the outer keeps its rotation so the two transforms don't fight. */
-    .card__inner {
-      width: 100%; height: 100%;
-      display: flex; flex-direction: column; justify-content: space-between;
-    }
-
-    /* Five unique float keyframes — each a slightly different arc so nothing syncs. */
-    @keyframes drift1 {
-      0%,100% { transform: translate(0,0) rotate(-6deg); }
-      50%     { transform: translate(6px,-10px) rotate(-5.2deg); }
-    }
-    @keyframes drift2 {
-      0%,100% { transform: translate(0,0) rotate(4deg); }
-      50%     { transform: translate(-8px,-8px) rotate(4.8deg); }
-    }
-    @keyframes drift3 {
-      0%,100% { transform: translate(0,0) rotate(-3deg); }
-      50%     { transform: translate(5px,-12px) rotate(-3.6deg); }
-    }
-    @keyframes drift4 {
-      0%,100% { transform: translate(0,0) rotate(7deg); }
-      50%     { transform: translate(-6px,-14px) rotate(6.3deg); }
-    }
-    @keyframes drift5 {
-      0%,100% { transform: translate(0,0) rotate(-5deg); }
-      50%     { transform: translate(9px,-9px) rotate(-4.2deg); }
-    }
-
-    .card[data-slot="0"] {
-      top: 8%; left: 10%; z-index: 1;
-      animation: fadeIn 0.8s cubic-bezier(0.2,0.8,0.2,1) 0.05s forwards,
-                 drift1 7.2s ease-in-out 0.8s infinite;
-    }
-    .card[data-slot="1"] {
-      top: 22%; left: 54%; z-index: 2;
-      animation: fadeIn 0.8s cubic-bezier(0.2,0.8,0.2,1) 0.18s forwards,
-                 drift2 8.4s ease-in-out 1.4s infinite;
-    }
-    .card[data-slot="2"] {
-      top: 50%; left: 18%; z-index: 3;
-      animation: fadeIn 0.8s cubic-bezier(0.2,0.8,0.2,1) 0.31s forwards,
-                 drift3 6.1s ease-in-out 0.3s infinite;
-    }
-    .card[data-slot="3"] {
-      top: 38%; left: 68%; z-index: 4;
-      animation: fadeIn 0.8s cubic-bezier(0.2,0.8,0.2,1) 0.44s forwards,
-                 drift4 9.0s ease-in-out 2.1s infinite;
-    }
-    .card[data-slot="4"] {
-      top: 68%; left: 44%; z-index: 5;
-      animation: fadeIn 0.8s cubic-bezier(0.2,0.8,0.2,1) 0.57s forwards,
-                 drift5 5.4s ease-in-out 1.0s infinite;
-    }
-
-    /* Hover: gently lift out of the float. We pause the drift animation and
-       apply a static lifted transform using the slot's base rotation. */
-    .card:hover { animation-play-state: running, paused; }
-    .card[data-slot="0"]:hover .card__inner { transform: scale(1.04); }
-    .card[data-slot="1"]:hover .card__inner { transform: scale(1.04); }
-    .card[data-slot="2"]:hover .card__inner { transform: scale(1.04); }
-    .card[data-slot="3"]:hover .card__inner { transform: scale(1.04); }
-    .card[data-slot="4"]:hover .card__inner { transform: scale(1.04); }
-    .card__inner { transition: transform 0.25s cubic-bezier(0.2,0.8,0.2,1); }
-
-    .card.is-tapped .card__inner { transform: scale(1.08); }
-
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to   { opacity: 1; }
-    }
+    .state--loading span { animation: shimmer 1.8s ease-in-out infinite; }
 
     /* ── Footer ────────────────────────────────────── */
     .page-foot {
-      display: flex;
-      justify-content: center;
-      gap: 1.25rem;
-      font-size: 0.72rem;
-      opacity: 0.35;
+      display: flex; justify-content: center; gap: 1.25rem;
+      font-size: 0.72rem; opacity: 0.35;
       padding: 1.5rem 2rem 2rem;
     }
     .page-foot a:hover { opacity: 1; color: var(--cash-green); }
 
-    /* ── Mobile: vertical floaty stack ─────────────── */
-    @media (max-width: 640px) {
-      .bar { padding: 1.25rem; }
-      main { padding: 1rem 1rem 3rem; }
-      .drift { min-height: 42rem; }
+    @media (max-width: 720px) {
+      .bar { padding: 0.75rem 1.25rem 1rem; }
+      main { padding: 0.25rem 1rem 3rem; }
+      .scatter { height: 48rem; }
       .pill-phone { font-size: 0.72rem; padding: 0.4rem 0.7rem; }
-      .card { width: 9.25rem; }
-
-      /* Re-layout into a gentle vertical column with smaller rotations. */
-      .card[data-slot="0"] { top: 2%;  left: 10%;  }
-      .card[data-slot="1"] { top: 20%; left: 42%; }
-      .card[data-slot="2"] { top: 40%; left: 8%;  }
-      .card[data-slot="3"] { top: 58%; left: 44%; }
-      .card[data-slot="4"] { top: 78%; left: 18%; }
-
-      @keyframes drift1 {
-        0%,100% { transform: translate(0,0) rotate(-3deg); }
-        50%     { transform: translate(4px,-6px) rotate(-2.4deg); }
-      }
-      @keyframes drift2 {
-        0%,100% { transform: translate(0,0) rotate(2deg); }
-        50%     { transform: translate(-4px,-5px) rotate(2.6deg); }
-      }
-      @keyframes drift3 {
-        0%,100% { transform: translate(0,0) rotate(-2deg); }
-        50%     { transform: translate(3px,-7px) rotate(-2.4deg); }
-      }
-      @keyframes drift4 {
-        0%,100% { transform: translate(0,0) rotate(3deg); }
-        50%     { transform: translate(-3px,-8px) rotate(2.6deg); }
-      }
-      @keyframes drift5 {
-        0%,100% { transform: translate(0,0) rotate(-2.5deg); }
-        50%     { transform: translate(5px,-5px) rotate(-2deg); }
-      }
     }
-
     @media (prefers-reduced-motion: reduce) {
-      .card {
-        animation: fadeIn 0.4s ease-out both !important;
-      }
-      .card[data-slot="0"] { transform: rotate(-6deg); }
-      .card[data-slot="1"] { transform: rotate(4deg);  }
-      .card[data-slot="2"] { transform: rotate(-3deg); }
-      .card[data-slot="3"] { transform: rotate(7deg);  }
-      .card[data-slot="4"] { transform: rotate(-5deg); }
+      .seed { animation: none !important; transform: rotate(var(--rot)); }
+      .state--loading span { animation: none; }
     }
   </style>
 </head>
@@ -319,7 +250,9 @@
   </header>
 
   <main>
-    <section class="drift" id="drift" aria-label="your cards"></section>
+    <section class="scatter" id="scatter" aria-label="your cards">
+      <div class="state state--loading" id="loading"><span>settling in…</span></div>
+    </section>
   </main>
 
   <footer class="page-foot">
