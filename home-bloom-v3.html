@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>bloom v3 · orbit · cash bff</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
+
+  <style>
+    @font-face {
+      font-family: 'Greed Condensed';
+      src: url('fonts/GreedCondensed-Bold.woff2') format('woff2');
+      font-weight: 700; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Greed Condensed';
+      src: url('fonts/GreedCondensed-Medium.woff2') format('woff2');
+      font-weight: 500; font-display: swap;
+    }
+    :root {
+      --cash-green: #014751;
+      --electric-green: #D3FFB4;
+      --periwinkle: #C5B6F1;
+      --off-black: #1A1717;
+      --vanilla: #FCFAF2;
+      --font-display: 'Greed Condensed', 'Archivo Narrow', 'Arial Narrow', Impact, sans-serif;
+      --font-body: 'Instrument Sans', system-ui, -apple-system, sans-serif;
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: var(--font-body);
+      background: var(--vanilla);
+      color: var(--off-black);
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.5;
+      min-height: 100dvh;
+      overflow-x: hidden;
+    }
+    a { color: inherit; text-decoration: none; }
+
+    .review-banner {
+      text-align: center;
+      font-size: 0.72rem;
+      color: var(--off-black);
+      opacity: 0.55;
+      padding: 0.6rem 1rem;
+      letter-spacing: 0.02em;
+      font-weight: 500;
+    }
+
+    .bar {
+      display: flex;
+      align-items: center;
+      padding: 1rem 2rem 1.25rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-weight: 700; font-size: 1.5rem;
+      letter-spacing: -0.02em;
+      color: var(--cash-green);
+    }
+
+    main {
+      max-width: 64rem;
+      margin: 0 auto;
+      padding: 0.5rem 2rem 4rem;
+      position: relative;
+    }
+
+    .lede {
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: 1.5rem;
+      color: var(--cash-green);
+      text-align: center;
+      margin-bottom: 0.35rem;
+      letter-spacing: -0.01em;
+    }
+    .sublede {
+      text-align: center;
+      font-size: 0.82rem;
+      opacity: 0.55;
+      margin-bottom: 1rem;
+      font-style: italic;
+    }
+
+    /* Cosmos canvas — hero in center, satellites orbit. */
+    .cosmos {
+      position: relative;
+      width: 100%;
+      height: 42rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Faint orbit rings for depth */
+    .cosmos::before,
+    .cosmos::after {
+      content: "";
+      position: absolute;
+      left: 50%; top: 50%;
+      border-radius: 50%;
+      border: 1px dashed rgba(1,71,81,0.12);
+      pointer-events: none;
+    }
+    .cosmos::before {
+      width: 26rem; height: 19rem;
+      transform: translate(-50%, -50%) rotate(-8deg);
+    }
+    .cosmos::after {
+      width: 42rem; height: 30rem;
+      transform: translate(-50%, -50%) rotate(12deg);
+    }
+
+    .seed {
+      position: absolute;
+      border-radius: 1.1rem;
+      padding: 1rem 1.1rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      color: var(--vanilla);
+      background: var(--cash-green);
+      cursor: pointer;
+      border: none;
+      font-family: inherit;
+      text-align: left;
+      overflow: hidden;
+      box-shadow: 0 14px 36px -18px rgba(26,23,23,0.35);
+      transition: box-shadow 0.3s ease;
+      left: 50%; top: 50%;
+      will-change: transform;
+    }
+    .seed:hover {
+      box-shadow: 0 28px 60px -20px rgba(26,23,23,0.5);
+      z-index: 10;
+    }
+    .seed::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 25% 15%, rgba(211,255,180,0.12), transparent 55%);
+      pointer-events: none;
+    }
+
+    /* Hero — smallest balance, centered, a gentle pulse. */
+    .seed.hero {
+      width: 15rem;
+      height: 12rem;
+      background: var(--electric-green);
+      color: var(--off-black);
+      transform: translate(-50%, -50%);
+      animation: pulse 7s ease-in-out infinite;
+      z-index: 2;
+    }
+    .seed.hero .seed__balance { color: var(--cash-green); font-size: 2.8rem; }
+    .seed.hero .seed__top,
+    .seed.hero .seed__bottom { color: var(--off-black); opacity: 0.7; }
+    .seed.hero .seed__tag { background: rgba(1,71,81,0.12); color: var(--cash-green); }
+
+    @keyframes pulse {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); }
+      50%      { transform: translate(-50%, -50%) scale(1.03); }
+    }
+
+    /* Satellites: orbit via CSS keyframes — unique radius, duration, phase. */
+    .seed.satellite {
+      /* Default size overridden per rank */
+      width: 11rem;
+      height: 8.5rem;
+      transform-origin: center;
+      animation-name: orbit;
+      animation-duration: var(--orbit-dur, 30s);
+      animation-timing-function: linear;
+      animation-iteration-count: infinite;
+      animation-delay: var(--orbit-delay, 0s);
+    }
+    .seed.satellite:hover {
+      animation-play-state: paused;
+    }
+    .cosmos:hover .seed.satellite {
+      /* soft slowdown on cosmos hover — kept subtle via individual :hover above */
+    }
+
+    /* Each satellite orbit = translate out along rx/ry, then rotate around center. */
+    @keyframes orbit {
+      from {
+        transform: translate(-50%, -50%)
+                   rotate(var(--start, 0deg))
+                   translate(var(--rx, 14rem), var(--ry, 0))
+                   rotate(calc(-1 * var(--start, 0deg)));
+      }
+      to {
+        transform: translate(-50%, -50%)
+                   rotate(calc(var(--start, 0deg) + 360deg))
+                   translate(var(--rx, 14rem), var(--ry, 0))
+                   rotate(calc(-1 * (var(--start, 0deg) + 360deg)));
+      }
+    }
+
+    .seed.sat-large {
+      width: 12.5rem; height: 9.5rem;
+      background: var(--periwinkle);
+      color: var(--off-black);
+    }
+    .seed.sat-large .seed__balance { color: var(--cash-green); font-size: 2rem; }
+    .seed.sat-large .seed__top,
+    .seed.sat-large .seed__bottom { color: var(--off-black); opacity: 0.7; }
+
+    .seed.sat-med   {
+      width: 11rem; height: 8.5rem;
+      background: var(--cash-green);
+    }
+    .seed.sat-med .seed__balance { font-size: 1.55rem; }
+
+    .seed.sat-small {
+      width: 10rem; height: 7.5rem;
+      background: #022d33;
+    }
+    .seed.sat-small .seed__balance { font-size: 1.3rem; }
+
+    .seed.sat-tiny  {
+      width: 9rem; height: 6.8rem;
+      background: #01272d;
+      opacity: 0.88;
+    }
+    .seed.sat-tiny .seed__balance { font-size: 1.1rem; }
+
+    .seed__top {
+      font-weight: 500; font-size: 0.74rem;
+      letter-spacing: 0.02em; opacity: 0.75;
+      text-transform: lowercase;
+    }
+    .seed__balance {
+      font-family: var(--font-display);
+      font-weight: 700;
+      line-height: 0.95;
+      letter-spacing: -0.02em;
+      color: var(--electric-green);
+    }
+    .seed__balance .cents {
+      font-size: 0.45em; opacity: 0.65; font-weight: 500;
+      margin-left: 0.08em;
+    }
+    .seed__bottom {
+      font-weight: 500; font-size: 0.74rem;
+      opacity: 0.75; text-transform: lowercase;
+    }
+    .seed__tag {
+      display: inline-block;
+      font-size: 0.68rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 100px;
+      background: rgba(26,23,23,0.15);
+      margin-top: 0.4rem;
+      font-weight: 500;
+    }
+
+    .page-foot {
+      display: flex; justify-content: center; gap: 1.25rem;
+      font-size: 0.72rem; opacity: 0.35;
+      padding: 1.5rem 2rem 2rem;
+    }
+
+    @media (max-width: 720px) {
+      .bar { padding: 0.75rem 1.25rem 1rem; }
+      main { padding: 0.25rem 1rem 3rem; }
+      .lede { font-size: 1.2rem; }
+      .cosmos { height: 38rem; }
+      .cosmos::before { width: 18rem; height: 14rem; }
+      .cosmos::after  { width: 28rem; height: 21rem; }
+      .seed.hero { width: 12rem; height: 10rem; }
+      .seed.hero .seed__balance { font-size: 2.2rem; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .seed { animation: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="review-banner">review · dummy data · bloom v3</div>
+  <header class="bar">
+    <a href="/" class="wordmark">cash bff</a>
+  </header>
+
+  <main>
+    <p class="lede">one center, quiet orbits.</p>
+    <p class="sublede">the closest ones circle faster — hover to pause.</p>
+    <section class="cosmos" id="cosmos" aria-label="your cards"></section>
+  </main>
+
+  <footer class="page-foot">
+    <a href="home-bloom">bloom v1</a>
+    <span>·</span>
+    <a href="home-bloom-v2">bloom v2</a>
+    <span>·</span>
+    <a href="home-bloom-v3">bloom v3</a>
+  </footer>
+
+  <script src="/assets/js/home-bloom-v3.js" defer></script>
+</body>
+</html>

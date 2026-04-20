@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>bloom · review · cash bff</title>
+  <title>bloom v2 · scatter · cash bff</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -54,7 +54,7 @@
     .bar {
       display: flex;
       align-items: center;
-      padding: 1rem 2rem 1.75rem;
+      padding: 1rem 2rem 1.25rem;
       max-width: 1200px;
       margin: 0 auto;
     }
@@ -66,9 +66,9 @@
     }
 
     main {
-      max-width: 56rem;
+      max-width: 64rem;
       margin: 0 auto;
-      padding: 1rem 2rem 4rem;
+      padding: 0.5rem 2rem 4rem;
       position: relative;
     }
 
@@ -85,21 +85,20 @@
       text-align: center;
       font-size: 0.82rem;
       opacity: 0.55;
-      margin-bottom: 2.5rem;
+      margin-bottom: 1.5rem;
       font-style: italic;
     }
 
-    /* Bloom grid — free-form, organic. Each card sized inversely to balance. */
-    .bloom {
-      display: grid;
-      grid-template-columns: repeat(12, 1fr);
-      grid-auto-rows: 1.5rem;
-      gap: 0.6rem;
-      min-height: 30rem;
+    /* Scatter canvas — absolute positioning, each card asymmetric. */
+    .scatter {
+      position: relative;
+      width: 100%;
+      height: 38rem;
+      margin-top: 1rem;
     }
 
     .seed {
-      position: relative;
+      position: absolute;
       border-radius: 1.1rem;
       padding: 1rem 1.1rem;
       display: flex;
@@ -112,57 +111,50 @@
       font-family: inherit;
       text-align: left;
       overflow: hidden;
-      box-shadow: 0 12px 28px -14px rgba(26,23,23,0.25);
-      transform-origin: center;
-      animation: breathe 6s ease-in-out infinite;
-      transition: box-shadow 0.3s ease;
+      box-shadow: 0 14px 36px -18px rgba(26,23,23,0.35);
+      transition: box-shadow 0.3s ease, z-index 0s;
+      will-change: transform;
     }
     .seed:hover {
-      box-shadow: 0 24px 48px -16px rgba(26,23,23,0.4);
+      box-shadow: 0 28px 60px -20px rgba(26,23,23,0.45);
+      z-index: 10;
     }
     .seed::before {
       content: "";
       position: absolute;
       inset: 0;
-      background: radial-gradient(circle at 20% 15%, rgba(211,255,180,0.12), transparent 55%);
+      background: radial-gradient(circle at 25% 15%, rgba(211,255,180,0.12), transparent 55%);
       pointer-events: none;
     }
 
-    /* Each seed gets its own breathing rhythm + rotation so nothing syncs. */
-    .seed[data-slot="0"] { animation-duration: 6.4s; animation-delay: 0.1s; transform: rotate(-1.5deg); }
-    .seed[data-slot="1"] { animation-duration: 5.2s; animation-delay: 0.6s; transform: rotate(1deg); }
-    .seed[data-slot="2"] { animation-duration: 7.1s; animation-delay: 0.3s; transform: rotate(-2deg); }
-    .seed[data-slot="3"] { animation-duration: 5.8s; animation-delay: 1.0s; transform: rotate(0.8deg); }
-    .seed[data-slot="4"] { animation-duration: 6.7s; animation-delay: 0.45s; transform: rotate(-0.6deg); }
-
-    @keyframes breathe {
-      0%, 100% { transform: scale(1) rotate(var(--r, 0deg)); }
-      50%      { transform: scale(1.025) rotate(var(--r, 0deg)); }
+    /* Each seed has CSS custom props for x/y/rotation/size set inline via style= */
+    .seed {
+      left: var(--x);
+      top: var(--y);
+      width: var(--w);
+      height: var(--h);
+      --rot: 0deg;
+      animation: drift var(--drift-dur, 9s) ease-in-out infinite;
+      animation-delay: var(--drift-delay, 0s);
     }
-    .seed[data-slot="0"] { --r: -1.5deg; }
-    .seed[data-slot="1"] { --r: 1deg; }
-    .seed[data-slot="2"] { --r: -2deg; }
-    .seed[data-slot="3"] { --r: 0.8deg; }
-    .seed[data-slot="4"] { --r: -0.6deg; }
 
-    /* Size & color vary inversely with balance. Smallest balance = biggest seed,
-       and gets the electric-green accent because it's the one you can actually kill. */
+    @keyframes drift {
+      0%, 100% { transform: translate(0, 0) rotate(var(--rot)); }
+      25%      { transform: translate(6px, -4px) rotate(calc(var(--rot) + 0.6deg)); }
+      50%      { transform: translate(-3px, 5px) rotate(calc(var(--rot) - 0.4deg)); }
+      75%      { transform: translate(-5px, -2px) rotate(calc(var(--rot) + 0.3deg)); }
+    }
+
+    /* Size tiers — smallest balance = biggest card. */
     .seed.size-huge {
-      grid-column: span 8;
-      grid-row: span 10;
       background: var(--electric-green);
       color: var(--off-black);
-    }
-    .seed.size-huge::before {
-      background: radial-gradient(circle at 80% 20%, rgba(1,71,81,0.08), transparent 60%);
     }
     .seed.size-huge .seed__balance { color: var(--cash-green); }
     .seed.size-huge .seed__top,
     .seed.size-huge .seed__bottom { color: var(--off-black); opacity: 0.7; }
 
     .seed.size-large {
-      grid-column: span 6;
-      grid-row: span 8;
       background: var(--periwinkle);
       color: var(--off-black);
     }
@@ -170,22 +162,9 @@
     .seed.size-large .seed__top,
     .seed.size-large .seed__bottom { color: var(--off-black); opacity: 0.7; }
 
-    .seed.size-med {
-      grid-column: span 5;
-      grid-row: span 7;
-      background: var(--cash-green);
-    }
-    .seed.size-small {
-      grid-column: span 4;
-      grid-row: span 6;
-      background: #022d33;
-    }
-    .seed.size-tiny {
-      grid-column: span 4;
-      grid-row: span 5;
-      background: #01272d;
-      opacity: 0.85;
-    }
+    .seed.size-med   { background: var(--cash-green); }
+    .seed.size-small { background: #022d33; }
+    .seed.size-tiny  { background: #01272d; opacity: 0.88; }
 
     .seed__top {
       font-weight: 500; font-size: 0.78rem;
@@ -199,11 +178,11 @@
       letter-spacing: -0.02em;
       color: var(--electric-green);
     }
-    .seed.size-huge  .seed__balance { font-size: 3.2rem; }
-    .seed.size-large .seed__balance { font-size: 2.4rem; }
-    .seed.size-med   .seed__balance { font-size: 1.7rem; }
+    .seed.size-huge  .seed__balance { font-size: 3rem; }
+    .seed.size-large .seed__balance { font-size: 2.2rem; }
+    .seed.size-med   .seed__balance { font-size: 1.65rem; }
     .seed.size-small .seed__balance { font-size: 1.3rem; }
-    .seed.size-tiny  .seed__balance { font-size: 1.1rem; }
+    .seed.size-tiny  .seed__balance { font-size: 1.05rem; }
 
     .seed__balance .cents {
       font-size: 0.45em; opacity: 0.65; font-weight: 500;
@@ -233,18 +212,11 @@
       padding: 1.5rem 2rem 2rem;
     }
 
-    @media (max-width: 640px) {
-      .bar { padding: 0.75rem 1.25rem 1.25rem; }
-      main { padding: 0.5rem 1rem 3rem; }
+    @media (max-width: 720px) {
+      .bar { padding: 0.75rem 1.25rem 1rem; }
+      main { padding: 0.25rem 1rem 3rem; }
       .lede { font-size: 1.2rem; }
-      .bloom { grid-template-columns: repeat(6, 1fr); gap: 0.5rem; }
-      .seed.size-huge  { grid-column: span 6; grid-row: span 9; }
-      .seed.size-large { grid-column: span 6; grid-row: span 7; }
-      .seed.size-med   { grid-column: span 3; grid-row: span 6; }
-      .seed.size-small { grid-column: span 3; grid-row: span 5; }
-      .seed.size-tiny  { grid-column: span 6; grid-row: span 4; }
-      .seed.size-huge  .seed__balance { font-size: 2.4rem; }
-      .seed.size-large .seed__balance { font-size: 1.8rem; }
+      .scatter { height: 44rem; }
     }
     @media (prefers-reduced-motion: reduce) {
       .seed { animation: none !important; }
@@ -252,15 +224,15 @@
   </style>
 </head>
 <body>
-  <div class="review-banner">review · dummy data · pick your favourite</div>
+  <div class="review-banner">review · dummy data · bloom v2</div>
   <header class="bar">
     <a href="/" class="wordmark">cash bff</a>
   </header>
 
   <main>
-    <p class="lede">the smallest ones are closest to gone.</p>
-    <p class="sublede">size shrinks as balance grows — pay off the big ones first.</p>
-    <section class="bloom" id="bloom" aria-label="your cards"></section>
+    <p class="lede">seeds on soil.</p>
+    <p class="sublede">the smaller the balance, the bigger the seed — wander, don't scan.</p>
+    <section class="scatter" id="scatter" aria-label="your cards"></section>
   </main>
 
   <footer class="page-foot">
@@ -271,6 +243,6 @@
     <a href="home-bloom-v3">bloom v3</a>
   </footer>
 
-  <script src="/assets/js/home-bloom.js" defer></script>
+  <script src="/assets/js/home-bloom-v2.js" defer></script>
 </body>
 </html>
