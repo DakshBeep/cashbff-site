@@ -1,18 +1,37 @@
-// home.js — scatter/seedbed rendering of the logged-in user's real cards.
-// Visual direction ported from home-bloom-v2. Positions are generated
-// programmatically so any card count (1..N) lays out without overlap.
+// home.js — infinite-canvas workspace for the logged-in user's cards.
+//
+// The "viewport" is a fixed full-screen element. Inside it lives a much larger
+// "world" (a pannable, zoomable surface with a dot-grid background). Cards are
+// placed at world coordinates; pan/zoom applies a single CSS transform to the
+// world element so everything moves as one.
 //
 // Public API (bound to window.CashBFFHome for testability):
-//   allocatePositions(cards, canvasWidthPx, canvasHeightPx) -> positionedCards[]
-//   renderCards(container, cards)
+//   allocatePositions(cards, canvasW, canvasH) -> positionedCards[]
+//   renderCards(container, cards)              (legacy; writes into container)
 //   fetchHome() -> Promise<{cards, first_name?}>
+//   addLocalCard(card)                         (optimistic manual-add hook)
 (function () {
   'use strict';
 
   // ── Config ───────────────────────────────────────
   var API_BASE = 'https://api.cashbff.com';
   var NAME_KEY = 'cbff_first_name';
+  var MANUAL_KEY = 'cbff_manual_cards';
   var SIZE_CLASSES = ['size-huge', 'size-large', 'size-med', 'size-small', 'size-tiny'];
+
+  // World / canvas.
+  var WORLD_W = 8000;
+  var WORLD_H = 8000;
+  // A generous "playground" in the center of the world where we allocate card
+  // positions. Everything outside stays empty grid — you can still pan there.
+  var PLAYGROUND_W = 1800;
+  var PLAYGROUND_H = 1200;
+
+  // Zoom clamps + trackpad feel.
+  var MIN_ZOOM = 0.5;
+  var MAX_ZOOM = 2.0;
+  var WHEEL_ZOOM_INTENSITY = 0.0015;     // ctrl+wheel / trackpad pinch
+  var WHEEL_PAN_INTENSITY  = 1.0;        // plain wheel = pan
 
   // ── Helpers ─────────────────────────────────────
   function formatMoney(n) {
@@ -34,9 +53,9 @@
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;');
   }
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 
   // ── Deterministic RNG seeded off the card mask ──
-  // Tiny xorshift / string hash. Same mask => same position across reloads.
   function hashString(s) {
     var h = 2166136261 >>> 0;
     s = String(s || '');
@@ -57,33 +76,23 @@
     };
   }
 
-  // ── Position allocation ─────────────────────────
-  // Strategy: for each card, pick a size based on its balance rank (smallest
-  // balance = biggest tile). Compute pixel dimensions, then place via seeded
-  // jittered-grid / rejection sampling so tiles don't overlap and stay in bounds.
-  // Deterministic: hashing the card mask as seed means reloads are stable.
+  // ── Position allocation (unchanged contract) ────
   function sizeTierForRank(rank, total) {
-    // Map rank (0 = smallest balance) to one of SIZE_CLASSES, scaling by total.
     if (total <= 1) return 0;
     var ratio = rank / (total - 1);
-    if (ratio < 0.15) return 0; // huge
-    if (ratio < 0.35) return 1; // large
-    if (ratio < 0.65) return 2; // med
-    if (ratio < 0.85) return 3; // small
-    return 4;                    // tiny
+    if (ratio < 0.15) return 0;
+    if (ratio < 0.35) return 1;
+    if (ratio < 0.65) return 2;
+    if (ratio < 0.85) return 3;
+    return 4;
   }
-
-  // Tile dimensions in px for a given size tier and canvas width.
-  // Scale with canvas so the layout looks right at mobile + desktop widths.
   function tileDims(tier, canvasW) {
-    // Base widths as fractions of canvas width, clamped.
     var fractions = [0.42, 0.33, 0.28, 0.22, 0.19];
-    var aspects   = [0.75, 0.77, 0.75, 0.74, 0.74]; // height/width
+    var aspects   = [0.75, 0.77, 0.75, 0.74, 0.74];
     var w = Math.max(150, Math.min(340, canvasW * fractions[tier]));
     var h = w * aspects[tier];
     return { w: w, h: h };
   }
-
   function rectsOverlap(a, b, pad) {
     pad = pad || 0;
     return !(a.x + a.w + pad <= b.x ||
@@ -94,16 +103,13 @@
 
   /**
    * allocatePositions(cards, canvasW, canvasH)
-   * Returns a new array of card objects with layout props:
-   *   { ...card, _rank, _size, x, y, w, h, rot, driftDur, driftDelay }
+   * Returns a positioned card per input, in the same order.
    */
   function allocatePositions(cards, canvasW, canvasH) {
     if (!Array.isArray(cards) || cards.length === 0) return [];
     canvasW = Math.max(280, canvasW || 640);
     canvasH = Math.max(320, canvasH || 640);
 
-    // Sort ascending by balance for ranking. Keep original index so output
-    // order matches input order (consumer may want stable iteration).
     var withRank = cards.map(function (c, i) {
       return { card: c, origIndex: i, balance: Number(c.balance) || 0 };
     });
@@ -111,16 +117,14 @@
     sorted.forEach(function (entry, rank) { entry.rank = rank; });
 
     var total = cards.length;
-    var PAD = 10; // px gap between tiles
+    var PAD = 24; // more breathing room on the open canvas
 
-    // Place biggest tiles first — they're hardest to fit.
     var placementOrder = sorted.slice().sort(function (a, b) { return a.rank - b.rank; });
     var placed = [];
 
     placementOrder.forEach(function (entry) {
       var tier = sizeTierForRank(entry.rank, total);
       var dims = tileDims(tier, canvasW);
-      // Clamp dims to canvas.
       if (dims.w > canvasW - 16) { dims.w = canvasW - 16; dims.h = dims.w * 0.75; }
       if (dims.h > canvasH - 16) { dims.h = canvasH - 16; dims.w = dims.h / 0.75; }
 
@@ -131,9 +135,8 @@
       var maxY = Math.max(0, canvasH - dims.h);
 
       var chosen = null;
-      // Up to N rejection-sample attempts; if all fail, shrink the tile and retry.
       for (var shrink = 0; shrink < 5 && !chosen; shrink++) {
-        for (var attempt = 0; attempt < 60; attempt++) {
+        for (var attempt = 0; attempt < 80; attempt++) {
           var x = rand() * maxX;
           var y = rand() * maxY;
           var rect = { x: x, y: y, w: dims.w, h: dims.h };
@@ -144,24 +147,19 @@
           if (!clash) { chosen = rect; break; }
         }
         if (!chosen) {
-          // Shrink 12% and recompute bounds.
           dims.w *= 0.88; dims.h *= 0.88;
           maxX = Math.max(0, canvasW - dims.w);
           maxY = Math.max(0, canvasH - dims.h);
         }
       }
-      // Last-resort fallback: place anyway at the least-occupied corner-ish spot.
       if (!chosen) {
         chosen = { x: (rand() * maxX) | 0, y: (rand() * maxY) | 0, w: dims.w, h: dims.h };
       }
 
-      // Rotation ±3–6°, seeded.
       var rotMag = 3 + rand() * 3;
       var rotSign = rand() < 0.5 ? -1 : 1;
       var rot = (rotMag * rotSign).toFixed(2) + 'deg';
-
-      // Drift 7–11s with small per-card delay so they desync.
-      var dur = (7 + rand() * 4).toFixed(2) + 's';
+      var dur = (10 + rand() * 4).toFixed(2) + 's';
       var delay = (rand() * 1.4).toFixed(2) + 's';
 
       placed.push({
@@ -174,7 +172,6 @@
       });
     });
 
-    // Return in original input order for a stable, testable output.
     var byOrig = new Array(total);
     placed.forEach(function (p) {
       byOrig[p.entry.origIndex] = {
@@ -194,8 +191,8 @@
     return byOrig;
   }
 
-  // ── Rendering ───────────────────────────────────
-  function buildSeedElement(positioned) {
+  // ── Card element builder ────────────────────────
+  function buildSeedElement(positioned, worldOffsetX, worldOffsetY) {
     var card = positioned.card;
     var el = document.createElement('button');
     el.type = 'button';
@@ -204,14 +201,13 @@
     el.dataset.mask = String(card.mask || '');
     el.setAttribute('aria-label',
       cleanText(card.institution) + ' card ending in ' + cleanText(card.mask));
-    el.style.setProperty('--x', positioned.x + 'px');
-    el.style.setProperty('--y', positioned.y + 'px');
+    el.style.setProperty('--x', (worldOffsetX + positioned.x) + 'px');
+    el.style.setProperty('--y', (worldOffsetY + positioned.y) + 'px');
     el.style.setProperty('--w', positioned.w + 'px');
     el.style.setProperty('--h', positioned.h + 'px');
     el.style.setProperty('--rot', positioned.rot);
     el.style.setProperty('--drift-dur', positioned.driftDur);
     el.style.setProperty('--drift-delay', positioned.driftDelay);
-    el.style.transform = 'rotate(' + positioned.rot + ')';
 
     var money = formatMoney(Number(card.balance) || 0);
     var institution = escapeHTML(cleanText(card.institution) || 'card');
@@ -230,36 +226,25 @@
       '</span>' +
       '<span class="seed__bottom">' + limitStr + '</span>';
 
+    // Stub: click does nothing in this pass; hover lift handled in CSS.
+    el.addEventListener('click', function (ev) {
+      ev.stopPropagation();
+      // Intentionally empty — card detail panel is a follow-up.
+    });
     return el;
   }
 
+  // ── Legacy renderCards (kept for test compat) ───
   function renderCards(container, cards) {
     if (!container) return;
     container.innerHTML = '';
-    if (!cards || cards.length === 0) {
-      renderEmpty(container);
-      return;
-    }
+    if (!cards || cards.length === 0) return;
     var rect = container.getBoundingClientRect();
     var positioned = allocatePositions(cards, rect.width || container.clientWidth, rect.height || container.clientHeight);
     positioned.forEach(function (p) {
       if (!p) return;
-      container.appendChild(buildSeedElement(p));
+      container.appendChild(buildSeedElement(p, 0, 0));
     });
-  }
-
-  function renderEmpty(container) {
-    container.innerHTML =
-      '<div class="state state--empty">' +
-        '<span>no cards connected yet.</span>' +
-        '<a href="connect.html">connect one →</a>' +
-      '</div>';
-  }
-  function renderError(container) {
-    container.innerHTML = '<div class="state state--err"><em>give us a sec…</em></div>';
-  }
-  function renderLoading(container) {
-    container.innerHTML = '<div class="state state--loading"><span>settling in…</span></div>';
   }
 
   // ── Fetch ───────────────────────────────────────
@@ -270,7 +255,6 @@
     }).then(function (res) {
       if (res.status === 401) {
         location.replace('/');
-        // Return a never-resolving promise so callers don't proceed mid-redirect.
         return new Promise(function () {});
       }
       if (!res.ok) throw new Error('bad response ' + res.status);
@@ -284,7 +268,24 @@
     });
   }
 
-  // ── Header ──────────────────────────────────────
+  // ── localStorage fallback for manual cards ──────
+  function loadManualCards() {
+    try {
+      var raw = localStorage.getItem(MANUAL_KEY);
+      if (!raw) return [];
+      var parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (_) { return []; }
+  }
+  function saveManualCard(card) {
+    try {
+      var list = loadManualCards();
+      list.push(card);
+      localStorage.setItem(MANUAL_KEY, JSON.stringify(list));
+    } catch (_) {}
+  }
+
+  // ── Header UI bits ──────────────────────────────
   function wirePhonePill() {
     var pill = document.getElementById('phone-pill');
     if (!pill) return;
@@ -296,57 +297,411 @@
       pill.textContent = '+1 (' + d.slice(0,3) + ') ' + d.slice(3,6) + '-' + d.slice(6);
     }
   }
-
   function wireSignout() {
     var btn = document.getElementById('signout');
     if (!btn) return;
     btn.addEventListener('click', function () {
       fetch(API_BASE + '/api/logout', { method: 'POST', credentials: 'include' })
-        .catch(function () { /* leaving anyway */ })
+        .catch(function () {})
         .then(function () {
           try { localStorage.clear(); } catch (_) {}
-          var container = document.getElementById('scatter');
-          if (container) container.innerHTML = '';
           location.replace('/');
         });
     });
   }
-
-  // ── Card count pill (overrides the phone pill with "+N signed in") ──
   function updateSignedInCount(n) {
     var pill = document.getElementById('phone-pill');
     if (!pill) return;
-    // Only overwrite if the user didn't arrive with a ?phone= param.
     var params = new URLSearchParams(location.search);
     if (!params.get('phone')) {
       pill.textContent = '+' + n + ' signed in';
     }
   }
 
+  // ── Canvas engine (pan/zoom state lives here) ───
+  var Canvas = {
+    viewport: null,
+    world: null,
+    addBtn: null,
+    loadingToast: null,
+
+    panX: 0,
+    panY: 0,
+    zoom: 1,
+    positioned: [],       // {card, x, y (world coords), w, h, ...}
+    worldOffsetX: 0,       // playground origin inside the world
+    worldOffsetY: 0,
+
+    // Runtime input state
+    _isPanning: false,
+    _panStart: null,
+    _pointerMoved: 0,
+    _activePointers: {},   // for pinch-zoom
+    _pinchStart: null,
+
+    init: function () {
+      this.viewport = document.getElementById('viewport');
+      this.world = document.getElementById('world');
+      this.addBtn = document.getElementById('add-account-btn');
+      this.loadingToast = document.getElementById('loading-toast');
+      if (!this.viewport || !this.world) return;
+
+      // Center the playground inside the world.
+      this.worldOffsetX = Math.round((WORLD_W - PLAYGROUND_W) / 2);
+      this.worldOffsetY = Math.round((WORLD_H - PLAYGROUND_H) / 2);
+
+      this._wireInput();
+      this._wireResize();
+      this._wireKeyboard();
+      this.applyTransform();
+    },
+
+    applyTransform: function () {
+      if (!this.world) return;
+      this.world.style.transform =
+        'translate(' + this.panX + 'px, ' + this.panY + 'px) scale(' + this.zoom + ')';
+    },
+
+    // Fit all rendered cards into the viewport, with a margin.
+    autoFit: function () {
+      if (!this.positioned.length || !this.viewport) {
+        // With no cards, center the viewport on the middle of the playground.
+        var vw0 = this.viewport ? this.viewport.clientWidth : window.innerWidth;
+        var vh0 = this.viewport ? this.viewport.clientHeight : window.innerHeight;
+        this.zoom = 1;
+        this.panX = Math.round(vw0 / 2 - (this.worldOffsetX + PLAYGROUND_W / 2));
+        this.panY = Math.round(vh0 / 2 - (this.worldOffsetY + PLAYGROUND_H / 2));
+        this.applyTransform();
+        return;
+      }
+      var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      var i, p, wx, wy;
+      for (i = 0; i < this.positioned.length; i++) {
+        p = this.positioned[i];
+        wx = this.worldOffsetX + p.x;
+        wy = this.worldOffsetY + p.y;
+        if (wx < minX) minX = wx;
+        if (wy < minY) minY = wy;
+        if (wx + p.w > maxX) maxX = wx + p.w;
+        if (wy + p.h > maxY) maxY = wy + p.h;
+      }
+      var padding = 80;
+      minX -= padding; minY -= padding; maxX += padding; maxY += padding;
+      var vw = this.viewport.clientWidth;
+      var vh = this.viewport.clientHeight;
+      var contentW = maxX - minX;
+      var contentH = maxY - minY;
+      var zoomX = vw / contentW;
+      var zoomY = vh / contentH;
+      var fitZoom = clamp(Math.min(zoomX, zoomY), MIN_ZOOM, MAX_ZOOM);
+      // Slight dial-back so edges aren't kissed.
+      fitZoom = Math.min(fitZoom, 1);
+      this.zoom = fitZoom;
+      // Center the content box inside the viewport.
+      var cxWorld = (minX + maxX) / 2;
+      var cyWorld = (minY + maxY) / 2;
+      this.panX = vw / 2 - cxWorld * this.zoom;
+      this.panY = vh / 2 - cyWorld * this.zoom;
+      this.applyTransform();
+    },
+
+    render: function (cards) {
+      this.world.innerHTML = '';
+      this.positioned = allocatePositions(cards, PLAYGROUND_W, PLAYGROUND_H);
+      var self = this;
+      this.positioned.forEach(function (p) {
+        if (!p) return;
+        var el = buildSeedElement(p, self.worldOffsetX, self.worldOffsetY);
+        self.world.appendChild(el);
+      });
+      this._syncAddBtnMode(cards.length);
+    },
+
+    // Add a single card without disturbing existing layout. Places it at a
+    // seeded spot that doesn't overlap current cards (within the playground
+    // box). Returns the positioned entry.
+    addCard: function (card) {
+      var canvasW = PLAYGROUND_W;
+      var canvasH = PLAYGROUND_H;
+      var idx = this.positioned.length;
+      var tier = sizeTierForRank(Math.max(0, Math.min(idx, 4)), idx + 1);
+      var dims = tileDims(tier, canvasW);
+      var seed = hashString((card.mask || '') + ':' + (card.institution || '') + ':new:' + Date.now());
+      var rand = mulberry32(seed);
+      var PAD = 24;
+      var chosen = null;
+      var maxX = Math.max(0, canvasW - dims.w);
+      var maxY = Math.max(0, canvasH - dims.h);
+      for (var shrink = 0; shrink < 5 && !chosen; shrink++) {
+        for (var attempt = 0; attempt < 80; attempt++) {
+          var x = rand() * maxX;
+          var y = rand() * maxY;
+          var rect = { x: x, y: y, w: dims.w, h: dims.h };
+          var clash = false;
+          for (var i = 0; i < this.positioned.length; i++) {
+            var p = this.positioned[i];
+            if (rectsOverlap(rect, { x: p.x, y: p.y, w: p.w, h: p.h }, PAD)) {
+              clash = true; break;
+            }
+          }
+          if (!clash) { chosen = rect; break; }
+        }
+        if (!chosen) {
+          dims.w *= 0.88; dims.h *= 0.88;
+          maxX = Math.max(0, canvasW - dims.w);
+          maxY = Math.max(0, canvasH - dims.h);
+        }
+      }
+      if (!chosen) {
+        chosen = { x: rand() * maxX, y: rand() * maxY, w: dims.w, h: dims.h };
+      }
+      var rotMag = 3 + rand() * 3;
+      var rotSign = rand() < 0.5 ? -1 : 1;
+      var entry = {
+        card: card,
+        rank: idx,
+        size: tier,
+        sizeClass: SIZE_CLASSES[tier],
+        x: chosen.x,
+        y: chosen.y,
+        w: chosen.w,
+        h: chosen.h,
+        rot: (rotMag * rotSign).toFixed(2) + 'deg',
+        driftDur: (10 + rand() * 4).toFixed(2) + 's',
+        driftDelay: (rand() * 1.4).toFixed(2) + 's'
+      };
+      this.positioned.push(entry);
+      var el = buildSeedElement(entry, this.worldOffsetX, this.worldOffsetY);
+      el.classList.add('is-new');
+      this.world.appendChild(el);
+      this._syncAddBtnMode(this.positioned.length);
+      // Gently re-fit so the new card is in view.
+      this.autoFit();
+      return entry;
+    },
+
+    _syncAddBtnMode: function (n) {
+      if (!this.addBtn) return;
+      if (n === 0) {
+        this.addBtn.classList.add('add-btn--center');
+        this.addBtn.classList.remove('add-btn--corner');
+        this.addBtn.textContent = '+ add account';
+      } else {
+        this.addBtn.classList.remove('add-btn--center');
+        this.addBtn.classList.add('add-btn--corner');
+        this.addBtn.textContent = '+ add';
+      }
+    },
+
+    hideLoading: function () {
+      if (this.loadingToast) this.loadingToast.remove();
+    },
+
+    showError: function () {
+      if (this.loadingToast) {
+        this.loadingToast.classList.remove('toast--loading');
+        this.loadingToast.textContent = 'give us a sec…';
+      }
+    },
+
+    // ── Input handlers ─────────────────────────
+    _wireInput: function () {
+      var self = this;
+      var vp = this.viewport;
+
+      // Pointer events cover mouse + touch + pen.
+      vp.addEventListener('pointerdown', function (e) {
+        // Ignore if the pointer originates inside a card / UI chip — we still
+        // want them to be clickable.
+        if (e.target.closest('.seed') || e.target.closest('.chip') ||
+            e.target.closest('.add-btn') || e.target.closest('.modal-backdrop')) {
+          return;
+        }
+        vp.setPointerCapture(e.pointerId);
+        self._activePointers[e.pointerId] = { x: e.clientX, y: e.clientY };
+        if (Object.keys(self._activePointers).length === 1) {
+          self._isPanning = true;
+          self._panStart = { x: e.clientX, y: e.clientY, panX: self.panX, panY: self.panY };
+          self._pointerMoved = 0;
+          vp.classList.add('is-panning');
+        } else if (Object.keys(self._activePointers).length === 2) {
+          // Pinch start
+          var ids = Object.keys(self._activePointers);
+          var a = self._activePointers[ids[0]];
+          var b = self._activePointers[ids[1]];
+          var dx = b.x - a.x, dy = b.y - a.y;
+          self._pinchStart = {
+            dist: Math.sqrt(dx * dx + dy * dy),
+            zoom: self.zoom,
+            cx: (a.x + b.x) / 2,
+            cy: (a.y + b.y) / 2,
+            panX: self.panX,
+            panY: self.panY
+          };
+          self._isPanning = false;
+        }
+      });
+
+      vp.addEventListener('pointermove', function (e) {
+        if (!self._activePointers[e.pointerId]) return;
+        var prev = self._activePointers[e.pointerId];
+        self._activePointers[e.pointerId] = { x: e.clientX, y: e.clientY };
+        var ids = Object.keys(self._activePointers);
+        if (ids.length === 2 && self._pinchStart) {
+          var a = self._activePointers[ids[0]];
+          var b = self._activePointers[ids[1]];
+          var dx = b.x - a.x, dy = b.y - a.y;
+          var d = Math.sqrt(dx * dx + dy * dy);
+          var newZoom = clamp(self._pinchStart.zoom * (d / self._pinchStart.dist), MIN_ZOOM, MAX_ZOOM);
+          // Keep the pinch midpoint anchored in world-space.
+          var cx = self._pinchStart.cx;
+          var cy = self._pinchStart.cy;
+          var rect = vp.getBoundingClientRect();
+          var px = cx - rect.left;
+          var py = cy - rect.top;
+          // world point under pinch center at start:
+          var worldPx = (px - self._pinchStart.panX) / self._pinchStart.zoom;
+          var worldPy = (py - self._pinchStart.panY) / self._pinchStart.zoom;
+          self.panX = px - worldPx * newZoom;
+          self.panY = py - worldPy * newZoom;
+          self.zoom = newZoom;
+          self.applyTransform();
+          return;
+        }
+        if (self._isPanning && self._panStart) {
+          var mx = e.clientX - self._panStart.x;
+          var my = e.clientY - self._panStart.y;
+          self._pointerMoved = Math.max(self._pointerMoved, Math.abs(mx), Math.abs(my));
+          self.panX = self._panStart.panX + mx;
+          self.panY = self._panStart.panY + my;
+          self.applyTransform();
+        }
+      });
+
+      function endPointer(e) {
+        delete self._activePointers[e.pointerId];
+        if (Object.keys(self._activePointers).length < 2) {
+          self._pinchStart = null;
+        }
+        if (Object.keys(self._activePointers).length === 0) {
+          self._isPanning = false;
+          self._panStart = null;
+          vp.classList.remove('is-panning');
+        }
+        try { vp.releasePointerCapture(e.pointerId); } catch (_) {}
+      }
+      vp.addEventListener('pointerup', endPointer);
+      vp.addEventListener('pointercancel', endPointer);
+      vp.addEventListener('pointerleave', endPointer);
+
+      // Wheel: ctrl+wheel (or trackpad pinch) = zoom; plain wheel = pan.
+      vp.addEventListener('wheel', function (e) {
+        e.preventDefault();
+        var rect = vp.getBoundingClientRect();
+        var px = e.clientX - rect.left;
+        var py = e.clientY - rect.top;
+        if (e.ctrlKey) {
+          var newZoom = clamp(self.zoom * (1 - e.deltaY * WHEEL_ZOOM_INTENSITY), MIN_ZOOM, MAX_ZOOM);
+          // Anchor the zoom to the cursor's world coord.
+          var worldPx = (px - self.panX) / self.zoom;
+          var worldPy = (py - self.panY) / self.zoom;
+          self.panX = px - worldPx * newZoom;
+          self.panY = py - worldPy * newZoom;
+          self.zoom = newZoom;
+        } else {
+          self.panX -= e.deltaX * WHEEL_PAN_INTENSITY;
+          self.panY -= e.deltaY * WHEEL_PAN_INTENSITY;
+        }
+        self.applyTransform();
+      }, { passive: false });
+    },
+
+    _wireResize: function () {
+      var self = this;
+      var pending = null;
+      window.addEventListener('resize', function () {
+        if (pending) cancelAnimationFrame(pending);
+        pending = requestAnimationFrame(function () {
+          self.autoFit();
+          pending = null;
+        });
+      });
+    },
+
+    _wireKeyboard: function () {
+      // "N" or Cmd/Ctrl+A opens the modal (as long as we're not typing).
+      document.addEventListener('keydown', function (e) {
+        var typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target && e.target.tagName || '');
+        if (typing) return;
+        var openModal = window.CashBFFAddAccount && window.CashBFFAddAccount.open;
+        if ((e.key === 'n' || e.key === 'N') && !e.metaKey && !e.ctrlKey) {
+          if (openModal) { e.preventDefault(); openModal(); }
+        } else if ((e.key === 'a' || e.key === 'A') && (e.metaKey || e.ctrlKey)) {
+          if (openModal) { e.preventDefault(); openModal(); }
+        }
+      });
+    }
+  };
+
   // ── Boot ────────────────────────────────────────
   function boot() {
     wirePhonePill();
     wireSignout();
-    var container = document.getElementById('scatter');
-    if (!container) return;
-    renderLoading(container);
+    Canvas.init();
+
+    // Wire the add button to the modal.
+    var addBtn = document.getElementById('add-account-btn');
+    if (addBtn) {
+      addBtn.addEventListener('click', function () {
+        if (window.CashBFFAddAccount && window.CashBFFAddAccount.open) {
+          window.CashBFFAddAccount.open();
+        }
+      });
+    }
+
     fetchHome().then(function (data) {
-      updateSignedInCount((data.cards || []).length);
-      renderCards(container, data.cards);
+      var cards = (data.cards || []).slice();
+      // Layer in any optimistically-saved manual cards (endpoint may be down).
+      var locals = loadManualCards();
+      if (locals.length) {
+        // Dedupe by (institution, mask) so refresh doesn't double-render
+        // entries that later made it to the backend.
+        var seen = {};
+        cards.forEach(function (c) {
+          seen[(c.institution || '').toLowerCase() + '|' + (c.mask || '')] = true;
+        });
+        locals.forEach(function (c) {
+          var key = (c.institution || '').toLowerCase() + '|' + (c.mask || '');
+          if (!seen[key]) { cards.push(c); seen[key] = true; }
+        });
+      }
+      updateSignedInCount(cards.length);
+      Canvas.render(cards);
+      Canvas.hideLoading();
+      Canvas.autoFit();
     }).catch(function () {
-      renderError(container);
+      Canvas.showError();
+      // Still allow add-account even on fetch error.
+      Canvas._syncAddBtnMode(0);
     });
   }
 
-  // Expose the API surface for tests + other scripts.
+  // ── Public API ──────────────────────────────────
   window.CashBFFHome = {
     allocatePositions: allocatePositions,
     renderCards: renderCards,
-    renderEmpty: renderEmpty,
-    renderError: renderError,
-    renderLoading: renderLoading,
     fetchHome: fetchHome,
-    // internals exposed for tests:
+    addLocalCard: function (card) {
+      saveManualCard(card);
+      Canvas.addCard(card);
+      updateSignedInCount(Canvas.positioned.length);
+    },
+    addServerCard: function (card) {
+      // Card made it to the server; render it but don't persist to localStorage.
+      Canvas.addCard(card);
+      updateSignedInCount(Canvas.positioned.length);
+    },
+    _canvas: Canvas,
     _hashString: hashString,
     _sizeTierForRank: sizeTierForRank,
     _tileDims: tileDims

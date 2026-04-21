@@ -36,6 +36,12 @@
       --font-body: 'Instrument Sans', system-ui, -apple-system, sans-serif;
     }
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      overscroll-behavior: none;
+    }
     body {
       font-family: var(--font-body);
       background: var(--vanilla);
@@ -43,36 +49,69 @@
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
       line-height: 1.5;
-      min-height: 100dvh;
-      overflow-x: hidden;
     }
     a { color: inherit; text-decoration: none; }
-    button { font-family: inherit; cursor: pointer; border: none; background: none; }
+    button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
 
-    /* ── Top bar ───────────────────────────────────── */
-    .bar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 1rem 2rem 1.25rem;
-      max-width: 1200px;
-      margin: 0 auto;
+    /* ── Viewport (the fixed window onto the world) ─── */
+    .viewport {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      background: var(--vanilla);
+      touch-action: none;   /* we handle pan + zoom ourselves */
+      cursor: grab;
+      user-select: none;
+      -webkit-user-select: none;
     }
-    .wordmark {
+    .viewport.is-panning { cursor: grabbing; }
+
+    /* ── World (the pannable, zoomable canvas) ────── */
+    .world {
+      position: absolute;
+      /* Very large so "edges" aren't reachable in normal use. Centered by JS. */
+      width: 8000px;
+      height: 8000px;
+      left: 0;
+      top: 0;
+      transform-origin: 0 0;
+      /* The dot grid. 32px spacing, off-black at 8% opacity. Scales with zoom. */
+      background-color: var(--vanilla);
+      background-image: radial-gradient(circle, rgba(26,23,23,0.18) 1px, transparent 1.4px);
+      background-size: 32px 32px;
+      background-position: 0 0;
+      will-change: transform;
+    }
+
+    /* ── Pinned viewport UI (does NOT pan/zoom) ──── */
+    .chip {
+      position: fixed;
+      z-index: 20;
+      padding: 0.55rem 0.9rem;
+      border-radius: 100px;
+      font-size: 0.82rem;
+      background: rgba(252,250,242,0.82);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(26,23,23,0.06);
+      box-shadow: 0 2px 10px -6px rgba(26,23,23,0.25);
+    }
+    .chip--wordmark {
+      top: 1rem; left: 1rem;
       font-family: var(--font-display);
-      font-weight: 700; font-size: 1.5rem;
+      font-weight: 700;
+      font-size: 1.15rem;
       letter-spacing: -0.02em;
       color: var(--cash-green);
+      padding: 0.4rem 0.8rem;
     }
-    .bar__right {
-      display: flex; align-items: center; gap: 1.25rem;
-      font-size: 0.82rem;
+    .chip--top-right {
+      top: 1rem; right: 1rem;
+      display: flex; align-items: center; gap: 0.7rem;
+      padding: 0.4rem 0.8rem;
     }
     .pill-phone {
-      background: rgba(1,71,81,0.08);
       color: var(--cash-green);
-      padding: 0.45rem 0.85rem;
-      border-radius: 100px;
       font-weight: 500;
       font-size: 0.78rem;
       letter-spacing: 0.01em;
@@ -80,26 +119,57 @@
     .signout {
       opacity: 0.55;
       font-weight: 500;
+      font-size: 0.78rem;
       transition: opacity 0.15s ease, color 0.15s ease;
     }
     .signout:hover { opacity: 1; color: var(--cash-green); }
 
-    /* ── Scatter canvas ────────────────────────────── */
-    main {
-      max-width: 64rem;
-      margin: 0 auto;
-      padding: 0.5rem 2rem 4rem;
-      position: relative;
+    /* ── Add button: centered when empty, bottom-center chip when populated ── */
+    .add-btn {
+      position: fixed;
+      z-index: 25;
+      font-family: var(--font-body);
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      transition: background 0.2s ease, transform 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease;
+    }
+    .add-btn--center {
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      padding: 1.1rem 2rem;
+      font-size: 1.05rem;
+      background: var(--electric-green);
+      color: var(--off-black);
+      border-radius: 100px;
+      box-shadow: 0 14px 36px -14px rgba(1,71,81,0.35);
+    }
+    .add-btn--center:hover {
+      transform: translate(-50%, -50%) scale(1.03);
+      box-shadow: 0 20px 44px -14px rgba(1,71,81,0.45);
+    }
+    .add-btn--corner {
+      bottom: 1.4rem; left: 50%;
+      transform: translateX(-50%);
+      padding: 0.7rem 1.3rem;
+      font-size: 0.88rem;
+      background: rgba(211,255,180,0.78);
+      color: var(--off-black);
+      border-radius: 100px;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      opacity: 0.9;
+      box-shadow: 0 6px 18px -10px rgba(1,71,81,0.3);
+    }
+    .add-btn--corner:hover {
+      opacity: 1;
+      transform: translateX(-50%) translateY(-2px);
+    }
+    .add-btn:focus-visible {
+      outline: 2px solid var(--cash-green);
+      outline-offset: 3px;
     }
 
-    .scatter {
-      position: relative;
-      width: 100%;
-      height: 40rem;
-      margin-top: 1rem;
-    }
-
-    /* ── Seed card ─────────────────────────────────── */
+    /* ── Cards floating on the canvas ───────────────── */
     .seed {
       position: absolute;
       border-radius: 1.1rem;
@@ -115,18 +185,20 @@
       text-align: left;
       overflow: hidden;
       box-shadow: 0 14px 36px -18px rgba(26,23,23,0.35);
-      transition: box-shadow 0.3s ease, z-index 0s;
+      transition: box-shadow 0.3s ease, transform 0.3s ease;
       will-change: transform;
       left: var(--x);
       top: var(--y);
       width: var(--w);
       height: var(--h);
       --rot: 0deg;
-      animation: drift var(--drift-dur, 9s) ease-in-out infinite;
+      transform: rotate(var(--rot));
+      animation: drift var(--drift-dur, 12s) ease-in-out infinite;
       animation-delay: var(--drift-delay, 0s);
     }
     .seed:hover {
-      box-shadow: 0 28px 60px -20px rgba(26,23,23,0.45);
+      box-shadow: 0 24px 52px -18px rgba(26,23,23,0.45);
+      transform: rotate(var(--rot)) translateY(-3px);
       z-index: 10;
     }
     .seed::before {
@@ -136,15 +208,24 @@
       background: radial-gradient(circle at 25% 15%, rgba(211,255,180,0.12), transparent 55%);
       pointer-events: none;
     }
-
-    @keyframes drift {
-      0%, 100% { transform: translate(0, 0) rotate(var(--rot)); }
-      25%      { transform: translate(6px, -4px) rotate(calc(var(--rot) + 0.6deg)); }
-      50%      { transform: translate(-3px, 5px) rotate(calc(var(--rot) - 0.4deg)); }
-      75%      { transform: translate(-5px, -2px) rotate(calc(var(--rot) + 0.3deg)); }
+    /* Soft settle-in when a card is newly added. */
+    .seed.is-new {
+      animation: settle 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) 1,
+                 drift var(--drift-dur, 12s) ease-in-out 0.55s infinite;
+    }
+    @keyframes settle {
+      0%   { transform: rotate(var(--rot)) scale(0.6); opacity: 0; }
+      60%  { transform: rotate(var(--rot)) scale(1.04); opacity: 1; }
+      100% { transform: rotate(var(--rot)) scale(1); opacity: 1; }
     }
 
-    /* Size tiers — smallest balance = biggest card. */
+    /* Lower-amplitude drift than v2 — the canvas is the motion focus now. */
+    @keyframes drift {
+      0%, 100% { transform: translate(0, 0) rotate(var(--rot)); }
+      33%      { transform: translate(3px, -2px) rotate(calc(var(--rot) + 0.3deg)); }
+      66%      { transform: translate(-2px, 2px) rotate(calc(var(--rot) - 0.2deg)); }
+    }
+
     .seed.size-huge {
       background: var(--electric-green);
       color: var(--off-black);
@@ -191,76 +272,265 @@
       opacity: 0.75; text-transform: lowercase;
     }
 
-    /* ── States ────────────────────────────────────── */
-    .state {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      gap: 0.6rem;
+    /* ── Loading / error floating toast ───────────── */
+    .toast {
+      position: fixed;
+      top: 38%; left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 15;
       color: var(--off-black);
       opacity: 0.55;
       font-size: 0.92rem;
-      text-align: center;
-      padding: 2rem;
-    }
-    .state--err { font-style: italic; }
-    .state--loading { font-style: italic; }
-    .state a {
-      color: var(--cash-green);
-      opacity: 0.9;
-      border-bottom: 1px solid currentColor;
-      padding-bottom: 1px;
+      font-style: italic;
+      pointer-events: none;
     }
     @keyframes shimmer {
       0%, 100% { opacity: 0.35; }
       50%      { opacity: 0.7;  }
     }
-    .state--loading span { animation: shimmer 1.8s ease-in-out infinite; }
+    .toast--loading { animation: shimmer 1.8s ease-in-out infinite; }
 
-    /* ── Footer ────────────────────────────────────── */
-    .page-foot {
-      display: flex; justify-content: center; gap: 1.25rem;
-      font-size: 0.72rem; opacity: 0.35;
-      padding: 1.5rem 2rem 2rem;
+    /* ── Modal (add-account flow) ────────────────── */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(26,23,23,0.28);
+      backdrop-filter: blur(3px);
+      -webkit-backdrop-filter: blur(3px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.25rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
     }
-    .page-foot a:hover { opacity: 1; color: var(--cash-green); }
+    .modal-backdrop.is-open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .modal {
+      background: var(--vanilla);
+      border-radius: 1.4rem;
+      padding: 1.8rem 1.6rem 1.4rem;
+      width: 100%;
+      max-width: 26rem;
+      box-shadow: 0 30px 80px -30px rgba(26,23,23,0.5);
+      transform: translateY(12px) scale(0.98);
+      transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+      max-height: calc(100dvh - 2.5rem);
+      overflow-y: auto;
+    }
+    .modal-backdrop.is-open .modal { transform: translateY(0) scale(1); }
+    .modal__title {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 2rem;
+      letter-spacing: -0.02em;
+      color: var(--cash-green);
+      margin-bottom: 1.3rem;
+      line-height: 1;
+    }
+    .modal__choices {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+    .modal__btn {
+      width: 100%;
+      padding: 0.95rem 1.2rem;
+      border-radius: 14px;
+      font-size: 0.98rem;
+      font-weight: 600;
+      letter-spacing: 0.005em;
+      transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+      text-align: center;
+    }
+    .modal__btn--primary {
+      background: var(--cash-green);
+      color: var(--vanilla);
+    }
+    .modal__btn--primary:hover { transform: translateY(-1px); background: #023239; }
+    .modal__btn--secondary {
+      background: transparent;
+      color: var(--cash-green);
+      border: 1.5px solid var(--cash-green);
+    }
+    .modal__btn--secondary:hover { background: rgba(1,71,81,0.06); }
+    .modal__btn--tertiary {
+      background: transparent;
+      color: var(--off-black);
+      opacity: 0.55;
+      font-weight: 500;
+      padding: 0.6rem 1.2rem;
+    }
+    .modal__btn--tertiary:hover { opacity: 1; }
+    .modal__btn:focus-visible {
+      outline: 2px solid var(--cash-green);
+      outline-offset: 2px;
+    }
 
-    @media (max-width: 720px) {
-      .bar { padding: 0.75rem 1.25rem 1rem; }
-      main { padding: 0.25rem 1rem 3rem; }
-      .scatter { height: 48rem; }
-      .pill-phone { font-size: 0.72rem; padding: 0.4rem 0.7rem; }
+    /* ── Manual form (inside modal) ────────────── */
+    .manual-form { display: none; flex-direction: column; gap: 0.9rem; }
+    .manual-form.is-visible { display: flex; }
+    .modal__choices.is-hidden { display: none; }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
     }
+    .field__label {
+      font-size: 0.78rem;
+      font-weight: 500;
+      opacity: 0.7;
+      text-transform: lowercase;
+      letter-spacing: 0.01em;
+    }
+    .field__input {
+      width: 100%;
+      padding: 0.75rem 0.9rem;
+      border-radius: 12px;
+      border: 1.5px solid rgba(26,23,23,0.12);
+      background: rgba(252,250,242,0.6);
+      font-family: inherit;
+      font-size: 0.98rem;
+      color: var(--off-black);
+      transition: border-color 0.15s ease, background 0.15s ease;
+    }
+    .field__input:focus {
+      outline: none;
+      border-color: var(--cash-green);
+      background: #fff;
+    }
+    .field__input::placeholder { color: rgba(26,23,23,0.35); }
+
+    .chips-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin-top: 0.15rem;
+    }
+    .quick-chip {
+      padding: 0.3rem 0.7rem;
+      border-radius: 100px;
+      background: rgba(1,71,81,0.06);
+      color: var(--cash-green);
+      font-size: 0.78rem;
+      font-weight: 500;
+      transition: background 0.15s ease;
+    }
+    .quick-chip:hover, .quick-chip.is-active { background: rgba(1,71,81,0.15); }
+
+    .form__actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.4rem;
+    }
+    .form__actions .modal__btn { flex: 1; }
+
+    .form__error {
+      font-size: 0.78rem;
+      color: #8a2a2a;
+      min-height: 1.1em;
+    }
+
+    /* ── Reduced motion ─────────────────────────── */
     @media (prefers-reduced-motion: reduce) {
-      .seed { animation: none !important; transform: rotate(var(--rot)); }
-      .state--loading span { animation: none; }
+      .seed, .seed.is-new { animation: none !important; transform: rotate(var(--rot)) !important; }
+      .toast--loading { animation: none; }
+      .modal, .modal-backdrop { transition: none !important; }
+    }
+
+    /* ── Mobile polish ──────────────────────────── */
+    @media (max-width: 560px) {
+      .chip--top-right { gap: 0.5rem; }
+      .pill-phone { font-size: 0.72rem; }
+      .add-btn--center { padding: 0.95rem 1.5rem; font-size: 0.98rem; }
+      .modal__title { font-size: 1.7rem; }
     }
   </style>
 </head>
 <body>
-  <header class="bar">
-    <a href="index.html" class="wordmark">cash bff</a>
-    <div class="bar__right">
-      <span class="pill-phone" id="phone-pill">+1 signed in</span>
-      <button type="button" class="signout" id="signout">sign out</button>
+  <!-- Fixed viewport UI (does not pan/zoom) -->
+  <a href="index.html" class="chip chip--wordmark" aria-label="cash bff home">cash bff</a>
+  <div class="chip chip--top-right">
+    <span class="pill-phone" id="phone-pill">+0 signed in</span>
+    <button type="button" class="signout" id="signout">sign out</button>
+  </div>
+
+  <!-- Pan/zoom canvas -->
+  <div class="viewport" id="viewport" role="application" aria-label="your cards workspace" tabindex="0">
+    <div class="world" id="world"></div>
+  </div>
+
+  <!-- Floating loading toast (removed once cards render) -->
+  <div class="toast toast--loading" id="loading-toast" aria-live="polite">settling in…</div>
+
+  <!-- Central / corner add button. Single element, class swaps on card count. -->
+  <button
+    type="button"
+    class="add-btn add-btn--center"
+    id="add-account-btn"
+    tabindex="0"
+    aria-haspopup="dialog"
+    aria-controls="add-modal"
+  >+ add account</button>
+
+  <!-- Add-account modal -->
+  <div class="modal-backdrop" id="add-modal" role="dialog" aria-modal="true" aria-labelledby="add-modal-title" hidden>
+    <div class="modal" id="add-modal-panel">
+      <h2 class="modal__title" id="add-modal-title">add an account.</h2>
+
+      <!-- Three-choice view -->
+      <div class="modal__choices" id="modal-choices">
+        <button type="button" class="modal__btn modal__btn--primary" id="choice-manual">manual</button>
+        <button type="button" class="modal__btn modal__btn--secondary" id="choice-plaid">plaid</button>
+        <button type="button" class="modal__btn modal__btn--tertiary" id="choice-close">close</button>
+      </div>
+
+      <!-- Manual form (hidden by default) -->
+      <form class="manual-form" id="manual-form" novalidate>
+        <div class="field">
+          <label class="field__label" for="f-institution">institution</label>
+          <input class="field__input" type="text" id="f-institution" name="institution" placeholder="chase, capital one, …" autocomplete="off" required>
+          <div class="chips-row" id="institution-chips">
+            <button type="button" class="quick-chip" data-v="Chase">chase</button>
+            <button type="button" class="quick-chip" data-v="Capital One">capital one</button>
+            <button type="button" class="quick-chip" data-v="Discover">discover</button>
+            <button type="button" class="quick-chip" data-v="Credit One">credit one</button>
+            <button type="button" class="quick-chip" data-v="Bank of America">bank of america</button>
+            <button type="button" class="quick-chip" data-v="other">other</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="f-mask">last 4</label>
+          <input class="field__input" type="text" id="f-mask" name="mask" inputmode="numeric" pattern="\d{4}" maxlength="4" placeholder="1234" autocomplete="off" required>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="f-balance">current balance</label>
+          <input class="field__input" type="text" id="f-balance" name="balance" inputmode="decimal" placeholder="$0.00" autocomplete="off" required>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="f-limit">credit limit</label>
+          <input class="field__input" type="text" id="f-limit" name="limit" inputmode="decimal" placeholder="$0" autocomplete="off">
+        </div>
+
+        <div class="form__error" id="form-error" aria-live="polite"></div>
+
+        <div class="form__actions">
+          <button type="button" class="modal__btn modal__btn--tertiary" id="manual-back">back</button>
+          <button type="submit" class="modal__btn modal__btn--primary" id="manual-submit">add it.</button>
+        </div>
+      </form>
     </div>
-  </header>
-
-  <main>
-    <section class="scatter" id="scatter" aria-label="your cards">
-      <div class="state state--loading" id="loading"><span>settling in…</span></div>
-    </section>
-  </main>
-
-  <footer class="page-foot">
-    <a href="privacy.html">privacy</a>
-    <span>·</span>
-    <a href="mailto:hi@cashbff.com">hi@cashbff.com</a>
-  </footer>
+  </div>
 
   <script src="/assets/js/home.js" defer></script>
+  <script src="/assets/js/add-account.js" defer></script>
 </body>
 </html>
