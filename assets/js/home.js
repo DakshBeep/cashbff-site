@@ -24,12 +24,20 @@
   var WORLD_H = 8000;
   // A generous "playground" in the center of the world where we allocate card
   // positions. Everything outside stays empty grid — you can still pan there.
-  var PLAYGROUND_W = 1800;
-  var PLAYGROUND_H = 1200;
+  // Expanded ~1.4x from the original 1800x1200 so cards have more negative
+  // space between tiles (OCD-friendly: more air, same tile size).
+  var PLAYGROUND_W = 2520;
+  var PLAYGROUND_H = 1680;
 
   // Zoom clamps + trackpad feel.
-  var MIN_ZOOM = 0.5;
+  // MIN_ZOOM extended to 0.35 so the user can pull back far enough for the
+  // cards to feel held-at-a-distance, not crowded.
+  var MIN_ZOOM = 0.35;
   var MAX_ZOOM = 2.0;
+  // Initial auto-fit lands inside this band rather than filling the viewport,
+  // so first load reads as breathy, not tight.
+  var INITIAL_FIT_MIN = 0.75;
+  var INITIAL_FIT_MAX = 0.85;
   var WHEEL_ZOOM_INTENSITY = 0.0015;     // ctrl+wheel / trackpad pinch
   var WHEEL_PAN_INTENSITY  = 1.0;        // plain wheel = pan
 
@@ -327,7 +335,9 @@
 
     panX: 0,
     panY: 0,
-    zoom: 1,
+    // Default zoom to the low end of the initial fit band so the world reads
+    // as breathy even before autoFit runs.
+    zoom: 0.75,
     positioned: [],       // {card, x, y (world coords), w, h, ...}
     worldOffsetX: 0,       // playground origin inside the world
     worldOffsetY: 0,
@@ -365,12 +375,16 @@
     // Fit all rendered cards into the viewport, with a margin.
     autoFit: function () {
       if (!this.positioned.length || !this.viewport) {
-        // With no cards, center the viewport on the middle of the playground.
+        // With no cards, center the viewport on the middle of the playground
+        // at the low end of the initial fit band so the empty state also feels
+        // breathy rather than filling the screen.
         var vw0 = this.viewport ? this.viewport.clientWidth : window.innerWidth;
         var vh0 = this.viewport ? this.viewport.clientHeight : window.innerHeight;
-        this.zoom = 1;
-        this.panX = Math.round(vw0 / 2 - (this.worldOffsetX + PLAYGROUND_W / 2));
-        this.panY = Math.round(vh0 / 2 - (this.worldOffsetY + PLAYGROUND_H / 2));
+        this.zoom = INITIAL_FIT_MIN;
+        var cx0 = this.worldOffsetX + PLAYGROUND_W / 2;
+        var cy0 = this.worldOffsetY + PLAYGROUND_H / 2;
+        this.panX = Math.round(vw0 / 2 - cx0 * this.zoom);
+        this.panY = Math.round(vh0 / 2 - cy0 * this.zoom);
         this.applyTransform();
         return;
       }
@@ -385,7 +399,9 @@
         if (wx + p.w > maxX) maxX = wx + p.w;
         if (wy + p.h > maxY) maxY = wy + p.h;
       }
-      var padding = 80;
+      // Extra-generous margin so the fit doesn't kiss the viewport edges —
+      // this produces the "held at arm's length" feel rather than filling it.
+      var padding = 180;
       minX -= padding; minY -= padding; maxX += padding; maxY += padding;
       var vw = this.viewport.clientWidth;
       var vh = this.viewport.clientHeight;
@@ -393,9 +409,15 @@
       var contentH = maxY - minY;
       var zoomX = vw / contentW;
       var zoomY = vh / contentH;
-      var fitZoom = clamp(Math.min(zoomX, zoomY), MIN_ZOOM, MAX_ZOOM);
-      // Slight dial-back so edges aren't kissed.
-      fitZoom = Math.min(fitZoom, 1);
+      var fitZoom = Math.min(zoomX, zoomY);
+      // Cap the initial fit so the cards feel breathy from first load. If the
+      // content naturally wants to sit further out (i.e. lots of cards), let
+      // it, but never squash in tighter than INITIAL_FIT_MAX.
+      fitZoom = Math.min(fitZoom, INITIAL_FIT_MAX);
+      // And never shrink below the lower end of the breathy band on auto-fit —
+      // the user can still pinch out to MIN_ZOOM manually.
+      fitZoom = Math.max(fitZoom, INITIAL_FIT_MIN);
+      fitZoom = clamp(fitZoom, MIN_ZOOM, MAX_ZOOM);
       this.zoom = fitZoom;
       // Center the content box inside the viewport.
       var cxWorld = (minX + maxX) / 2;
@@ -403,6 +425,44 @@
       this.panX = vw / 2 - cxWorld * this.zoom;
       this.panY = vh / 2 - cyWorld * this.zoom;
       this.applyTransform();
+    },
+
+    // Smooth transition to auto-fit (for the "press 0" affordance). We animate
+    // the (panX, panY, zoom) triple with a short ease so the user sees the
+    // motion rather than a jarring snap.
+    smoothAutoFit: function () {
+      if (!this.world) return;
+      var startPanX = this.panX, startPanY = this.panY, startZoom = this.zoom;
+      // Compute target values without committing them yet.
+      var savedPanX = this.panX, savedPanY = this.panY, savedZoom = this.zoom;
+      this.autoFit();
+      var targetPanX = this.panX, targetPanY = this.panY, targetZoom = this.zoom;
+      // Restore start state so the tween reads as motion, not a jump.
+      this.panX = savedPanX; this.panY = savedPanY; this.zoom = savedZoom;
+      this.applyTransform();
+
+      var self = this;
+      var duration = 420;
+      var t0 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+      function ease(t) { return 1 - Math.pow(1 - t, 3); } // easeOutCubic
+      function frame() {
+        var now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+        var t = Math.min(1, (now - t0) / duration);
+        var k = ease(t);
+        self.panX = startPanX + (targetPanX - startPanX) * k;
+        self.panY = startPanY + (targetPanY - startPanY) * k;
+        self.zoom = startZoom + (targetZoom - startZoom) * k;
+        self.applyTransform();
+        if (t < 1) requestAnimationFrame(frame);
+      }
+      // Skip animation if the user prefers reduced motion.
+      var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (reduceMotion) {
+        this.panX = targetPanX; this.panY = targetPanY; this.zoom = targetZoom;
+        this.applyTransform();
+        return;
+      }
+      requestAnimationFrame(frame);
     },
 
     render: function (cards) {
@@ -629,15 +689,30 @@
     },
 
     _wireKeyboard: function () {
-      // "N" or Cmd/Ctrl+A opens the modal (as long as we're not typing).
+      // "N" or Cmd/Ctrl+A opens the add-account modal.
+      // "G" opens the add-goal modal.
+      // "0" smoothly resets zoom + centering to auto-fit.
+      // All shortcuts are suppressed while the user is typing in a field.
+      var self = this;
       document.addEventListener('keydown', function (e) {
         var typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target && e.target.tagName || '');
         if (typing) return;
-        var openModal = window.CashBFFAddAccount && window.CashBFFAddAccount.open;
+        if (e.target && e.target.isContentEditable) return;
+
+        var openAdd = window.CashBFFAddAccount && window.CashBFFAddAccount.open;
+        var openGoal = window.CashBFFGoal && window.CashBFFGoal.open;
+
+        if (e.key === '0' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+          e.preventDefault();
+          self.smoothAutoFit();
+          return;
+        }
         if ((e.key === 'n' || e.key === 'N') && !e.metaKey && !e.ctrlKey) {
-          if (openModal) { e.preventDefault(); openModal(); }
+          if (openAdd) { e.preventDefault(); openAdd(); }
         } else if ((e.key === 'a' || e.key === 'A') && (e.metaKey || e.ctrlKey)) {
-          if (openModal) { e.preventDefault(); openModal(); }
+          if (openAdd) { e.preventDefault(); openAdd(); }
+        } else if ((e.key === 'g' || e.key === 'G') && !e.metaKey && !e.ctrlKey) {
+          if (openGoal) { e.preventDefault(); openGoal(); }
         }
       });
     }
