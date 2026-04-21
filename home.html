@@ -436,9 +436,193 @@
       min-height: 1.1em;
     }
 
+    /* ── Goal tile (lives on the canvas beside .seed tiles) ─ */
+    .goal-tile {
+      position: absolute;
+      left: var(--x);
+      top: var(--y);
+      width: var(--w);
+      height: var(--h);
+      border-radius: 1.1rem;
+      padding: 1rem 1.1rem;
+      background: var(--periwinkle);
+      color: var(--off-black);
+      border: 1.5px dashed rgba(26,23,23,0.38);
+      cursor: pointer;
+      font-family: inherit;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.55rem;
+      overflow: hidden;
+      box-shadow: 0 12px 30px -18px rgba(26,23,23,0.3);
+      transition: box-shadow 0.3s ease, transform 0.3s ease, background 0.3s ease;
+      will-change: transform;
+      --rot: 0deg;
+      transform: rotate(var(--rot));
+      /* Gentler drift than cards — the goal is steadier than the debts. */
+      animation: goal-drift 14s ease-in-out infinite,
+                 goal-dash 5s linear infinite;
+    }
+    .goal-tile:hover {
+      box-shadow: 0 22px 48px -18px rgba(26,23,23,0.4);
+      transform: rotate(var(--rot)) translateY(-3px);
+      background: #d5c7f7;
+      z-index: 9;
+    }
+    .goal-tile:focus-visible {
+      outline: 2px solid var(--cash-green);
+      outline-offset: 3px;
+    }
+    .goal-tile::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 25% 15%, rgba(252,250,242,0.35), transparent 55%);
+      pointer-events: none;
+    }
+    .goal-tile__plus {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 2.4rem;
+      line-height: 1;
+      color: rgba(26,23,23,0.75);
+      user-select: none;
+    }
+    .goal-tile__label {
+      font-family: var(--font-body);
+      font-weight: 500;
+      font-size: 0.92rem;
+      letter-spacing: 0.01em;
+      text-transform: lowercase;
+      color: rgba(26,23,23,0.7);
+    }
+    .goal-tile__kicker {
+      font-family: var(--font-body);
+      font-weight: 500;
+      font-size: 0.68rem;
+      letter-spacing: 0.05em;
+      text-transform: lowercase;
+      color: rgba(26,23,23,0.55);
+      margin-bottom: 0.1rem;
+    }
+    .goal-tile__intention {
+      font-family: var(--font-body);
+      font-weight: 600;
+      font-size: 0.96rem;
+      line-height: 1.3;
+      color: var(--off-black);
+      /* Clamp to the tile; long strings trim with a soft ellipsis. */
+      display: -webkit-box;
+      -webkit-line-clamp: 4;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding: 0 0.25rem;
+    }
+    .goal-tile.is-filled {
+      border-style: solid;
+      border-color: rgba(1,71,81,0.25);
+      animation: goal-drift 14s ease-in-out infinite;
+    }
+    .goal-tile.is-new {
+      animation: goal-settle 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) 1,
+                 goal-drift 14s ease-in-out 0.55s infinite;
+    }
+    @keyframes goal-drift {
+      0%, 100% { transform: translate(0, 0) rotate(var(--rot)); }
+      50%      { transform: translate(2px, -1px) rotate(calc(var(--rot) + 0.2deg)); }
+    }
+    @keyframes goal-dash {
+      0%   { background-position: 0 0, 0 0; }
+      100% { background-position: 0 0, 0 0; }
+    }
+    @keyframes goal-settle {
+      0%   { transform: rotate(var(--rot)) scale(0.7); opacity: 0; }
+      60%  { transform: rotate(var(--rot)) scale(1.03); opacity: 1; }
+      100% { transform: rotate(var(--rot)) scale(1); opacity: 1; }
+    }
+    /* Subtle dash-offset idle pulse on the empty tile border. */
+    .goal-tile:not(.is-filled) {
+      background-image:
+        linear-gradient(var(--periwinkle), var(--periwinkle));
+    }
+
+    /* ── Periwinkle modal variant (add-goal) ──────── */
+    .modal--periwinkle {
+      background: #efe7ff;
+      border: 1.5px solid rgba(1,71,81,0.12);
+    }
+    .modal__title--periwinkle {
+      color: var(--cash-green);
+      margin-bottom: 0.4rem;
+    }
+    .modal__subtitle {
+      font-family: var(--font-body);
+      font-weight: 500;
+      font-size: 0.92rem;
+      color: rgba(26,23,23,0.65);
+      margin-bottom: 1.1rem;
+      text-transform: lowercase;
+      letter-spacing: 0.01em;
+    }
+    .goal-form { display: flex; flex-direction: column; gap: 0.75rem; }
+    .goal-form__textarea {
+      resize: none;
+      min-height: 88px;
+      font-family: inherit;
+      font-size: 1rem;
+      line-height: 1.4;
+      background: rgba(252,250,242,0.85);
+    }
+    .goal-form__count {
+      font-size: 0.72rem;
+      color: rgba(26,23,23,0.45);
+      text-align: right;
+      margin-top: 0.15rem;
+    }
+    .goal-form__soft {
+      font-size: 0.76rem;
+      color: rgba(26,23,23,0.5);
+      text-align: center;
+      margin-top: 0.5rem;
+      font-style: italic;
+    }
+    .modal__btn--submit {
+      background: var(--electric-green);
+      color: var(--off-black);
+      box-shadow: 0 8px 22px -12px rgba(1,71,81,0.4);
+    }
+    .modal__btn--submit:hover {
+      transform: translateY(-1px);
+      background: #c6f6a3;
+    }
+    .modal__btn--submit:disabled {
+      opacity: 0.6;
+      cursor: default;
+      transform: none;
+    }
+
+    /* Accessibility helper: hide text visually but keep it for screen readers. */
+    .sr-only {
+      position: absolute;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
     /* ── Reduced motion ─────────────────────────── */
     @media (prefers-reduced-motion: reduce) {
       .seed, .seed.is-new { animation: none !important; transform: rotate(var(--rot)) !important; }
+      .goal-tile, .goal-tile.is-new, .goal-tile.is-filled {
+        animation: none !important;
+        transform: rotate(var(--rot)) !important;
+      }
       .toast--loading { animation: none; }
       .modal, .modal-backdrop { transition: none !important; }
     }
@@ -477,6 +661,40 @@
     aria-haspopup="dialog"
     aria-controls="add-modal"
   >+ add account</button>
+
+  <!-- Add-goal modal -->
+  <div class="modal-backdrop" id="goal-modal" role="dialog" aria-modal="true" aria-labelledby="goal-modal-title" hidden>
+    <div class="modal modal--periwinkle" id="goal-modal-panel">
+      <h2 class="modal__title modal__title--periwinkle" id="goal-modal-title">add goal here.</h2>
+      <p class="modal__subtitle" id="goal-modal-subtitle">what&rsquo;s your first intention?</p>
+
+      <form class="goal-form" id="goal-form" novalidate>
+        <div class="field">
+          <label class="field__label sr-only" for="goal-text">intention</label>
+          <textarea
+            class="field__input goal-form__textarea"
+            id="goal-text"
+            name="text"
+            maxlength="120"
+            placeholder="e.g. be out of credit card debt by july"
+            rows="3"
+            autocomplete="off"
+            required
+          ></textarea>
+          <div class="goal-form__count"><span id="goal-count">0</span>/120</div>
+        </div>
+
+        <div class="form__error" id="goal-error" aria-live="polite"></div>
+
+        <div class="form__actions">
+          <button type="button" class="modal__btn modal__btn--tertiary" id="goal-close">close</button>
+          <button type="submit" class="modal__btn modal__btn--submit" id="goal-submit">set intention &rarr;</button>
+        </div>
+
+        <p class="goal-form__soft">no judgment. you can change this anytime.</p>
+      </form>
+    </div>
+  </div>
 
   <!-- Add-account modal -->
   <div class="modal-backdrop" id="add-modal" role="dialog" aria-modal="true" aria-labelledby="add-modal-title" hidden>
@@ -532,5 +750,6 @@
 
   <script src="/assets/js/home.js" defer></script>
   <script src="/assets/js/add-account.js" defer></script>
+  <script src="/assets/js/add-goal.js" defer></script>
 </body>
 </html>

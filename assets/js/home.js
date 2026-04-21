@@ -571,10 +571,11 @@
 
       // Pointer events cover mouse + touch + pen.
       vp.addEventListener('pointerdown', function (e) {
-        // Ignore if the pointer originates inside a card / UI chip — we still
-        // want them to be clickable.
-        if (e.target.closest('.seed') || e.target.closest('.chip') ||
-            e.target.closest('.add-btn') || e.target.closest('.modal-backdrop')) {
+        // Ignore if the pointer originates inside a card / goal tile / UI chip
+        // — we still want them to be clickable.
+        if (e.target.closest('.seed') || e.target.closest('.goal-tile') ||
+            e.target.closest('.chip') || e.target.closest('.add-btn') ||
+            e.target.closest('.modal-backdrop')) {
           return;
         }
         vp.setPointerCapture(e.pointerId);
@@ -718,6 +719,150 @@
     }
   };
 
+  // ── Goal tile controller ────────────────────────
+  // Renders a single "goal" tile on the canvas as a sibling of .seed cards.
+  // Visually distinct (periwinkle + dashed border) so it reads as a
+  // placeholder-slot. Click opens the add-goal modal; on save the tile swaps
+  // from the "+ add goal" empty state to a filled "your intention." state.
+  var GOAL_LOCAL_KEY = 'cbff_goals';
+  var GOAL_TILE_W = 220;
+  var GOAL_TILE_H = 165;
+
+  var Goal = {
+    el: null,
+    data: null,   // { id?, text } once saved, else null
+
+    // Place the goal tile offset up-and-right from the card cluster centroid.
+    // Falls back to center-ish placement if there are no cards.
+    _computePosition: function () {
+      var positioned = Canvas.positioned || [];
+      var cx, cy;
+      if (positioned.length) {
+        var sx = 0, sy = 0;
+        positioned.forEach(function (p) {
+          sx += p.x + p.w / 2;
+          sy += p.y + p.h / 2;
+        });
+        cx = sx / positioned.length;
+        cy = sy / positioned.length;
+        // Consistent offset: +120px x, -80px y from centroid, then tile is
+        // centered on that point.
+        cx += 120;
+        cy -= 80;
+      } else {
+        // Empty state: drop it just below the center so it sits under the
+        // big "+ add account" button rather than on top of it.
+        cx = PLAYGROUND_W / 2;
+        cy = PLAYGROUND_H / 2 + 140;
+      }
+      var x = cx - GOAL_TILE_W / 2;
+      var y = cy - GOAL_TILE_H / 2;
+      // Keep it inside the playground box.
+      x = clamp(x, 16, PLAYGROUND_W - GOAL_TILE_W - 16);
+      y = clamp(y, 16, PLAYGROUND_H - GOAL_TILE_H - 16);
+      return { x: x, y: y };
+    },
+
+    _build: function () {
+      var el = document.createElement('button');
+      el.type = 'button';
+      el.className = 'goal-tile';
+      el.id = 'goal-tile';
+      el.setAttribute('aria-label', 'add a goal');
+      el.style.setProperty('--w', GOAL_TILE_W + 'px');
+      el.style.setProperty('--h', GOAL_TILE_H + 'px');
+      el.style.setProperty('--rot', '-1.6deg');
+      el.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        if (window.CashBFFGoal && window.CashBFFGoal.open) {
+          window.CashBFFGoal.open();
+        }
+      });
+      return el;
+    },
+
+    _applyPosition: function () {
+      if (!this.el) return;
+      var pos = this._computePosition();
+      this.el.style.setProperty('--x', (Canvas.worldOffsetX + pos.x) + 'px');
+      this.el.style.setProperty('--y', (Canvas.worldOffsetY + pos.y) + 'px');
+    },
+
+    _renderInner: function () {
+      if (!this.el) return;
+      if (this.data && this.data.text) {
+        this.el.classList.add('is-filled');
+        this.el.setAttribute('aria-label', 'your goal: ' + this.data.text + ' (click to edit)');
+        this.el.innerHTML =
+          '<span class="goal-tile__kicker">your intention.</span>' +
+          '<span class="goal-tile__intention"></span>';
+        // Use textContent to avoid HTML injection from user input.
+        var textEl = this.el.querySelector('.goal-tile__intention');
+        if (textEl) textEl.textContent = this.data.text;
+      } else {
+        this.el.classList.remove('is-filled');
+        this.el.setAttribute('aria-label', 'add a goal');
+        this.el.innerHTML =
+          '<span class="goal-tile__plus" aria-hidden="true">+</span>' +
+          '<span class="goal-tile__label">add goal</span>';
+      }
+    },
+
+    // Render (or re-render) the tile into the world. Safe to call multiple
+    // times — it upserts the single tile element.
+    render: function () {
+      if (!Canvas.world) return;
+      if (!this.el) {
+        this.el = this._build();
+        Canvas.world.appendChild(this.el);
+      } else if (!Canvas.world.contains(this.el)) {
+        // World was rebuilt (e.g. Canvas.render(cards)); re-attach.
+        Canvas.world.appendChild(this.el);
+      }
+      this._applyPosition();
+      this._renderInner();
+    },
+
+    // Merge a saved goal (from server or localStorage) into state.
+    setData: function (goal) {
+      this.data = (goal && typeof goal === 'object' && goal.text) ? {
+        id: goal.id || null,
+        text: String(goal.text)
+      } : null;
+      this._renderInner();
+    },
+
+    // Clear any in-memory + local goal. Not wired to UI yet.
+    clear: function () {
+      this.data = null;
+      try { localStorage.removeItem(GOAL_LOCAL_KEY); } catch (_) {}
+      this._renderInner();
+    },
+
+    // Read the last-known goal from localStorage (offline fallback).
+    loadLocal: function () {
+      try {
+        var raw = localStorage.getItem(GOAL_LOCAL_KEY);
+        if (!raw) return null;
+        var parsed = JSON.parse(raw);
+        if (parsed && parsed.text) return parsed;
+      } catch (_) {}
+      return null;
+    },
+    saveLocal: function (goal) {
+      try { localStorage.setItem(GOAL_LOCAL_KEY, JSON.stringify(goal)); } catch (_) {}
+    },
+
+    // Animate the tile into its new state (called after save from the modal).
+    flashSettle: function () {
+      if (!this.el) return;
+      this.el.classList.remove('is-new');
+      // Force reflow so the animation re-triggers.
+      void this.el.offsetWidth;
+      this.el.classList.add('is-new');
+    }
+  };
+
   // ── Boot ────────────────────────────────────────
   function boot() {
     wirePhonePill();
@@ -733,6 +878,11 @@
         }
       });
     }
+
+    // Hydrate the goal tile from localStorage before the fetch resolves, so
+    // the tile appears immediately (either empty or pre-filled).
+    var localGoal = Goal.loadLocal();
+    if (localGoal) Goal.setData(localGoal);
 
     fetchHome().then(function (data) {
       var cards = (data.cards || []).slice();
@@ -752,12 +902,21 @@
       }
       updateSignedInCount(cards.length);
       Canvas.render(cards);
+      // Render the goal tile AFTER the cards so it reads as a sibling element
+      // on top (dashed border sits over the dot grid).
+      Goal.render();
+      // If the server sent back a goal on /api/home, respect it.
+      if (data && data.goal && data.goal.text) {
+        Goal.setData(data.goal);
+        Goal.saveLocal(data.goal);
+      }
       Canvas.hideLoading();
       Canvas.autoFit();
     }).catch(function () {
       Canvas.showError();
-      // Still allow add-account even on fetch error.
+      // Still allow add-account + goal even on fetch error.
       Canvas._syncAddBtnMode(0);
+      Goal.render();
     });
   }
 
@@ -777,10 +936,24 @@
       updateSignedInCount(Canvas.positioned.length);
     },
     _canvas: Canvas,
+    _goal: Goal,
     _hashString: hashString,
     _sizeTierForRank: sizeTierForRank,
     _tileDims: tileDims
   };
+
+  // Thin surface for add-goal.js to drive the tile without reaching into
+  // module internals. .open is filled in by add-goal.js once it inits;
+  // render/save/current are safe to call immediately.
+  window.CashBFFGoal = window.CashBFFGoal || {};
+  window.CashBFFGoal.render = function () { Goal.render(); };
+  window.CashBFFGoal.current = function () { return Goal.data ? { id: Goal.data.id, text: Goal.data.text } : null; };
+  window.CashBFFGoal.save = function (goal) {
+    Goal.setData(goal);
+    Goal.saveLocal({ id: goal && goal.id, text: goal && goal.text });
+    Goal.flashSettle();
+  };
+  window.CashBFFGoal._canvas = Canvas;
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', boot);
