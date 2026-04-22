@@ -559,6 +559,11 @@
       el.classList.add('is-new');
       this.world.appendChild(el);
       this._syncAddBtnMode(this.positioned.length);
+      // Card count changed — re-run goal positioning so it doesn't end up
+      // overlapping the new tile.
+      if (typeof Goal !== 'undefined' && Goal && Goal.el) {
+        Goal.render();
+      }
       // Gently re-fit so the new card is in view.
       this.autoFit();
       return entry;
@@ -751,6 +756,9 @@
   var GOAL_LOCAL_KEY = 'cbff_goals';
   var GOAL_TILE_W = 220;
   var GOAL_TILE_H = 165;
+  // Goal tile breathes more than cards do between each other — it's a
+  // distinct object, not just another card. Double the card PAD of 24.
+  var GOAL_PAD = 48;
 
   var Goal = {
     el: null,
@@ -758,33 +766,77 @@
 
     // Place the goal tile offset up-and-right from the card cluster centroid.
     // Falls back to center-ish placement if there are no cards.
+    //
+    // Collision-aware: after computing the base candidate, check it against
+    // every placed card rectangle. If any card (expanded by GOAL_PAD) overlaps
+    // the goal rect, extend the offset further in the same up-and-right
+    // direction and retry. Deterministic — no randomness, so position is
+    // stable across reloads.
     _computePosition: function () {
       var positioned = Canvas.positioned || [];
-      var cx, cy;
-      if (positioned.length) {
-        var sx = 0, sy = 0;
-        positioned.forEach(function (p) {
-          sx += p.x + p.w / 2;
-          sy += p.y + p.h / 2;
-        });
-        cx = sx / positioned.length;
-        cy = sy / positioned.length;
-        // Consistent offset: +120px x, -80px y from centroid, then tile is
-        // centered on that point.
-        cx += 120;
-        cy -= 80;
-      } else {
+      if (!positioned.length) {
         // Empty state: drop it just below the center so it sits under the
         // big "+ add account" button rather than on top of it.
-        cx = PLAYGROUND_W / 2;
-        cy = PLAYGROUND_H / 2 + 140;
+        var cx0 = PLAYGROUND_W / 2;
+        var cy0 = PLAYGROUND_H / 2 + 140;
+        var x0 = clamp(cx0 - GOAL_TILE_W / 2, 16, PLAYGROUND_W - GOAL_TILE_W - 16);
+        var y0 = clamp(cy0 - GOAL_TILE_H / 2, 16, PLAYGROUND_H - GOAL_TILE_H - 16);
+        return { x: x0, y: y0 };
       }
-      var x = cx - GOAL_TILE_W / 2;
-      var y = cy - GOAL_TILE_H / 2;
-      // Keep it inside the playground box.
-      x = clamp(x, 16, PLAYGROUND_W - GOAL_TILE_W - 16);
-      y = clamp(y, 16, PLAYGROUND_H - GOAL_TILE_H - 16);
-      return { x: x, y: y };
+
+      var sx = 0, sy = 0;
+      positioned.forEach(function (p) {
+        sx += p.x + p.w / 2;
+        sy += p.y + p.h / 2;
+      });
+      var centroidX = sx / positioned.length;
+      var centroidY = sy / positioned.length;
+
+      // Direction vector: up-and-right (the original deterministic feel).
+      // Base offset magnitudes match the old (+120, -80) vector.
+      var baseDx = 120;
+      var baseDy = -80;
+      var dirLen = Math.sqrt(baseDx * baseDx + baseDy * baseDy);
+      var ux = baseDx / dirLen;
+      var uy = baseDy / dirLen;
+
+      var maxX = PLAYGROUND_W - GOAL_TILE_W - 16;
+      var maxY = PLAYGROUND_H - GOAL_TILE_H - 16;
+
+      var chosen = null;
+      var step = 40; // grow offset by this much per retry
+      for (var attempt = 0; attempt < 30; attempt++) {
+        var magnitude = dirLen + attempt * step;
+        var cx = centroidX + ux * magnitude;
+        var cy = centroidY + uy * magnitude;
+        var x = clamp(cx - GOAL_TILE_W / 2, 16, maxX);
+        var y = clamp(cy - GOAL_TILE_H / 2, 16, maxY);
+        var goalRect = { x: x, y: y, w: GOAL_TILE_W, h: GOAL_TILE_H };
+
+        var clash = false;
+        for (var i = 0; i < positioned.length; i++) {
+          var p = positioned[i];
+          if (rectsOverlap(goalRect, { x: p.x, y: p.y, w: p.w, h: p.h }, GOAL_PAD)) {
+            clash = true;
+            break;
+          }
+        }
+        if (!clash) { chosen = { x: x, y: y }; break; }
+      }
+
+      if (chosen) return chosen;
+
+      // Fallback: nowhere along the up-and-right ray is clear (shouldn't
+      // happen with 5 cards in 2520x1680, but guard anyway). Place at the
+      // top-right corner of the cluster bounding box, padded by GOAL_PAD.
+      var minY = Infinity, maxBX = -Infinity;
+      positioned.forEach(function (p) {
+        if (p.y < minY) minY = p.y;
+        if (p.x + p.w > maxBX) maxBX = p.x + p.w;
+      });
+      var fx = clamp(maxBX + GOAL_PAD, 16, maxX);
+      var fy = clamp(minY - GOAL_TILE_H - GOAL_PAD, 16, maxY);
+      return { x: fx, y: fy };
     },
 
     _build: function () {
