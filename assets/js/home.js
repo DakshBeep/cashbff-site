@@ -370,32 +370,6 @@
       if (!this.world) return;
       this.world.style.transform =
         'translate(' + this.panX + 'px, ' + this.panY + 'px) scale(' + this.zoom + ')';
-      // Keep any listeners (zoom slider, etc.) in sync with the canonical
-      // zoom value. Fired on every transform update; handlers should be cheap.
-      if (typeof this._onZoomChange === 'function') {
-        try { this._onZoomChange(this.zoom); } catch (_) {}
-      }
-    },
-
-    // Imperatively set the zoom level. Anchors the scale around (anchorX,
-    // anchorY) in viewport-pixel coords so the world point under that screen
-    // pixel stays put. If no anchor is provided, anchors to the viewport
-    // center — the right default for a chip-driven slider (the user isn't
-    // pointing at a specific card).
-    setZoom: function (value, anchorX, anchorY) {
-      if (!this.viewport) return;
-      var newZoom = clamp(Number(value) || this.zoom, MIN_ZOOM, MAX_ZOOM);
-      if (newZoom === this.zoom) return;
-      var vw = this.viewport.clientWidth;
-      var vh = this.viewport.clientHeight;
-      var ax = (typeof anchorX === 'number') ? anchorX : vw / 2;
-      var ay = (typeof anchorY === 'number') ? anchorY : vh / 2;
-      var worldPx = (ax - this.panX) / this.zoom;
-      var worldPy = (ay - this.panY) / this.zoom;
-      this.panX = ax - worldPx * newZoom;
-      this.panY = ay - worldPy * newZoom;
-      this.zoom = newZoom;
-      this.applyTransform();
     },
 
     // Fit all rendered cards into the viewport, with a margin.
@@ -568,33 +542,14 @@
 
     _syncAddBtnMode: function (n) {
       if (!this.addBtn) return;
-      var dock = document.getElementById('dock');
       if (n === 0) {
-        // Big center button; also mark the dock so the other chips scale down
-        // so they don't compete with the empty-state CTA.
         this.addBtn.classList.add('add-btn--center');
-        this.addBtn.classList.remove('add-btn--dock');
-        this.addBtn.classList.remove('dock-chip');
+        this.addBtn.classList.remove('add-btn--corner');
         this.addBtn.textContent = '+ add account';
-        // Move back out of the dock if it's currently parented there.
-        if (dock && this.addBtn.parentNode === dock) {
-          document.body.appendChild(this.addBtn);
-        }
-        if (dock) dock.classList.add('is-empty-state');
       } else {
-        // Slot into the dock as the left-most chip (before #goal-chip).
         this.addBtn.classList.remove('add-btn--center');
-        this.addBtn.classList.add('add-btn--dock');
-        this.addBtn.classList.add('dock-chip');
+        this.addBtn.classList.add('add-btn--corner');
         this.addBtn.textContent = '+ add';
-        if (dock) {
-          dock.classList.remove('is-empty-state');
-          var goalChip = document.getElementById('goal-chip');
-          if (this.addBtn.parentNode !== dock) {
-            if (goalChip) dock.insertBefore(this.addBtn, goalChip);
-            else dock.appendChild(this.addBtn);
-          }
-        }
       }
     },
 
@@ -620,7 +575,6 @@
         // — we still want them to be clickable.
         if (e.target.closest('.seed') || e.target.closest('.goal-tile') ||
             e.target.closest('.chip') || e.target.closest('.add-btn') ||
-            e.target.closest('.dock') || e.target.closest('.zoom-popover') ||
             e.target.closest('.modal-backdrop')) {
           return;
         }
@@ -909,90 +863,6 @@
     }
   };
 
-  // ── Zoom chip + slider popover ──────────────────
-  // Toggle a slim inline slider above the zoom chip in the dock. Dragging
-  // the slider calls Canvas.setZoom (anchored to viewport center — the
-  // user isn't pointing at a specific card on the canvas with this
-  // control). Reset link animates back to auto-fit, same as the "0" key.
-  function wireZoomControl() {
-    var chip = document.getElementById('zoom-chip');
-    var popover = document.getElementById('zoom-popover');
-    var slider = document.getElementById('zoom-slider');
-    var percentEl = document.getElementById('zoom-percent');
-    var resetBtn = document.getElementById('zoom-reset');
-    if (!chip || !popover || !slider) return;
-
-    function formatPct(z) { return Math.round(z * 100) + '%'; }
-
-    function syncSliderFromZoom(z) {
-      // Don't fight the user mid-drag.
-      if (document.activeElement === slider) {
-        if (percentEl) percentEl.textContent = formatPct(z);
-        return;
-      }
-      slider.value = String(z);
-      if (percentEl) percentEl.textContent = formatPct(z);
-    }
-
-    // Push canvas zoom changes (wheel, pinch, keyboard 0) into the UI.
-    Canvas._onZoomChange = syncSliderFromZoom;
-    // Initial value so the slider shows the right percent before any input.
-    syncSliderFromZoom(Canvas.zoom);
-
-    function openPopover() {
-      popover.hidden = false;
-      // Read the current zoom into the slider every time we open.
-      syncSliderFromZoom(Canvas.zoom);
-      requestAnimationFrame(function () {
-        popover.classList.add('is-open');
-      });
-      chip.setAttribute('aria-expanded', 'true');
-      document.addEventListener('mousedown', onOutsidePointer, true);
-      document.addEventListener('touchstart', onOutsidePointer, true);
-      document.addEventListener('keydown', onEscapeKey, true);
-    }
-    function closePopover() {
-      popover.classList.remove('is-open');
-      chip.setAttribute('aria-expanded', 'false');
-      // Wait out the transition before truly hiding so the fade-out plays.
-      setTimeout(function () {
-        if (!popover.classList.contains('is-open')) popover.hidden = true;
-      }, 180);
-      document.removeEventListener('mousedown', onOutsidePointer, true);
-      document.removeEventListener('touchstart', onOutsidePointer, true);
-      document.removeEventListener('keydown', onEscapeKey, true);
-    }
-    function togglePopover() {
-      if (popover.classList.contains('is-open')) closePopover();
-      else openPopover();
-    }
-    function onOutsidePointer(e) {
-      if (popover.contains(e.target) || chip.contains(e.target)) return;
-      closePopover();
-    }
-    function onEscapeKey(e) {
-      if (e.key === 'Escape') { e.preventDefault(); closePopover(); }
-    }
-
-    chip.addEventListener('click', function (e) {
-      e.stopPropagation();
-      togglePopover();
-    });
-
-    slider.addEventListener('input', function () {
-      Canvas.setZoom(parseFloat(slider.value));
-      if (percentEl) percentEl.textContent = formatPct(Canvas.zoom);
-    });
-
-    if (resetBtn) {
-      resetBtn.addEventListener('click', function () {
-        Canvas.smoothAutoFit();
-        // Popover stays open so the user sees the percent drop to the
-        // auto-fit value, which is nice feedback.
-      });
-    }
-  }
-
   // ── Boot ────────────────────────────────────────
   function boot() {
     wirePhonePill();
@@ -1008,8 +878,6 @@
         }
       });
     }
-
-    wireZoomControl();
 
     // Hydrate the goal tile from localStorage before the fetch resolves, so
     // the tile appears immediately (either empty or pre-filled).
@@ -1042,11 +910,6 @@
         Goal.setData(data.goal);
         Goal.saveLocal(data.goal);
       }
-      // Flip the dock chip label to match whatever hydrated goal we have
-      // (server-side or localStorage). Safe no-op if add-goal.js isn't loaded.
-      if (window.CashBFFGoal && window.CashBFFGoal.refreshChip) {
-        window.CashBFFGoal.refreshChip();
-      }
       Canvas.hideLoading();
       Canvas.autoFit();
     }).catch(function () {
@@ -1054,9 +917,6 @@
       // Still allow add-account + goal even on fetch error.
       Canvas._syncAddBtnMode(0);
       Goal.render();
-      if (window.CashBFFGoal && window.CashBFFGoal.refreshChip) {
-        window.CashBFFGoal.refreshChip();
-      }
     });
   }
 
@@ -1075,8 +935,6 @@
       Canvas.addCard(card);
       updateSignedInCount(Canvas.positioned.length);
     },
-    setZoom: function (value, anchorX, anchorY) { Canvas.setZoom(value, anchorX, anchorY); },
-    resetZoom: function () { Canvas.smoothAutoFit(); },
     _canvas: Canvas,
     _goal: Goal,
     _hashString: hashString,
@@ -1094,8 +952,6 @@
     Goal.setData(goal);
     Goal.saveLocal({ id: goal && goal.id, text: goal && goal.text });
     Goal.flashSettle();
-    // Flip the dock chip's label in step with the tile state.
-    if (window.CashBFFGoal.refreshChip) window.CashBFFGoal.refreshChip();
   };
   window.CashBFFGoal._canvas = Canvas;
 
