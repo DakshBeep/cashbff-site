@@ -370,6 +370,30 @@
       if (!this.world) return;
       this.world.style.transform =
         'translate(' + this.panX + 'px, ' + this.panY + 'px) scale(' + this.zoom + ')';
+      // Notify listeners (e.g. the zoom slider) that the zoom changed. Keeps
+      // the slider position in sync whether zoom changed via wheel, pinch,
+      // keyboard reset, auto-fit, or the slider itself.
+      if (this._onZoomChange) {
+        try { this._onZoomChange(this.zoom); } catch (_) {}
+      }
+    },
+
+    // Programmatic zoom. Anchors to (anchorX, anchorY) in viewport pixels; if
+    // omitted, anchors to the viewport center so the content doesn't drift
+    // when the user drags the slider. Clamps to [MIN_ZOOM, MAX_ZOOM] and
+    // re-renders via applyTransform (same render hook wheel/pinch use).
+    setZoom: function (value, anchorX, anchorY) {
+      if (!this.viewport) return;
+      var newZoom = clamp(Number(value) || this.zoom, MIN_ZOOM, MAX_ZOOM);
+      var rect = this.viewport.getBoundingClientRect();
+      var px = (typeof anchorX === 'number') ? (anchorX - rect.left) : (rect.width / 2);
+      var py = (typeof anchorY === 'number') ? (anchorY - rect.top)  : (rect.height / 2);
+      var worldPx = (px - this.panX) / this.zoom;
+      var worldPy = (py - this.panY) / this.zoom;
+      this.panX = px - worldPx * newZoom;
+      this.panY = py - worldPy * newZoom;
+      this.zoom = newZoom;
+      this.applyTransform();
     },
 
     // Fit all rendered cards into the viewport, with a margin.
@@ -863,11 +887,49 @@
     }
   };
 
+  // Wire the bottom-right zoom slider to Canvas. Bidirectional:
+  //   - slider -> Canvas.setZoom (anchored to viewport center)
+  //   - Canvas applyTransform -> slider position + percent label
+  //   - percent label click -> smoothAutoFit (matches "0" shortcut)
+  function wireZoomControl() {
+    var slider = document.getElementById('zoom-slider');
+    var pct = document.getElementById('zoom-pct');
+    if (!slider || !pct) return;
+
+    var suppressSliderEvent = false;
+
+    function syncUI(z) {
+      suppressSliderEvent = true;
+      // Avoid churning the value if it hasn't changed meaningfully.
+      var next = String(Math.round(z * 100) / 100);
+      if (slider.value !== next) slider.value = next;
+      var percent = Math.round(z * 100);
+      pct.textContent = percent + '%';
+      slider.setAttribute('aria-valuenow', String(z));
+      suppressSliderEvent = false;
+    }
+
+    // Subscribe to Canvas zoom changes (wheel / pinch / keyboard / autoFit).
+    Canvas._onZoomChange = syncUI;
+    // Seed initial state from current zoom.
+    syncUI(Canvas.zoom);
+
+    slider.addEventListener('input', function () {
+      if (suppressSliderEvent) return;
+      Canvas.setZoom(parseFloat(slider.value));
+    });
+
+    pct.addEventListener('click', function () {
+      Canvas.smoothAutoFit();
+    });
+  }
+
   // ── Boot ────────────────────────────────────────
   function boot() {
     wirePhonePill();
     wireSignout();
     Canvas.init();
+    wireZoomControl();
 
     // Wire the add button to the modal.
     var addBtn = document.getElementById('add-account-btn');
