@@ -124,7 +124,58 @@
     }
     .signout:hover { opacity: 1; color: var(--cash-green); }
 
-    /* ── Add button: centered when empty, bottom-center chip when populated ── */
+    /* ── Bottom-center dock of action chips ──────── */
+    /* The dock pins to the bottom of the viewport and holds the three
+       sibling chips (add-account · goal · zoom). When the add-account
+       button is in its empty-state "center" variant, we remove it from
+       the dock but keep goal + zoom anchored down here, just smaller. */
+    .dock {
+      position: fixed;
+      left: 50%;
+      bottom: 1.4rem;
+      transform: translateX(-50%);
+      z-index: 25;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      pointer-events: none; /* children re-enable */
+    }
+    .dock > * { pointer-events: auto; }
+    .dock.is-empty-state { bottom: 1.1rem; }
+    .dock.is-empty-state .dock-chip { transform: scale(0.92); }
+    .dock.is-empty-state .dock-chip:hover { transform: scale(0.92) translateY(-2px); }
+
+    /* Shared chip aesthetic for every dock button. */
+    .dock-chip {
+      font-family: var(--font-body);
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      font-size: 0.88rem;
+      padding: 0.7rem 1.3rem;
+      border-radius: 100px;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      opacity: 0.92;
+      box-shadow: 0 6px 18px -10px rgba(1,71,81,0.3);
+      transition: background 0.2s ease, transform 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      color: var(--off-black);
+      line-height: 1;
+    }
+    .dock-chip:hover {
+      opacity: 1;
+      transform: translateY(-2px);
+      box-shadow: 0 10px 22px -10px rgba(1,71,81,0.35);
+    }
+    .dock-chip:active { transform: translateY(0) scale(0.97); }
+    .dock-chip:focus-visible {
+      outline: 2px solid var(--cash-green);
+      outline-offset: 3px;
+    }
+
+    /* Add-account chip (electric-green) — the pivot color on this page. */
     .add-btn {
       position: fixed;
       z-index: 25;
@@ -147,26 +198,167 @@
       transform: translate(-50%, -50%) scale(1.03);
       box-shadow: 0 20px 44px -14px rgba(1,71,81,0.45);
     }
-    .add-btn--corner {
-      bottom: 1.4rem; left: 50%;
-      transform: translateX(-50%);
-      padding: 0.7rem 1.3rem;
-      font-size: 0.88rem;
-      background: rgba(211,255,180,0.78);
+    /* Dock variant: sits in the flex dock alongside the other chips. */
+    .add-btn--dock {
+      position: static;
+      transform: none;
+      background: rgba(211,255,180,0.82);
       color: var(--off-black);
-      border-radius: 100px;
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      opacity: 0.9;
-      box-shadow: 0 6px 18px -10px rgba(1,71,81,0.3);
     }
-    .add-btn--corner:hover {
-      opacity: 1;
-      transform: translateX(-50%) translateY(-2px);
+    .add-btn--dock:hover {
+      transform: translateY(-2px);
     }
     .add-btn:focus-visible {
       outline: 2px solid var(--cash-green);
       outline-offset: 3px;
+    }
+
+    /* Goal chip (periwinkle) — ties to the goal tile on the canvas. */
+    .goal-chip {
+      background: rgba(197,182,241,0.85);
+    }
+    .goal-chip:hover { background: rgba(197,182,241,0.98); }
+    .goal-chip[data-state="filled"] {
+      /* Slightly deeper periwinkle once set, to read as "edit this". */
+      background: rgba(197,182,241,0.92);
+    }
+
+    /* Zoom chip (neutral vanilla with cash-green accent). */
+    .zoom-chip {
+      background: rgba(252,250,242,0.9);
+      border: 1px solid rgba(1,71,81,0.18);
+      color: var(--cash-green);
+    }
+    .zoom-chip:hover { background: var(--vanilla); }
+    .zoom-chip[aria-expanded="true"] {
+      background: var(--cash-green);
+      color: var(--vanilla);
+      border-color: var(--cash-green);
+    }
+    .zoom-chip__icon {
+      /* Inline magnifier glyph — flat, not an emoji, so it matches the
+         wordmark weight of the rest of the UI. */
+      width: 0.95rem;
+      height: 0.95rem;
+      display: inline-block;
+      flex: 0 0 auto;
+    }
+    /* Positioning context so .zoom-popover can anchor to the chip. */
+    .zoom-chip-wrap { position: relative; }
+
+    /* Zoom popover: slim slider panel above the zoom chip. */
+    .zoom-popover {
+      position: absolute;
+      left: 50%;
+      bottom: calc(100% + 0.55rem);
+      transform: translateX(-50%) translateY(6px);
+      min-width: 240px;
+      padding: 0.75rem 0.9rem 0.65rem;
+      background: rgba(252,250,242,0.96);
+      border: 1px solid rgba(26,23,23,0.08);
+      border-radius: 14px;
+      box-shadow: 0 18px 40px -18px rgba(1,71,81,0.35);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.18s ease, transform 0.18s ease;
+      z-index: 26;
+    }
+    .zoom-popover.is-open {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateX(-50%) translateY(0);
+    }
+    .zoom-popover__row {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      font-size: 0.72rem;
+      font-weight: 500;
+      color: rgba(26,23,23,0.6);
+      letter-spacing: 0.02em;
+      text-transform: lowercase;
+    }
+    .zoom-popover__end {
+      min-width: 2.2rem;
+      text-align: center;
+      user-select: none;
+    }
+    .zoom-popover__meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 0.4rem;
+      font-size: 0.72rem;
+      color: rgba(26,23,23,0.55);
+      letter-spacing: 0.02em;
+      text-transform: lowercase;
+    }
+    .zoom-popover__percent {
+      font-family: var(--font-body);
+      font-weight: 600;
+      color: var(--cash-green);
+      font-size: 0.78rem;
+    }
+    .zoom-popover__reset {
+      font-family: inherit;
+      background: none;
+      border: none;
+      padding: 0.15rem 0.3rem;
+      font-size: 0.72rem;
+      color: var(--cash-green);
+      opacity: 0.75;
+      cursor: pointer;
+      text-transform: lowercase;
+      letter-spacing: 0.02em;
+      border-radius: 6px;
+      transition: opacity 0.15s ease, background 0.15s ease;
+    }
+    .zoom-popover__reset:hover { opacity: 1; background: rgba(1,71,81,0.08); }
+    .zoom-popover__reset:focus-visible {
+      outline: 2px solid var(--cash-green);
+      outline-offset: 2px;
+    }
+
+    /* Slim range slider, brand-styled. WebKit + Firefox rules differ, so
+       we repeat the rules rather than hoping ::-webkit and ::-moz merge. */
+    .zoom-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      flex: 1;
+      height: 4px;
+      background: rgba(1,71,81,0.15);
+      border-radius: 4px;
+      outline: none;
+      cursor: pointer;
+      margin: 0;
+    }
+    .zoom-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--cash-green);
+      border: 2px solid var(--vanilla);
+      box-shadow: 0 2px 6px -2px rgba(1,71,81,0.5);
+      cursor: grab;
+      transition: transform 0.1s ease;
+    }
+    .zoom-slider::-webkit-slider-thumb:active { cursor: grabbing; transform: scale(1.1); }
+    .zoom-slider::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--cash-green);
+      border: 2px solid var(--vanilla);
+      box-shadow: 0 2px 6px -2px rgba(1,71,81,0.5);
+      cursor: grab;
+    }
+    .zoom-slider::-moz-range-thumb:active { cursor: grabbing; }
+    .zoom-slider:focus-visible {
+      box-shadow: 0 0 0 3px rgba(1,71,81,0.18);
     }
 
     /* ── Cards floating on the canvas ───────────────── */
@@ -633,6 +825,15 @@
       .pill-phone { font-size: 0.72rem; }
       .add-btn--center { padding: 0.95rem 1.5rem; font-size: 0.98rem; }
       .modal__title { font-size: 1.7rem; }
+      /* Shrink the dock chips so three fit on a narrow screen. */
+      .dock { gap: 0.35rem; bottom: 1rem; }
+      .dock-chip { font-size: 0.78rem; padding: 0.55rem 0.9rem; }
+      .zoom-popover { min-width: 210px; padding: 0.65rem 0.75rem 0.55rem; }
+    }
+    @media (max-width: 380px) {
+      /* Extra tight: hide the add-account label text in favor of just "+".
+         Goal + zoom still read at a glance. */
+      .dock-chip { padding: 0.5rem 0.75rem; }
     }
   </style>
 </head>
@@ -652,7 +853,8 @@
   <!-- Floating loading toast (removed once cards render) -->
   <div class="toast toast--loading" id="loading-toast" aria-live="polite">settling in…</div>
 
-  <!-- Central / corner add button. Single element, class swaps on card count. -->
+  <!-- Central add button (empty-state only). When cards exist, the button
+       moves into the dock below and this element is styled/absent. -->
   <button
     type="button"
     class="add-btn add-btn--center"
@@ -661,6 +863,58 @@
     aria-haspopup="dialog"
     aria-controls="add-modal"
   >+ add account</button>
+
+  <!-- Bottom-center dock: action chips that live on the viewport (never pan/zoom).
+       Order (left → right): add-account · goal · zoom. When a goal is set the goal
+       chip label flips to an edit affordance; clicking either chip opens the same
+       modal. Zoom chip toggles an inline slider popover above itself. -->
+  <div class="dock" id="dock">
+    <!-- Goal chip — sibling of the add-account chip. -->
+    <button
+      type="button"
+      class="dock-chip goal-chip"
+      id="goal-chip"
+      data-state="empty"
+      aria-haspopup="dialog"
+      aria-controls="goal-modal"
+      aria-label="add a goal"
+    >+ goal</button>
+
+    <!-- Zoom chip + popover. The popover is a child so it positions relative
+         to the chip (see .zoom-popover absolute rules). -->
+    <div class="zoom-chip-wrap">
+      <button
+        type="button"
+        class="dock-chip zoom-chip"
+        id="zoom-chip"
+        aria-haspopup="true"
+        aria-expanded="false"
+        aria-controls="zoom-popover"
+        aria-label="zoom controls"
+      ><svg class="zoom-chip__icon" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>zoom</button>
+
+      <div class="zoom-popover" id="zoom-popover" role="group" aria-label="zoom slider" hidden>
+        <div class="zoom-popover__row">
+          <span class="zoom-popover__end" aria-hidden="true">0.35x</span>
+          <label for="zoom-slider" class="sr-only">zoom level</label>
+          <input
+            type="range"
+            class="zoom-slider"
+            id="zoom-slider"
+            min="0.35"
+            max="2"
+            step="0.01"
+            value="0.75"
+          >
+          <span class="zoom-popover__end" aria-hidden="true">2x</span>
+        </div>
+        <div class="zoom-popover__meta">
+          <span class="zoom-popover__percent" id="zoom-percent">75%</span>
+          <button type="button" class="zoom-popover__reset" id="zoom-reset">reset</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Add-goal modal -->
   <div class="modal-backdrop" id="goal-modal" role="dialog" aria-modal="true" aria-labelledby="goal-modal-title" hidden>

@@ -18,11 +18,31 @@
   var MAX_LEN = 120;
 
   var modal, panel, form, textarea, countEl, errEl, submitBtn, closeBtn, title, subtitle;
+  var goalChip = null;
   var lastFocus = null;
   var isOpen = false;
   var editingId = null;
 
   function $(id) { return document.getElementById(id); }
+
+  // Sync the dock chip label based on whether a goal is already set.
+  // Empty state: "+ goal"  (add affordance, matches other dock chips)
+  // Filled state: "✎ goal" (edit affordance — clicking still opens the
+  // same modal but the user understands they're editing, not adding again).
+  function updateChipLabel() {
+    if (!goalChip) goalChip = document.getElementById('goal-chip');
+    if (!goalChip) return;
+    var current = (window.CashBFFGoal && window.CashBFFGoal.current && window.CashBFFGoal.current()) || null;
+    if (current && current.text) {
+      goalChip.textContent = '\u270E goal'; // pencil glyph
+      goalChip.setAttribute('data-state', 'filled');
+      goalChip.setAttribute('aria-label', 'edit your goal');
+    } else {
+      goalChip.textContent = '+ goal';
+      goalChip.setAttribute('data-state', 'empty');
+      goalChip.setAttribute('aria-label', 'add a goal');
+    }
+  }
 
   function updateCount() {
     if (!countEl || !textarea) return;
@@ -98,6 +118,8 @@
     if (window.CashBFFGoal && window.CashBFFGoal.save) {
       window.CashBFFGoal.save(goal);
     }
+    // Flip the dock chip to its "edit" affordance now that a goal exists.
+    updateChipLabel();
   }
 
   function submit(ev) {
@@ -184,6 +206,19 @@
 
     if (!modal) return;
 
+    // Wire the dock chip to open the modal.
+    goalChip = document.getElementById('goal-chip');
+    if (goalChip) {
+      goalChip.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        open();
+      });
+    }
+    // home.js hydrates Goal.data from localStorage before this init runs,
+    // so the chip label is correct on first paint. Still call it defensively
+    // in case load order ever changes.
+    updateChipLabel();
+
     if (closeBtn) closeBtn.addEventListener('click', close);
     if (form)     form.addEventListener('submit', submit);
     if (textarea) {
@@ -211,6 +246,9 @@
   window.CashBFFGoal = window.CashBFFGoal || {};
   window.CashBFFGoal.open = function () { open(); };
   window.CashBFFGoal.close = function () { close(); };
+  // Called by home.js after hydrating a server-side goal so the dock chip
+  // flips to its "edit" affordance.
+  window.CashBFFGoal.refreshChip = function () { updateChipLabel(); };
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
