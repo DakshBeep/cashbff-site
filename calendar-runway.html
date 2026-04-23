@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>calendar · runway · cash bff</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
+
+  <style>
+    @font-face {
+      font-family: 'Greed Condensed';
+      src: url('fonts/GreedCondensed-Bold.woff2') format('woff2');
+      font-weight: 700; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Greed Condensed';
+      src: url('fonts/GreedCondensed-Medium.woff2') format('woff2');
+      font-weight: 500; font-display: swap;
+    }
+    :root {
+      --cash-green: #014751;
+      --electric-green: #D3FFB4;
+      --periwinkle: #C5B6F1;
+      --off-black: #1A1717;
+      --vanilla: #FCFAF2;
+      --font-display: 'Greed Condensed', 'Archivo Narrow', 'Arial Narrow', Impact, sans-serif;
+      --font-body: 'Instrument Sans', system-ui, -apple-system, sans-serif;
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: var(--font-body);
+      background: var(--vanilla);
+      color: var(--off-black);
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.5;
+      min-height: 100dvh;
+      overflow-x: hidden;
+    }
+    a { color: inherit; text-decoration: none; }
+
+    .review-banner {
+      text-align: center;
+      font-size: 0.72rem;
+      opacity: 0.55;
+      padding: 0.6rem 1rem;
+      letter-spacing: 0.02em;
+    }
+
+    .bar {
+      display: flex;
+      align-items: center;
+      padding: 1rem 2rem 1.25rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-weight: 700; font-size: 1.5rem;
+      letter-spacing: -0.02em;
+      color: var(--cash-green);
+    }
+
+    main {
+      padding: 0.5rem 0 4rem;
+    }
+
+    .intro {
+      max-width: 56rem;
+      margin: 0 auto 1.5rem;
+      padding: 0 1.5rem;
+    }
+    .title {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 2.5rem;
+      color: var(--cash-green);
+      letter-spacing: -0.02em;
+      text-transform: lowercase;
+      margin-bottom: 0.35rem;
+    }
+    .sub {
+      opacity: 0.65;
+      font-size: 0.95rem;
+    }
+    .sub strong { color: var(--cash-green); font-weight: 600; opacity: 1; }
+
+    /* Scroll container */
+    .runway-wrap {
+      position: relative;
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      scroll-behavior: smooth;
+      margin: 0 auto;
+      max-width: 100%;
+      padding: 3rem 2rem 2rem;
+    }
+    .runway-wrap::-webkit-scrollbar { height: 6px; }
+    .runway-wrap::-webkit-scrollbar-thumb { background: rgba(1, 71, 81, 0.18); border-radius: 3px; }
+    .runway-wrap::-webkit-scrollbar-track { background: transparent; }
+
+    .runway-svg {
+      display: block;
+      /* width set by JS */
+    }
+
+    .day-label {
+      font-size: 0.62rem;
+      fill: var(--cash-green);
+      opacity: 0.55;
+      font-family: var(--font-body);
+    }
+    .day-label.weekend { opacity: 0.8; font-weight: 600; }
+    .tight-band {
+      fill: var(--periwinkle);
+      opacity: 0.18;
+    }
+    .cash-line {
+      fill: none;
+      stroke: var(--cash-green);
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .cash-line-area {
+      fill: var(--cash-green);
+      opacity: 0.06;
+    }
+    .expense-bar {
+      opacity: 0.92;
+    }
+    .expense-label {
+      font-size: 0.6rem;
+      fill: var(--off-black);
+      opacity: 0.75;
+      font-weight: 500;
+    }
+    .expense-amt {
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: 0.68rem;
+      fill: var(--cash-green);
+    }
+    .payday-marker {
+      fill: var(--electric-green);
+    }
+    .payday-label {
+      font-family: var(--font-display);
+      font-size: 0.7rem;
+      fill: var(--cash-green);
+      font-weight: 500;
+    }
+    .today-line {
+      stroke: var(--cash-green);
+      stroke-width: 1.2;
+      stroke-dasharray: 3 3;
+      opacity: 0.5;
+    }
+    .today-label {
+      font-size: 0.65rem;
+      fill: var(--cash-green);
+      font-weight: 600;
+      opacity: 0.9;
+    }
+    .threshold-line {
+      stroke: var(--periwinkle);
+      stroke-width: 1;
+      stroke-dasharray: 2 4;
+      opacity: 0.6;
+    }
+    .threshold-label {
+      font-size: 0.58rem;
+      fill: var(--off-black);
+      opacity: 0.5;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.25rem;
+      font-size: 0.75rem;
+      opacity: 0.7;
+      justify-content: center;
+      margin: 0.5rem 1.5rem 0;
+    }
+    .legend-item { display: inline-flex; align-items: center; gap: 0.45rem; }
+    .dot { width: 0.65rem; height: 0.65rem; border-radius: 50%; }
+    .dot.bill { background: var(--cash-green); }
+    .dot.cc { background: var(--periwinkle); }
+    .dot.sub { background: var(--vanilla); border: 1px solid var(--cash-green); }
+    .dot.planned { background: transparent; border: 1px dashed var(--cash-green); }
+    .dot.payday { background: var(--electric-green); border: 1px solid var(--cash-green); }
+
+    .page-foot {
+      display: flex; justify-content: center; gap: 1.25rem;
+      font-size: 0.72rem; opacity: 0.4;
+      padding: 2rem 2rem;
+    }
+    .page-foot a { transition: opacity 0.15s; }
+    .page-foot a:hover { opacity: 1; }
+    .page-foot .current { text-decoration: underline; opacity: 1; color: var(--cash-green); }
+
+    .hint {
+      text-align: center;
+      font-size: 0.7rem;
+      opacity: 0.4;
+      margin-top: 0.75rem;
+      font-style: italic;
+    }
+
+    @media (max-width: 640px) {
+      .title { font-size: 1.75rem; }
+      .intro { padding: 0 1rem; }
+      .runway-wrap { padding: 2.5rem 1rem 1.5rem; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .runway-wrap { scroll-behavior: auto; }
+    }
+  </style>
+</head>
+<body>
+  <div class="review-banner">review · dummy data · calendar runway view</div>
+
+  <header class="bar">
+    <a class="wordmark" href="/">cash bff</a>
+  </header>
+
+  <main>
+    <div class="intro">
+      <h1 class="title">runway</h1>
+      <p class="sub" id="intro-sub"></p>
+    </div>
+
+    <div class="runway-wrap" id="runway-wrap">
+      <svg class="runway-svg" id="runway-svg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="cash runway next 35 days"></svg>
+    </div>
+
+    <div class="legend">
+      <span class="legend-item"><span class="dot bill"></span>bill</span>
+      <span class="legend-item"><span class="dot cc"></span>card min</span>
+      <span class="legend-item"><span class="dot sub"></span>subscription</span>
+      <span class="legend-item"><span class="dot planned"></span>planned · uncertain</span>
+      <span class="legend-item"><span class="dot payday"></span>payday</span>
+    </div>
+
+    <div class="hint">scroll horizontally →</div>
+  </main>
+
+  <footer class="page-foot">
+    <span>view</span>
+    <span>·</span>
+    <a href="/calendar-month">month</a>
+    <span>·</span>
+    <a href="/calendar-runway" class="current">runway</a>
+  </footer>
+
+  <script src="/assets/js/calendar-runway.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>calendar · month · cash bff</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
+
+  <style>
+    @font-face {
+      font-family: 'Greed Condensed';
+      src: url('fonts/GreedCondensed-Bold.woff2') format('woff2');
+      font-weight: 700; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Greed Condensed';
+      src: url('fonts/GreedCondensed-Medium.woff2') format('woff2');
+      font-weight: 500; font-display: swap;
+    }
+    :root {
+      --cash-green: #014751;
+      --electric-green: #D3FFB4;
+      --periwinkle: #C5B6F1;
+      --off-black: #1A1717;
+      --vanilla: #FCFAF2;
+      --font-display: 'Greed Condensed', 'Archivo Narrow', 'Arial Narrow', Impact, sans-serif;
+      --font-body: 'Instrument Sans', system-ui, -apple-system, sans-serif;
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: var(--font-body);
+      background: var(--vanilla);
+      color: var(--off-black);
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.5;
+      min-height: 100dvh;
+    }
+    a { color: inherit; text-decoration: none; }
+
+    .review-banner {
+      text-align: center;
+      font-size: 0.72rem;
+      color: var(--off-black);
+      opacity: 0.55;
+      padding: 0.6rem 1rem;
+      letter-spacing: 0.02em;
+    }
+
+    .bar {
+      display: flex;
+      align-items: center;
+      padding: 1rem 2rem 1.25rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-weight: 700; font-size: 1.5rem;
+      letter-spacing: -0.02em;
+      color: var(--cash-green);
+    }
+
+    main {
+      max-width: 72rem;
+      margin: 0 auto;
+      padding: 0.5rem 1.5rem 4rem;
+    }
+
+    .header-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .month-nav {
+      display: flex;
+      align-items: baseline;
+      gap: 0.75rem;
+    }
+    .month-title {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 2.25rem;
+      letter-spacing: -0.02em;
+      color: var(--cash-green);
+      text-transform: lowercase;
+    }
+    .arrow {
+      font-size: 1.5rem;
+      color: var(--cash-green);
+      opacity: 0.5;
+      cursor: pointer;
+      padding: 0.25rem 0.6rem;
+      transition: opacity 0.15s;
+      user-select: none;
+    }
+    .arrow:hover { opacity: 1; }
+    .total-pill {
+      font-size: 0.85rem;
+      opacity: 0.6;
+      font-weight: 500;
+    }
+    .total-pill strong { font-weight: 600; color: var(--cash-green); opacity: 1; }
+
+    .weekday-row {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      opacity: 0.45;
+      margin-bottom: 0.5rem;
+      padding: 0 0.25rem;
+    }
+    .weekday-row span { padding: 0.35rem 0.5rem; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 0.35rem;
+      border-radius: 0.6rem;
+    }
+    .cell {
+      min-height: 6.5rem;
+      background: rgba(1, 71, 81, 0.025);
+      border-radius: 0.5rem;
+      padding: 0.4rem 0.45rem 0.5rem;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.15s;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .cell:hover {
+      background: rgba(211, 255, 180, 0.45);
+      transform: translateY(-1px);
+    }
+    .cell.off-month { opacity: 0.35; background: transparent; }
+    .cell.today .date {
+      background: var(--electric-green);
+      color: var(--cash-green);
+      padding: 0 0.35rem;
+      border-radius: 0.25rem;
+      font-weight: 700;
+    }
+    .cell .date {
+      font-family: var(--font-display);
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--cash-green);
+      margin-bottom: 0.1rem;
+      align-self: flex-start;
+    }
+    .pill {
+      font-size: 0.66rem;
+      padding: 0.15rem 0.4rem;
+      border-radius: 0.25rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.3;
+      font-weight: 500;
+    }
+    .pill.bill { background: var(--cash-green); color: var(--vanilla); }
+    .pill.cc   { background: var(--periwinkle); color: var(--off-black); }
+    .pill.sub  { background: var(--vanilla); color: var(--off-black); border: 1px solid var(--cash-green); }
+    .pill.planned {
+      background: transparent;
+      color: var(--off-black);
+      border: 1px dashed var(--cash-green);
+      font-style: italic;
+      opacity: 0.75;
+    }
+    .overflow {
+      font-size: 0.66rem;
+      opacity: 0.5;
+      font-weight: 500;
+      padding: 0 0.4rem;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.25rem;
+      margin-top: 1.5rem;
+      font-size: 0.75rem;
+      opacity: 0.7;
+      justify-content: center;
+    }
+    .legend-item { display: inline-flex; align-items: center; gap: 0.45rem; }
+    .swatch {
+      width: 0.85rem; height: 0.85rem; border-radius: 0.2rem;
+    }
+    .swatch.bill { background: var(--cash-green); }
+    .swatch.cc { background: var(--periwinkle); }
+    .swatch.sub { background: var(--vanilla); border: 1px solid var(--cash-green); }
+    .swatch.planned { background: transparent; border: 1px dashed var(--cash-green); }
+
+    /* Detail drawer */
+    .drawer-overlay {
+      position: fixed; inset: 0;
+      background: rgba(26, 23, 23, 0.25);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+      z-index: 10;
+    }
+    .drawer-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .drawer {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: var(--vanilla);
+      border-top-left-radius: 1.25rem;
+      border-top-right-radius: 1.25rem;
+      padding: 1.75rem 1.5rem 2rem;
+      max-height: 70vh;
+      overflow-y: auto;
+      transform: translateY(100%);
+      transition: transform 0.25s cubic-bezier(.3,.8,.3,1);
+      z-index: 11;
+      box-shadow: 0 -10px 40px rgba(26,23,23,0.1);
+    }
+    .drawer.open { transform: translateY(0); }
+    .drawer-head {
+      display: flex; justify-content: space-between; align-items: baseline;
+      margin-bottom: 1.25rem;
+    }
+    .drawer-date {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.4rem;
+      color: var(--cash-green);
+    }
+    .drawer-total {
+      font-size: 0.85rem;
+      opacity: 0.65;
+    }
+    .drawer-total strong { color: var(--cash-green); opacity: 1; font-weight: 600; }
+    .drawer-list { display: flex; flex-direction: column; gap: 0.6rem; }
+    .drawer-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 0.65rem 0.8rem;
+      border-radius: 0.5rem;
+      background: rgba(1, 71, 81, 0.04);
+    }
+    .drawer-item .name { font-weight: 500; }
+    .drawer-item .name small { opacity: 0.5; font-weight: 400; margin-left: 0.4rem; font-size: 0.72rem; }
+    .drawer-item .amt { font-family: var(--font-display); font-weight: 500; font-size: 1.05rem; color: var(--cash-green); }
+    .drawer-empty { opacity: 0.5; font-style: italic; padding: 1rem; text-align: center; }
+    .drawer-close {
+      border: none; background: transparent;
+      color: var(--off-black); opacity: 0.4;
+      cursor: pointer; font-size: 1.25rem;
+      padding: 0.25rem 0.5rem;
+    }
+
+    .page-foot {
+      display: flex; justify-content: center; gap: 1.25rem;
+      font-size: 0.72rem; opacity: 0.4;
+      padding: 1.5rem 2rem 2rem;
+    }
+    .page-foot a { transition: opacity 0.15s; }
+    .page-foot a:hover { opacity: 1; }
+    .page-foot .current { text-decoration: underline; opacity: 1; color: var(--cash-green); }
+
+    @media (max-width: 640px) {
+      main { padding: 0.25rem 0.75rem 4rem; }
+      .month-title { font-size: 1.75rem; }
+      .cell { min-height: 5rem; padding: 0.3rem 0.3rem 0.4rem; }
+      .pill { font-size: 0.58rem; padding: 0.12rem 0.3rem; }
+      .cell .date { font-size: 0.75rem; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .drawer, .drawer-overlay, .cell, .arrow { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="review-banner">review · dummy data · calendar month view</div>
+
+  <header class="bar">
+    <a class="wordmark" href="/">cash bff</a>
+  </header>
+
+  <main>
+    <div class="header-row">
+      <div class="month-nav">
+        <span class="arrow" id="prev-month" aria-label="previous month">‹</span>
+        <h1 class="month-title" id="month-title">april 2026</h1>
+        <span class="arrow" id="next-month" aria-label="next month">›</span>
+      </div>
+      <div class="total-pill" id="total-pill">— already spoken for this month</div>
+    </div>
+
+    <div class="weekday-row" aria-hidden="true">
+      <span>sun</span><span>mon</span><span>tue</span><span>wed</span><span>thu</span><span>fri</span><span>sat</span>
+    </div>
+
+    <div class="grid" id="grid" role="grid" aria-label="month calendar"></div>
+
+    <div class="legend">
+      <span class="legend-item"><span class="swatch bill"></span>bill</span>
+      <span class="legend-item"><span class="swatch cc"></span>card minimum</span>
+      <span class="legend-item"><span class="swatch sub"></span>subscription</span>
+      <span class="legend-item"><span class="swatch planned"></span>planned · uncertain</span>
+    </div>
+  </main>
+
+  <div class="drawer-overlay" id="drawer-overlay"></div>
+  <aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="drawer-head">
+      <div>
+        <div class="drawer-date" id="drawer-date"></div>
+        <div class="drawer-total" id="drawer-total"></div>
+      </div>
+      <button class="drawer-close" id="drawer-close" aria-label="close">×</button>
+    </div>
+    <div class="drawer-list" id="drawer-list"></div>
+  </aside>
+
+  <footer class="page-foot">
+    <span>view</span>
+    <span>·</span>
+    <a href="/calendar-month" class="current">month</a>
+    <span>·</span>
+    <a href="/calendar-runway">runway</a>
+  </footer>
+
+  <script src="/assets/js/calendar-month.js" defer></script>
+</body>
+</html>
