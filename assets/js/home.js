@@ -189,12 +189,10 @@
     }, 0);
     var incomeCount = exps.filter(function (e) { return e.type === 'income'; }).length;
     drawerDate.textContent = MONTHS[d.getMonth()] + ' ' + d.getDate();
-    if (exps.length === 0) {
-      drawerTotal.innerHTML = '';
-    } else if (outflow > 0) {
+    // Day total line only appears when there's actual outflow. Income-only
+    // days are quiet — the item itself is the whole story, no commentary.
+    if (outflow > 0) {
       drawerTotal.innerHTML = '<strong>' + money(outflow) + '</strong> on this day';
-    } else if (incomeCount > 0) {
-      drawerTotal.innerHTML = 'nothing going out.';
     } else {
       drawerTotal.innerHTML = '';
     }
@@ -208,19 +206,20 @@
       exps.forEach(function (e) {
         var item = document.createElement('div');
         item.className = 'drawer-item';
-        var typeLabel = {
-          bill: 'bill', cc: 'card minimum', sub: 'subscription', planned: 'planned', income: 'income'
-        }[e.type] || e.type;
-        // textContent-safe construction (name comes from dummy data, not user input,
-        // but keep it safe anyway to match the eventual real-data path).
+        // textContent-safe construction (name comes from dummy data, not
+        // user input, but keep it safe for the eventual real-data path).
         var nameDiv = document.createElement('div');
         nameDiv.className = 'name';
-        nameDiv.textContent = e.name + ' ';
-        var small = document.createElement('small');
-        small.textContent = typeLabel + (e.confidence < 1.0
-          ? ' · ' + Math.round(e.confidence * 100) + '% confidence'
-          : '');
-        nameDiv.appendChild(small);
+        nameDiv.textContent = e.name;
+
+        // Type + confidence subtext is inside-baseball — hide it for income
+        // (user doesn't need to see "income · 90% confidence"). For other
+        // types we keep it only when it adds real signal (low confidence).
+        if (e.type !== 'income' && e.confidence < 1.0) {
+          var small = document.createElement('small');
+          small.textContent = Math.round(e.confidence * 100) + '% confidence';
+          nameDiv.appendChild(small);
+        }
 
         var amtDiv = document.createElement('div');
         amtDiv.className = 'amt';
