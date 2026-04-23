@@ -18,20 +18,9 @@
 
   var API_BASE = 'https://api.cashbff.com';
 
-  // ── Hardcoded dummy expense data (same shape as calendar-month.js) ──
-  var PRECOMMITS = [
-    { date: '2026-04-24', amount: 14.99,   name: 'Netflix',               type: 'sub',     confidence: 1.0 },
-    { date: '2026-04-25', amount: 9.99,    name: 'Spotify',               type: 'sub',     confidence: 1.0 },
-    { date: '2026-04-28', amount: 380.00,  name: 'Car payment',           type: 'bill',    confidence: 1.0 },
-    { date: '2026-04-30', amount: 62.00,   name: 'Concert — Philip pays back?', type: 'planned', confidence: 0.6 },
-    { date: '2026-05-01', amount: 1450.00, name: 'Rent',                  type: 'bill',    confidence: 1.0 },
-    { date: '2026-05-05', amount: 75.00,   name: 'Phone bill',            type: 'bill',    confidence: 1.0 },
-    { date: '2026-05-12', amount: 42.00,   name: 'Vet (Pepper checkup)',  type: 'planned', confidence: 0.7 },
-    { date: '2026-05-15', amount: 120.00,  name: 'Credit One — min due',  type: 'cc',      confidence: 1.0 },
-    { date: '2026-05-15', amount: 45.00,   name: 'Capital One — min due', type: 'cc',      confidence: 1.0 },
-    { date: '2026-05-22', amount: 14.99,   name: 'Netflix',               type: 'sub',     confidence: 1.0 },
-    { date: '2026-05-28', amount: 380.00,  name: 'Car payment',           type: 'bill',    confidence: 1.0 }
-  ];
+  // Pre-committed expenses for the logged-in user. Empty until we wire real
+  // data (Plaid-derived recurring + card minimums + manual entries).
+  var PRECOMMITS = [];
 
   var MONTHS = [
     'january','february','march','april','may','june',
@@ -85,7 +74,9 @@
 
     monthTitle.textContent = MONTHS[month] + ' ' + year;
     var total = totalForMonth(year, month);
-    totalPill.innerHTML = '<strong>' + money(total) + '</strong> already spoken for this month';
+    totalPill.innerHTML = total > 0
+      ? '<strong>' + money(total) + '</strong> already spoken for this month'
+      : 'nothing spoken for yet — this month is open';
 
     for (var i = 0; i < 42; i++) {
       var cellDate = new Date(startOfGrid);
