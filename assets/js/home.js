@@ -35,6 +35,10 @@
   var grid, monthTitle, totalPill, prevBtn, nextBtn;
   var drawer, drawerOverlay, drawerDate, drawerTotal, drawerList, drawerClose;
 
+  // Signup boundary — the earliest month the calendar lets the user nav to.
+  // Set after /api/me resolves. Before that, stays null and prev-nav is allowed.
+  var earliestViewableMonth = null;
+
   // ── Small helpers ────────────────────────────────
   function iso(d) {
     return d.getFullYear() + '-' +
@@ -74,9 +78,13 @@
 
     monthTitle.textContent = MONTHS[month] + ' ' + year;
     var total = totalForMonth(year, month);
+    // [TODO] copy here is placeholder — placement + "spoken for" framing is
+    // intentional, but the specific wording ("nothing spoken for yet — this
+    // month is open") needs a brand-voice rewrite before launch.
     totalPill.innerHTML = total > 0
       ? '<strong>' + money(total) + '</strong> already spoken for this month'
       : 'nothing spoken for yet — this month is open';
+    updatePrevArrowState();
 
     for (var i = 0; i < 42; i++) {
       var cellDate = new Date(startOfGrid);
@@ -196,16 +204,41 @@
       if (!res.ok) throw new Error('bad response ' + res.status);
       return res.json();
     }).then(function (data) {
-      // Top-right pill shows "+N signed in", N = digit count of user_id.
-      // Mirrors the old home.js behavior so the visual language stays consistent.
+      // Top-right pill: last 4 of the user's real phone number, so "signed in
+      // as ···5819" reads accurately instead of the meaningless digit count.
       var pill = document.getElementById('phone-pill');
       if (pill) {
-        var uid = data && data.user_id != null ? String(data.user_id) : '';
-        var digits = uid.replace(/\D/g, '').length || 0;
-        pill.textContent = '+' + digits + ' signed in';
+        var phone = data && data.phone ? String(data.phone) : '';
+        var last4 = phone.replace(/\D/g, '').slice(-4);
+        pill.textContent = last4 ? '···' + last4 + ' signed in' : 'signed in';
+      }
+      // Clamp the calendar's earliest viewable month to the user's signup
+      // month — pre-signup calendar views are meaningless (no backfill yet).
+      if (data && data.created_at) {
+        var signup = new Date(data.created_at);
+        earliestViewableMonth = new Date(signup.getFullYear(), signup.getMonth(), 1);
+        updatePrevArrowState();
       }
       return data;
     });
+  }
+
+  function atEarliestMonth() {
+    if (!earliestViewableMonth) return false;
+    return view.getFullYear() === earliestViewableMonth.getFullYear() &&
+           view.getMonth()    === earliestViewableMonth.getMonth();
+  }
+  function updatePrevArrowState() {
+    if (!prevBtn) return;
+    if (atEarliestMonth()) {
+      prevBtn.style.opacity = '0.2';
+      prevBtn.style.pointerEvents = 'none';
+      prevBtn.setAttribute('aria-disabled', 'true');
+    } else {
+      prevBtn.style.opacity = '';
+      prevBtn.style.pointerEvents = '';
+      prevBtn.removeAttribute('aria-disabled');
+    }
   }
 
   function wireSignout() {
@@ -236,6 +269,7 @@
     drawerClose  = document.getElementById('drawer-close');
 
     if (prevBtn) prevBtn.addEventListener('click', function () {
+      if (atEarliestMonth()) return; // clamp — can't go back past signup month
       view.setMonth(view.getMonth() - 1);
       renderGrid();
     });
