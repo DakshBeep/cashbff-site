@@ -252,7 +252,8 @@
       position: fixed;
       /* top/left set by JS, anchored near the clicked cell */
       top: 0; left: 0;
-      background: var(--vanilla);
+      /* Warm paper tint — distinct from calendar vanilla, still calm. */
+      background: #F3EAD6;
       border-radius: 0.85rem;
       padding: 1rem 1.15rem 1.1rem;
       min-width: 13rem;
@@ -265,8 +266,8 @@
       pointer-events: none;
       transition: transform 0.18s ease, opacity 0.18s ease;
       z-index: 11;
-      box-shadow: 0 8px 28px rgba(26, 23, 23, 0.14);
-      border: 1px solid rgba(1, 71, 81, 0.08);
+      box-shadow: 0 12px 32px rgba(26, 23, 23, 0.14);
+      border: 1px solid rgba(1, 71, 81, 0.12);
     }
     .drawer.open {
       transform: scale(1) translateY(0);
@@ -298,7 +299,9 @@
       align-items: baseline;
       padding: 0.45rem 0.55rem;
       border-radius: 0.4rem;
-      background: rgba(1, 71, 81, 0.035);
+      /* inner rows sit on vanilla so they read as "notes on paper" */
+      background: var(--vanilla);
+      border: 1px solid rgba(1, 71, 81, 0.05);
     }
     .drawer-item .name { font-weight: 500; font-size: 0.82rem; }
     .drawer-item .name small { opacity: 0.5; font-weight: 400; margin-left: 0.3rem; font-size: 0.66rem; display: block; margin-top: 0.1rem; }
