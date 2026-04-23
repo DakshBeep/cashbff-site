@@ -211,6 +211,19 @@
       color: var(--cash-green);
       font-weight: 500;
     }
+    .pill.spent {
+      /* Muted, low-contrast — uncategorized everyday spending, reads as
+         "a thing that happened" rather than a commitment. Distinct from
+         .sub (solid border, full opacity). */
+      background: var(--vanilla);
+      color: var(--cash-green);
+      border: 1px solid rgba(1, 71, 81, 0.18);
+      opacity: 0.85;
+    }
+    /* Pending-transaction styling: italic signals "about to settle" without
+       changing color. Applied to both the cell pill and the drawer row name. */
+    .pill.pending-tx,
+    .drawer-item.pending-tx .name { font-style: italic; }
     .overflow {
       font-size: 0.66rem;
       opacity: 0.5;
@@ -235,6 +248,7 @@
     .swatch.cc { background: var(--periwinkle); }
     .swatch.sub { background: var(--vanilla); border: 1px solid var(--cash-green); }
     .swatch.planned { background: transparent; border: 1px dashed var(--cash-green); }
+    .swatch.spent { background: var(--vanilla); border: 1px solid rgba(1, 71, 81, 0.18); opacity: 0.85; }
 
     /* ── Day popover (anchored, light, calm) ──────── */
     /* Transparent overlay just captures click-outside; no dimming, nothing heavy. */
@@ -563,6 +577,7 @@
       <span class="legend-item"><span class="swatch bill"></span>bill</span>
       <span class="legend-item"><span class="swatch cc"></span>card minimum</span>
       <span class="legend-item"><span class="swatch sub"></span>subscription</span>
+      <span class="legend-item"><span class="swatch spent"></span>spent</span>
       <span class="legend-item"><span class="swatch planned"></span>planned &middot; uncertain</span>
     </div>
   </main>

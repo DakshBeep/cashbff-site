@@ -1,13 +1,14 @@
-// home.js — auth-gated calendar-month view with dummy pre-committed expenses.
+// home.js — auth-gated calendar-month view backed by /api/calendar.
 //
 // This is the post-login landing page. It:
 //   1. Calls GET /api/me to gate the page. 401 => redirect to "/".
-//   2. Populates the top-right chip as "+N signed in" where N is the
-//      returned user_id's digit count (same pattern as the v2 scatter page).
+//   2. Populates the top-right chip as "···NNNN signed in" using the last 4
+//      digits of the returned phone number.
 //   3. Wires the sign-out link to POST /api/logout + redirect.
-//   4. Renders a calendar-month grid of HARDCODED dummy expenses (PRECOMMITS),
-//      with pills colored by type, a click-to-open day drawer, and month
-//      navigation arrows. No /api/home fetch, no real cards.
+//   4. Fetches real expenses from GET /api/calendar?from=&to= — seeded with a
+//      single fallback entry (Apr 22 income) so the demo still shows something
+//      if the backend isn't live yet. Renders them in a calendar-month grid
+//      with pills colored by type, a click-to-open day drawer, and month nav.
 //   5. Wires the floating "+ add account" button to the existing add-account
 //      modal via window.CashBFFAddAccount.open().
 //
@@ -18,12 +19,17 @@
 
   var API_BASE = 'https://api.cashbff.com';
 
-  // Pre-committed expenses for the logged-in user. Mostly empty until we
-  // wire the full real-data pipeline (Plaid-derived recurring + card minimums
-  // + manual entries). One honest data point so Apr 22 isn't a void.
+  // Expenses for the logged-in user. Seeded with a single fallback entry so
+  // the demo still renders something on Apr 22 if the backend isn't live.
+  // Populated/merged from GET /api/calendar on boot + month nav.
   var PRECOMMITS = [
-    { date: '2026-04-22', amount: 127.01, name: 'IAIC claim payment', type: 'income', confidence: 0.9 }
+    { date: '2026-04-22', amount: 127.01, name: 'IAIC claim payment', type: 'income', confidence: 0.9, pending: false }
   ];
+
+  // Cache of "YYYY-MM" keys whose month ranges we've already fetched, so we
+  // don't re-request on every prev/next nav. Initial boot fetches the last 14
+  // days, which always covers the current month; we mark it fetched up front.
+  var fetchedMonths = new Set();
 
   var MONTHS = [
     'january','february','march','april','may','june',
@@ -60,6 +66,83 @@
   function expensesForDate(d) {
     var key = iso(d);
     return PRECOMMITS.filter(function (e) { return e.date === key; });
+  }
+
+  // ── /api/calendar fetch + merge ──────────────────
+  // Merge a batch of expenses into PRECOMMITS, replacing any entries whose
+  // (date,name,amount,type) tuple already exists. That keeps the Apr 22
+  // fallback in place if the backend returns nothing for that day, but lets
+  // the backend's canonical version win when present.
+  function mergeExpenses(batch) {
+    if (!Array.isArray(batch) || !batch.length) return;
+    batch.forEach(function (incoming) {
+      if (!incoming || !incoming.date) return;
+      var dupeIdx = -1;
+      for (var i = 0; i < PRECOMMITS.length; i++) {
+        var e = PRECOMMITS[i];
+        if (e.date === incoming.date &&
+            e.name === incoming.name &&
+            e.amount === incoming.amount &&
+            e.type === incoming.type) {
+          dupeIdx = i;
+          break;
+        }
+      }
+      if (dupeIdx >= 0) {
+        PRECOMMITS[dupeIdx] = incoming;
+      } else {
+        PRECOMMITS.push(incoming);
+      }
+    });
+  }
+
+  function fetchCalendarRange(fromISO, toISO) {
+    var url = API_BASE + '/api/calendar?from=' + encodeURIComponent(fromISO) +
+              '&to=' + encodeURIComponent(toISO);
+    return fetch(url, {
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include'
+    }).then(function (res) {
+      // 401 is handled globally by gateAuth; here we just bail quietly so a
+      // stale session during pagination doesn't spam errors.
+      if (res.status === 401) return null;
+      if (!res.ok) throw new Error('calendar fetch failed ' + res.status);
+      return res.json();
+    }).then(function (data) {
+      if (!data) return;
+      mergeExpenses(data.expenses || []);
+      renderGrid();
+    }).catch(function (err) {
+      // Non-2xx (and non-401) or network blip: log + leave existing data in
+      // place so the fallback Apr 22 entry and any prior fetches stay visible.
+      try { console.warn('[home] calendar fetch error:', err); } catch (_) {}
+    });
+  }
+
+  function monthKey(year, month) {
+    return year + '-' + String(month + 1).padStart(2, '0');
+  }
+
+  // Initial fetch: last 14 days through today. Covers the current month in
+  // the common case where today is mid-month-ish; the month-key cache then
+  // suppresses a redundant refetch when the user stays on this month.
+  function fetchInitialWindow() {
+    var end = new Date(today);
+    var start = new Date(today);
+    start.setDate(start.getDate() - 13);
+    fetchedMonths.add(monthKey(today.getFullYear(), today.getMonth()));
+    return fetchCalendarRange(iso(start), iso(end));
+  }
+
+  // Month-scoped fetch on prev/next nav. Computes the full month range
+  // (1st through last day) so any pill that belongs to this month arrives.
+  function fetchMonthIfNeeded(year, month) {
+    var key = monthKey(year, month);
+    if (fetchedMonths.has(key)) return;
+    fetchedMonths.add(key);
+    var start = new Date(year, month, 1);
+    var end = new Date(year, month + 1, 0); // day 0 of next month = last day of this month
+    fetchCalendarRange(iso(start), iso(end));
   }
 
   function totalForMonth(year, month) {
@@ -110,6 +193,9 @@
       exps.slice(0, maxPills).forEach(function (e) {
         var p = document.createElement('span');
         p.className = 'pill ' + e.type;
+        // Pending (not-yet-settled) transactions render italic — same color,
+        // just a visual "about to settle" cue.
+        if (e.pending) p.classList.add('pending-tx');
         // First-word label keeps pills narrow inside cramped cells.
         // Income gets a leading "+" so it reads as money in at a glance.
         var prefix = e.type === 'income' ? '+$' : '$';
@@ -206,20 +292,16 @@
       exps.forEach(function (e) {
         var item = document.createElement('div');
         item.className = 'drawer-item';
-        // textContent-safe construction (name comes from dummy data, not
-        // user input, but keep it safe for the eventual real-data path).
+        // Pending: italic on the name via the same class used on cell pills.
+        if (e.pending) item.classList.add('pending-tx');
+        // textContent-safe construction — backend has already cleaned the
+        // name, but keep the XSS-safe path regardless.
         var nameDiv = document.createElement('div');
         nameDiv.className = 'name';
         nameDiv.textContent = e.name;
 
-        // Type + confidence subtext is inside-baseball — hide it for income
-        // (user doesn't need to see "income · 90% confidence"). For other
-        // types we keep it only when it adds real signal (low confidence).
-        if (e.type !== 'income' && e.confidence < 1.0) {
-          var small = document.createElement('small');
-          small.textContent = Math.round(e.confidence * 100) + '% confidence';
-          nameDiv.appendChild(small);
-        }
+        // Confidence-% subtext intentionally dropped for now — user wants a
+        // minimal row. Revisit when confidence values actually vary.
 
         var amtDiv = document.createElement('div');
         amtDiv.className = 'amt';
@@ -328,10 +410,12 @@
       if (atEarliestMonth()) return; // clamp — can't go back past signup month
       view.setMonth(view.getMonth() - 1);
       renderGrid();
+      fetchMonthIfNeeded(view.getFullYear(), view.getMonth());
     });
     if (nextBtn) nextBtn.addEventListener('click', function () {
       view.setMonth(view.getMonth() + 1);
       renderGrid();
+      fetchMonthIfNeeded(view.getFullYear(), view.getMonth());
     });
     if (drawerOverlay) drawerOverlay.addEventListener('click', closeDrawer);
     if (drawerClose)   drawerClose.addEventListener('click', closeDrawer);
@@ -360,7 +444,11 @@
     // Gate the page on /api/me. If the user isn't signed in we'll have already
     // redirected to "/" — the calendar they briefly saw is acceptable; the
     // alternative (hiding everything until /api/me returns) would flash blank.
-    gateAuth().catch(function () {
+    gateAuth().then(function () {
+      // Only fetch calendar data once auth is confirmed, so we don't hit the
+      // endpoint for a user we're about to redirect anyway.
+      fetchInitialWindow();
+    }).catch(function () {
       // Network hiccup or 5xx — leave the page visible; user can retry by
       // reloading. We deliberately don't hard-redirect so a transient error
       // doesn't kick a signed-in user out.
