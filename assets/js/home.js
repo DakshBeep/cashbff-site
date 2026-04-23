@@ -18,9 +18,12 @@
 
   var API_BASE = 'https://api.cashbff.com';
 
-  // Pre-committed expenses for the logged-in user. Empty until we wire real
-  // data (Plaid-derived recurring + card minimums + manual entries).
-  var PRECOMMITS = [];
+  // Pre-committed expenses for the logged-in user. Mostly empty until we
+  // wire the full real-data pipeline (Plaid-derived recurring + card minimums
+  // + manual entries). One honest data point so Apr 22 isn't a void.
+  var PRECOMMITS = [
+    { date: '2026-04-22', amount: 127.01, name: 'IAIC claim payment', type: 'income', confidence: 0.9 }
+  ];
 
   var MONTHS = [
     'january','february','march','april','may','june',
@@ -60,7 +63,9 @@
   }
 
   function totalForMonth(year, month) {
+    // Income doesn't count toward "spoken for" — that phrase is about outflows.
     return PRECOMMITS.reduce(function (sum, e) {
+      if (e.type === 'income') return sum;
       var d = new Date(e.date + 'T12:00:00');
       if (d.getFullYear() === year && d.getMonth() === month) return sum + e.amount;
       return sum;
@@ -106,7 +111,9 @@
         var p = document.createElement('span');
         p.className = 'pill ' + e.type;
         // First-word label keeps pills narrow inside cramped cells.
-        p.textContent = '$' + e.amount.toFixed(0) + ' ' + e.name.split(' ')[0];
+        // Income gets a leading "+" so it reads as money in at a glance.
+        var prefix = e.type === 'income' ? '+$' : '$';
+        p.textContent = prefix + e.amount.toFixed(0) + ' ' + e.name.split(' ')[0];
         cell.appendChild(p);
       });
       if (exps.length > maxPills) {
@@ -139,11 +146,22 @@
   function openDrawer(d) {
     if (!drawer) return;
     var exps = expensesForDate(d);
-    var total = exps.reduce(function (s, e) { return s + e.amount; }, 0);
+    // Day total sums outflows only; income is shown inline but doesn't net
+    // against the "on this day" number to keep the framing honest.
+    var outflow = exps.reduce(function (s, e) {
+      return e.type === 'income' ? s : s + e.amount;
+    }, 0);
+    var incomeCount = exps.filter(function (e) { return e.type === 'income'; }).length;
     drawerDate.textContent = MONTHS[d.getMonth()] + ' ' + d.getDate();
-    drawerTotal.innerHTML = exps.length
-      ? '<strong>' + money(total) + '</strong> on this day'
-      : '';
+    if (exps.length === 0) {
+      drawerTotal.innerHTML = '';
+    } else if (outflow > 0) {
+      drawerTotal.innerHTML = '<strong>' + money(outflow) + '</strong> on this day';
+    } else if (incomeCount > 0) {
+      drawerTotal.innerHTML = 'nothing going out.';
+    } else {
+      drawerTotal.innerHTML = '';
+    }
     drawerList.innerHTML = '';
     if (!exps.length) {
       var em = document.createElement('div');
@@ -155,7 +173,7 @@
         var item = document.createElement('div');
         item.className = 'drawer-item';
         var typeLabel = {
-          bill: 'bill', cc: 'card minimum', sub: 'subscription', planned: 'planned'
+          bill: 'bill', cc: 'card minimum', sub: 'subscription', planned: 'planned', income: 'income'
         }[e.type] || e.type;
         // textContent-safe construction (name comes from dummy data, not user input,
         // but keep it safe anyway to match the eventual real-data path).
@@ -170,7 +188,8 @@
 
         var amtDiv = document.createElement('div');
         amtDiv.className = 'amt';
-        amtDiv.textContent = '$' + e.amount.toFixed(2);
+        // Income renders with a leading "+" so it visually reads as money in.
+        amtDiv.textContent = (e.type === 'income' ? '+$' : '$') + e.amount.toFixed(2);
 
         item.appendChild(nameDiv);
         item.appendChild(amtDiv);
