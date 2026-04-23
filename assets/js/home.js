@@ -125,9 +125,12 @@
 
       // Snapshot the date for the click handler (the loop var would alias).
       var dateCopy = new Date(cellDate);
-      cell.addEventListener('click', (function (d) {
-        return function () { openDrawer(d); };
-      })(dateCopy));
+      cell.addEventListener('click', (function (d, el) {
+        return function (ev) {
+          ev.stopPropagation();
+          openDrawer(d, el);
+        };
+      })(dateCopy, cell));
 
       grid.appendChild(cell);
     }
@@ -142,8 +145,41 @@
     }
   }
 
-  // ── Day drawer ───────────────────────────────────
-  function openDrawer(d) {
+  // ── Day popover (anchored near the clicked cell) ─────────
+  function positionPopoverNear(anchorEl) {
+    if (!drawer || !anchorEl) return;
+    // Mobile breakpoint: CSS handles bottom-docked layout via !important.
+    if (window.innerWidth <= 520) return;
+
+    // First render invisibly to measure, then place.
+    drawer.style.visibility = 'hidden';
+    drawer.style.top = '0px';
+    drawer.style.left = '0px';
+    // force layout
+    var cardRect = drawer.getBoundingClientRect();
+    var cardW = cardRect.width;
+    var cardH = cardRect.height;
+
+    var rect = anchorEl.getBoundingClientRect();
+    var gap = 8;
+    var vw = window.innerWidth;
+    var vh = window.innerHeight;
+
+    // Prefer below, then above; horizontally center on the anchor, clamped.
+    var top = rect.bottom + gap;
+    if (top + cardH > vh - 8) {
+      top = Math.max(8, rect.top - gap - cardH);
+    }
+    var left = rect.left + rect.width / 2 - cardW / 2;
+    left = Math.max(8, Math.min(left, vw - cardW - 8));
+
+    drawer.style.top = top + 'px';
+    drawer.style.left = left + 'px';
+    drawer.style.visibility = '';
+  }
+
+  // ── Day popover content ──────────────────────────
+  function openDrawer(d, anchorEl) {
     if (!drawer) return;
     var exps = expensesForDate(d);
     // Day total sums outflows only; income is shown inline but doesn't net
@@ -199,6 +235,8 @@
     drawer.classList.add('open');
     drawerOverlay.classList.add('open');
     drawer.setAttribute('aria-hidden', 'false');
+    // Anchor the popover near the clicked cell (desktop); CSS handles mobile.
+    positionPopoverNear(anchorEl);
   }
 
   function closeDrawer() {
