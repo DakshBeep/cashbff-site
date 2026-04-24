@@ -129,12 +129,90 @@
       user-select: none;
     }
     .arrow:hover { opacity: 1; }
-    .total-pill {
-      font-size: 0.85rem;
-      opacity: 0.6;
+    /* ── Schedule spend button (top-right of header) ─── */
+    .schedule-btn {
+      font-family: var(--font-body);
+      font-size: 0.82rem;
       font-weight: 500;
+      padding: 0.45rem 0.9rem;
+      border-radius: 100px;
+      background: transparent;
+      color: var(--cash-green);
+      border: 1px solid rgba(1, 71, 81, 0.28);
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease;
+      letter-spacing: 0.01em;
     }
-    .total-pill strong { font-weight: 600; color: var(--cash-green); opacity: 1; }
+    .schedule-btn:hover {
+      background: rgba(1, 71, 81, 0.05);
+      border-color: var(--cash-green);
+    }
+    .schedule-btn:focus-visible {
+      outline: 2px solid var(--cash-green);
+      outline-offset: 3px;
+    }
+
+    /* Placeholder popup — same paper-tint + feel as the day popover. */
+    .schedule-overlay {
+      position: fixed; inset: 0;
+      background: rgba(26, 23, 23, 0.18);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease;
+      z-index: 40;
+    }
+    .schedule-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .schedule-pop {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%) scale(0.96);
+      opacity: 0;
+      pointer-events: none;
+      background: #F3EAD6;
+      border: 1px solid rgba(1, 71, 81, 0.12);
+      border-radius: 0.85rem;
+      padding: 1.5rem 1.5rem 1.25rem;
+      max-width: 22rem;
+      width: calc(100% - 2.5rem);
+      box-shadow: 0 16px 40px rgba(26, 23, 23, 0.18);
+      transition: transform 0.18s ease, opacity 0.18s ease;
+      z-index: 41;
+    }
+    .schedule-pop.open {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .schedule-pop h2 {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.3rem;
+      color: var(--cash-green);
+      letter-spacing: -0.01em;
+      margin-bottom: 0.5rem;
+    }
+    .schedule-pop p {
+      font-size: 0.88rem;
+      color: var(--off-black);
+      opacity: 0.7;
+      line-height: 1.45;
+      margin-bottom: 1.1rem;
+    }
+    .schedule-pop .schedule-close {
+      font-family: var(--font-body);
+      font-size: 0.82rem;
+      color: var(--cash-green);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 0.25rem 0;
+      opacity: 0.7;
+      transition: opacity 0.15s ease;
+    }
+    .schedule-pop .schedule-close:hover { opacity: 1; }
 
     .weekday-row {
       display: grid;
@@ -564,8 +642,16 @@
         <h1 class="month-title" id="month-title">april 2026</h1>
         <span class="arrow" id="next-month" aria-label="next month">&rsaquo;</span>
       </div>
-      <div class="total-pill" id="total-pill">&mdash; already spoken for this month</div>
+      <button class="schedule-btn" id="schedule-btn" type="button">+ schedule spend</button>
     </div>
+
+    <!-- Schedule spend placeholder popup (no features yet, just the button + UI) -->
+    <div class="schedule-overlay" id="schedule-overlay"></div>
+    <aside class="schedule-pop" id="schedule-pop" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="schedule-pop-title">
+      <h2 id="schedule-pop-title">schedule a spend</h2>
+      <p>coming soon — you'll be able to log something you know is coming, before it hits.</p>
+      <button class="schedule-close" id="schedule-close" type="button">close</button>
+    </aside>
 
     <div class="weekday-row" aria-hidden="true">
       <span>sun</span><span>mon</span><span>tue</span><span>wed</span><span>thu</span><span>fri</span><span>sat</span>

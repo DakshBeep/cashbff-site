@@ -41,8 +41,9 @@
   var view = new Date(today.getFullYear(), today.getMonth(), 1);
 
   // ── DOM refs, populated on boot() ────────────────
-  var grid, monthTitle, totalPill, prevBtn, nextBtn;
+  var grid, monthTitle, prevBtn, nextBtn;
   var drawer, drawerOverlay, drawerDate, drawerTotal, drawerList, drawerClose;
+  var schedBtn, schedOverlay, schedPop, schedClose;
 
   // Signup boundary — the earliest month the calendar lets the user nav to.
   // Set after /api/me resolves. Before that, stays null and prev-nav is allowed.
@@ -145,15 +146,9 @@
     fetchCalendarRange(iso(start), iso(end));
   }
 
-  function totalForMonth(year, month) {
-    // Income doesn't count toward "spoken for" — that phrase is about outflows.
-    return PRECOMMITS.reduce(function (sum, e) {
-      if (e.type === 'income') return sum;
-      var d = new Date(e.date + 'T12:00:00');
-      if (d.getFullYear() === year && d.getMonth() === month) return sum + e.amount;
-      return sum;
-    }, 0);
-  }
+  // NOTE: totalForMonth() lived here previously for the "$X already spoken
+  // for this month" pill. Removed along with the pill. If a monthly metric
+  // comes back, rebuild it here and decide cleanly what it sums.
 
   // ── Calendar grid render ─────────────────────────
   function renderGrid() {
@@ -165,13 +160,6 @@
     var startOfGrid = new Date(year, month, 1 - firstDay.getDay()); // start on Sunday
 
     monthTitle.textContent = MONTHS[month] + ' ' + year;
-    var total = totalForMonth(year, month);
-    // [TODO] copy here is placeholder — placement + "spoken for" framing is
-    // intentional, but the specific wording ("nothing spoken for yet — this
-    // month is open") needs a brand-voice rewrite before launch.
-    totalPill.innerHTML = total > 0
-      ? '<strong>' + money(total) + '</strong> already spoken for this month'
-      : 'nothing spoken for yet — this month is open';
     updatePrevArrowState();
 
     for (var i = 0; i < 42; i++) {
@@ -396,7 +384,6 @@
   function wireCalendar() {
     grid         = document.getElementById('grid');
     monthTitle   = document.getElementById('month-title');
-    totalPill    = document.getElementById('total-pill');
     prevBtn      = document.getElementById('prev-month');
     nextBtn      = document.getElementById('next-month');
     drawer       = document.getElementById('drawer');
@@ -420,8 +407,31 @@
     if (drawerOverlay) drawerOverlay.addEventListener('click', closeDrawer);
     if (drawerClose)   drawerClose.addEventListener('click', closeDrawer);
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') closeDrawer();
+      if (e.key === 'Escape') { closeDrawer(); closeSchedule(); }
     });
+  }
+
+  // ── Schedule-spend button + placeholder popup ────
+  function openSchedule() {
+    if (!schedPop || !schedOverlay) return;
+    schedPop.classList.add('open');
+    schedOverlay.classList.add('open');
+    schedPop.setAttribute('aria-hidden', 'false');
+  }
+  function closeSchedule() {
+    if (!schedPop || !schedOverlay) return;
+    schedPop.classList.remove('open');
+    schedOverlay.classList.remove('open');
+    schedPop.setAttribute('aria-hidden', 'true');
+  }
+  function wireScheduleBtn() {
+    schedBtn      = document.getElementById('schedule-btn');
+    schedOverlay  = document.getElementById('schedule-overlay');
+    schedPop      = document.getElementById('schedule-pop');
+    schedClose    = document.getElementById('schedule-close');
+    if (schedBtn)     schedBtn.addEventListener('click', openSchedule);
+    if (schedClose)   schedClose.addEventListener('click', closeSchedule);
+    if (schedOverlay) schedOverlay.addEventListener('click', closeSchedule);
   }
 
   // ── Add-account button wiring ───────────────────
@@ -440,6 +450,7 @@
     wireSignout();
     wireCalendar();
     wireAddAccountBtn();
+    wireScheduleBtn();
     renderGrid();
     // Gate the page on /api/me. If the user isn't signed in we'll have already
     // redirected to "/" — the calendar they briefly saw is acceptable; the
