@@ -35,9 +35,9 @@
     'january','february','march','april','may','june',
     'july','august','september','october','november','december'
   ];
-  // Frozen "today" so the dummy pills highlight the right cell regardless of
-  // clock drift while we demo the flow.
-  var today = new Date(2026, 3, 23); // Apr 23, 2026
+  // Real today. Floor to local midnight so iso()/sameYMD comparisons are stable.
+  var today = new Date();
+  today.setHours(0, 0, 0, 0);
   var view = new Date(today.getFullYear(), today.getMonth(), 1);
 
   // ── DOM refs, populated on boot() ────────────────
