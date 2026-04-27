@@ -141,7 +141,8 @@
       flex-wrap: wrap;
     }
     .schedule-btn,
-    .balances-btn {
+    .balances-btn,
+    .reimbursements-btn {
       font-family: var(--font-body);
       font-size: 0.78rem;
       font-weight: 500;
@@ -155,12 +156,14 @@
       letter-spacing: 0.01em;
     }
     .schedule-btn:hover,
-    .balances-btn:hover {
+    .balances-btn:hover,
+    .reimbursements-btn:hover {
       background: rgba(1, 71, 81, 0.05);
       border-color: var(--cash-green);
     }
     .schedule-btn:focus-visible,
-    .balances-btn:focus-visible {
+    .balances-btn:focus-visible,
+    .reimbursements-btn:focus-visible {
       outline: 2px solid var(--cash-green);
       outline-offset: 3px;
     }
@@ -336,6 +339,14 @@
       color: var(--cash-green);
       border: 1px solid rgba(1, 71, 81, 0.18);
       opacity: 0.85;
+    }
+    /* Income chip — sage wash matching the .pill.income calendar pill so the
+       form preview reads visually consistent with what lands on the day. */
+    .type-chip[data-type="income"].is-active {
+      background: #DFEDE0;
+      color: var(--cash-green);
+      border: 1px solid #DFEDE0;
+      opacity: 1;
     }
     .type-chip:focus-visible {
       outline: 2px solid var(--cash-green);
@@ -598,6 +609,251 @@
       margin-top: 0.9rem;
     }
     .balances-pop .balances-close:hover { opacity: 1; }
+
+    /* ── Reimbursements popup (paper-tint, mirrors schedule + balances) ── */
+    .reimbursements-overlay {
+      position: fixed; inset: 0;
+      background: rgba(26, 23, 23, 0.18);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease;
+      z-index: 40;
+    }
+    .reimbursements-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .reimbursements-pop {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%) scale(0.96);
+      opacity: 0;
+      pointer-events: none;
+      background: #F3EAD6;
+      border: 1px solid rgba(1, 71, 81, 0.12);
+      border-radius: 0.85rem;
+      padding: 1.5rem 1.5rem 1.25rem;
+      max-width: 24rem;
+      width: calc(100% - 2.5rem);
+      max-height: min(80vh, 36rem);
+      overflow-y: auto;
+      box-shadow: 0 16px 40px rgba(26, 23, 23, 0.18);
+      transition: transform 0.18s ease, opacity 0.18s ease;
+      z-index: 41;
+    }
+    .reimbursements-pop.open {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .reimbursements-pop h2 {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.3rem;
+      color: var(--cash-green);
+      letter-spacing: -0.01em;
+      margin-bottom: 0.4rem;
+    }
+    .reimbursements-subtitle {
+      font-size: 0.82rem;
+      color: var(--off-black);
+      opacity: 0.7;
+      line-height: 1.4;
+      margin-bottom: 1rem;
+    }
+    /* Add-row: input + "+ add" pill button. Sits above the groups so the
+       primary action (log a new reimbursement) is always at the top. */
+    .reimb-add {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin-bottom: 1rem;
+    }
+    .reimb-add__input {
+      flex: 1;
+      min-width: 0;
+      padding: 0.55rem 0.75rem;
+      border-radius: 10px;
+      border: 1.5px solid rgba(26,23,23,0.12);
+      background: rgba(252,250,242,0.8);
+      font-family: inherit;
+      font-size: 0.92rem;
+      color: var(--off-black);
+      transition: border-color 0.15s ease, background 0.15s ease;
+    }
+    .reimb-add__input:focus {
+      outline: none;
+      border-color: var(--cash-green);
+      background: #fff;
+    }
+    .reimb-add__input::placeholder { color: rgba(26,23,23,0.4); }
+    .reimb-add__btn {
+      flex-shrink: 0;
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      font-weight: 500;
+      padding: 0.55rem 0.85rem;
+      border-radius: 100px;
+      background: var(--cash-green);
+      color: var(--vanilla);
+      border: none;
+      cursor: pointer;
+      transition: background 0.15s ease, opacity 0.15s ease;
+      letter-spacing: 0.01em;
+    }
+    .reimb-add__btn:hover { background: #023239; }
+    .reimb-add__btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      background: var(--cash-green);
+    }
+    .reimb-add__btn:focus-visible {
+      outline: 2px solid var(--cash-green);
+      outline-offset: 2px;
+    }
+    .reimb-error {
+      font-size: 0.78rem;
+      color: #8a2a2a;
+      min-height: 0;
+      margin-top: -0.6rem;
+      margin-bottom: 0.8rem;
+    }
+    .reimb-error:empty { display: none; }
+    /* Status messages (loading / error) live in their own row above the groups. */
+    .reimb-status {
+      font-size: 0.85rem;
+      font-style: italic;
+      opacity: 0.55;
+      padding: 0.25rem 0;
+    }
+    .reimb-status:empty { display: none; }
+    .reimb-groups {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .reimb-group { display: flex; flex-direction: column; gap: 0.4rem; }
+    .reimb-group__heading {
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: 0.9rem;
+      color: var(--cash-green);
+      letter-spacing: 0;
+      text-transform: lowercase;
+      opacity: 0.85;
+    }
+    .reimb-list { display: flex; flex-direction: column; gap: 0.35rem; }
+    .reimb-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.5rem 0.65rem 0.5rem 0.75rem;
+      background: var(--vanilla);
+      border: 1px solid rgba(1, 71, 81, 0.05);
+      border-radius: 0.4rem;
+    }
+    .reimb-item__desc {
+      font-family: var(--font-body);
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--off-black);
+      line-height: 1.3;
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    /* Status-cycle button — quiet text-link affordance on the right. Greyed
+       out + non-interactive on the "received" terminal state. */
+    .reimb-cycle {
+      flex-shrink: 0;
+      font-family: var(--font-body);
+      font-size: 0.74rem;
+      font-weight: 500;
+      color: var(--cash-green);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 0.2rem 0.3rem;
+      letter-spacing: 0.01em;
+      opacity: 0.75;
+      transition: opacity 0.15s ease;
+    }
+    .reimb-cycle:hover { opacity: 1; }
+    .reimb-cycle:focus-visible {
+      outline: 2px solid var(--cash-green);
+      outline-offset: 2px;
+    }
+    .reimb-cycle.is-done {
+      cursor: default;
+      opacity: 0.4;
+      pointer-events: none;
+    }
+    /* Trash + inline confirm — mirror the day-popover row pattern. */
+    .reimb-item__trash {
+      width: 0.85rem;
+      height: 0.85rem;
+      color: var(--cash-green);
+      opacity: 0;
+      flex-shrink: 0;
+      align-self: center;
+      transition: opacity 0.15s ease;
+      cursor: pointer;
+    }
+    .reimb-item:hover .reimb-item__trash,
+    .reimb-item:focus-within .reimb-item__trash { opacity: 0.55; }
+    .reimb-item__trash:hover,
+    .reimb-item__trash:focus-visible { opacity: 0.95 !important; }
+    .reimb-item__confirm {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.78rem;
+      margin-left: auto;
+      color: var(--cash-green);
+    }
+    .reimb-item__confirm-label { opacity: 0.7; font-weight: 500; }
+    .reimb-item__confirm-sep { opacity: 0.35; }
+    .reimb-item__confirm-yes,
+    .reimb-item__confirm-no {
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      color: var(--cash-green);
+      background: transparent;
+      border: none;
+      padding: 0.05rem 0.15rem;
+      cursor: pointer;
+      font-weight: 500;
+      opacity: 0.85;
+      transition: opacity 0.15s ease;
+    }
+    .reimb-item__confirm-yes { text-decoration: underline; }
+    .reimb-item__confirm-yes:hover,
+    .reimb-item__confirm-no:hover { opacity: 1; }
+    .reimb-item__confirm-yes:disabled,
+    .reimb-item__confirm-no:disabled { opacity: 0.4; cursor: not-allowed; }
+    .reimb-empty {
+      font-size: 0.85rem;
+      font-style: italic;
+      opacity: 0.55;
+      padding: 0.5rem 0.2rem;
+    }
+    .reimbursements-pop .reimbursements-close {
+      font-family: var(--font-body);
+      font-size: 0.82rem;
+      color: var(--cash-green);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 0.25rem 0;
+      opacity: 0.7;
+      transition: opacity 0.15s ease;
+      align-self: flex-start;
+      margin-top: 0.9rem;
+    }
+    .reimbursements-pop .reimbursements-close:hover { opacity: 1; }
 
     .weekday-row {
       display: grid;
@@ -1151,6 +1407,7 @@
       <div class="header-pills">
         <button class="schedule-btn" id="schedule-btn" type="button">+ schedule</button>
         <button class="balances-btn" id="balances-btn" type="button" aria-haspopup="dialog" aria-controls="balances-pop">balances</button>
+        <button class="reimbursements-btn" id="reimbursements-btn" type="button" aria-haspopup="dialog" aria-controls="reimbursements-pop">reimbursements</button>
       </div>
     </div>
 
@@ -1182,6 +1439,7 @@
             <button type="button" class="type-chip" data-type="sub" role="radio" aria-checked="false">sub</button>
             <button type="button" class="type-chip is-active" data-type="planned" role="radio" aria-checked="true">planned</button>
             <button type="button" class="type-chip" data-type="spent" role="radio" aria-checked="false">spent</button>
+            <button type="button" class="type-chip" data-type="income" role="radio" aria-checked="false">income</button>
           </div>
         </div>
 
@@ -1232,6 +1490,29 @@
       <div class="balances-groups" id="balances-groups"></div>
       <div class="balances-asof" id="balances-asof"></div>
       <button class="balances-close" id="balances-close" type="button">close</button>
+    </aside>
+
+    <!-- Reimbursements popup — simple to-do list backed by /api/reimbursements. -->
+    <div class="reimbursements-overlay" id="reimbursements-overlay"></div>
+    <aside class="reimbursements-pop" id="reimbursements-pop" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="reimbursements-pop-title">
+      <h2 id="reimbursements-pop-title">reimbursements</h2>
+      <p class="reimbursements-subtitle">track what you&rsquo;ve paid for that&rsquo;s coming back to you.</p>
+      <form class="reimb-add" id="reimb-add-form" novalidate>
+        <input
+          class="reimb-add__input"
+          type="text"
+          id="reimb-add-input"
+          name="description"
+          maxlength="120"
+          placeholder="e.g. dr. visit copay"
+          autocomplete="off"
+          required>
+        <button type="submit" class="reimb-add__btn" id="reimb-add-btn">+ add</button>
+      </form>
+      <div class="reimb-error" id="reimb-error" aria-live="polite"></div>
+      <div class="reimb-status" id="reimb-status" aria-live="polite"></div>
+      <div class="reimb-groups" id="reimb-groups"></div>
+      <button class="reimbursements-close" id="reimbursements-close" type="button">close</button>
     </aside>
 
     <div class="weekday-row" aria-hidden="true">

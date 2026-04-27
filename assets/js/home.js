@@ -87,6 +87,9 @@
       schedDeleteYes, schedDeleteCancel;
   var balBtn, balOverlay, balPop, balClose,
       balSummary, balStatus, balGroups, balAsOf;
+  var reimbBtn, reimbOverlay, reimbPop, reimbClose,
+      reimbAddForm, reimbAddInput, reimbAddBtn,
+      reimbError, reimbStatus, reimbGroups;
 
   // Edit-mode flag for the schedule popup. null = create mode (default), a
   // string id = edit mode for that scheduled transaction. Toggled by
@@ -102,6 +105,13 @@
   // reused on subsequent opens — the panel doesn't refetch on close/reopen.
   var balancesCache = null;
   var balancesFetchInflight = null;
+
+  // Reimbursements list for the reimbursements popup. Lazily fetched on first
+  // open, then evicted on every successful mutation (POST/PATCH/DELETE) so the
+  // next open refetches. Mirrors the balances/SWR pattern: hydrated from
+  // localStorage on boot for instant paint, then refreshed from the live API.
+  var reimbursementsCache = null;
+  var reimbursementsFetchInflight = null;
 
   // Signup boundary — the earliest month the calendar lets the user nav to.
   // Set after /api/me resolves. Before that, stays null and prev-nav is allowed.
@@ -153,6 +163,10 @@
         else if (t === 'credit') ccTotal += b;
       });
       currentRunningBalance = depTotal - ccTotal;
+    }
+    var cachedReimbursements = cacheRead('reimbursements');
+    if (Array.isArray(cachedReimbursements)) {
+      reimbursementsCache = cachedReimbursements;
     }
   }
 
@@ -752,7 +766,12 @@
     if (drawerOverlay) drawerOverlay.addEventListener('click', closeDrawer);
     if (drawerClose)   drawerClose.addEventListener('click', closeDrawer);
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') { closeDrawer(); closeSchedule(); closeBalances(); }
+      if (e.key === 'Escape') {
+        closeDrawer();
+        closeSchedule();
+        closeBalances();
+        closeReimbursements();
+      }
     });
   }
 
@@ -1378,6 +1397,461 @@
     if (balOverlay) balOverlay.addEventListener('click', closeBalances);
   }
 
+  // ── Reimbursements popup ────────────────────────
+  // Simple to-do list backed by /api/reimbursements. Same paper-tint modal
+  // pattern as schedule + balances. Cache lifecycle:
+  //   • Hydrated from localStorage on boot (SWR) for instant paint on reopen
+  //     across page loads.
+  //   • Lazily fetched on first open if no cache exists.
+  //   • Evicted on every successful POST/PATCH/DELETE so the next read pulls
+  //     the canonical server state. We optimistically update the local cache
+  //     for status cycle so the row repaints instantly without waiting on the
+  //     refetch; rollback on error.
+  var REIMB_GROUP_ORDER = [
+    { key: 'open',      heading: 'open' },
+    { key: 'submitted', heading: 'submitted' },
+    { key: 'received',  heading: 'received' }
+  ];
+  // Cycle map: clicking the right-side text advances to the next status.
+  // 'received' is terminal — button is rendered greyed out / non-interactive.
+  var REIMB_NEXT_STATUS = {
+    open: 'submitted',
+    submitted: 'received'
+  };
+  function reimbCycleLabel(status) {
+    if (status === 'open')      return 'submit claim \u2192';
+    if (status === 'submitted') return 'got EOB \u2192';
+    return 'done';
+  }
+
+  function persistReimbursementsCache() {
+    if (Array.isArray(reimbursementsCache)) {
+      cacheWrite('reimbursements', reimbursementsCache);
+    }
+  }
+
+  function fetchReimbursementsOnce() {
+    if (Array.isArray(reimbursementsCache) && reimbursementsCache.length >= 0 && reimbursementsCache._fresh) {
+      // _fresh marker indicates this cache was loaded from the live API in
+      // this page session. Hydrated-from-localStorage caches lack the marker
+      // so we still fall through to the network on first open.
+      return Promise.resolve(reimbursementsCache);
+    }
+    if (reimbursementsFetchInflight) return reimbursementsFetchInflight;
+    reimbursementsFetchInflight = fetch(API_BASE + '/api/reimbursements', {
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include'
+    }).then(function (res) {
+      if (res.status === 401) return { items: [] }; // gateAuth handles redirect
+      if (!res.ok) throw new Error('reimbursements fetch failed ' + res.status);
+      return res.json();
+    }).then(function (data) {
+      var items = (data && Array.isArray(data.items)) ? data.items : [];
+      reimbursementsCache = items;
+      // Mark this cache as backend-fresh so subsequent opens reuse without
+      // refetching. Eviction (cache = null) clears this implicitly.
+      try { Object.defineProperty(reimbursementsCache, '_fresh', { value: true, enumerable: false, configurable: true }); }
+      catch (_) { reimbursementsCache._fresh = true; }
+      persistReimbursementsCache();
+      reimbursementsFetchInflight = null;
+      return reimbursementsCache;
+    }).catch(function (err) {
+      reimbursementsFetchInflight = null;
+      try { console.warn('[home] reimbursements fetch error:', err); } catch (_) {}
+      throw err;
+    });
+    return reimbursementsFetchInflight;
+  }
+
+  function setReimbStatus(text) {
+    if (reimbStatus) reimbStatus.textContent = text || '';
+  }
+  function setReimbError(text) {
+    if (reimbError) reimbError.textContent = text || '';
+  }
+
+  // Group items by status, preserving server's intra-group ordering
+  // (open → submitted → received, then by recency within each).
+  function groupReimbursements(items) {
+    var groups = { open: [], submitted: [], received: [] };
+    (items || []).forEach(function (it) {
+      var s = (it && it.status) || 'open';
+      if (groups[s]) groups[s].push(it);
+      else groups.open.push(it);
+    });
+    return groups;
+  }
+
+  function renderReimbursements() {
+    if (!reimbGroups) return;
+    reimbGroups.innerHTML = '';
+    var items = Array.isArray(reimbursementsCache) ? reimbursementsCache : [];
+
+    if (!items.length) {
+      var empty = document.createElement('div');
+      empty.className = 'reimb-empty';
+      empty.textContent = 'no reimbursements yet \u2014 add one above.';
+      reimbGroups.appendChild(empty);
+      return;
+    }
+
+    var groups = groupReimbursements(items);
+    REIMB_GROUP_ORDER.forEach(function (g) {
+      var rows = groups[g.key];
+      if (!rows.length) return;
+      var section = document.createElement('section');
+      section.className = 'reimb-group';
+
+      var h = document.createElement('div');
+      h.className = 'reimb-group__heading';
+      h.textContent = g.heading;
+      section.appendChild(h);
+
+      var list = document.createElement('div');
+      list.className = 'reimb-list';
+      list.id = 'reimb-list-' + g.key;
+      rows.forEach(function (item) { list.appendChild(buildReimbItem(item)); });
+      section.appendChild(list);
+
+      reimbGroups.appendChild(section);
+    });
+  }
+
+  function buildReimbItem(item) {
+    var row = document.createElement('div');
+    row.className = 'reimb-item';
+    row.setAttribute('data-id', String(item.id));
+    row.setAttribute('data-status', item.status || 'open');
+
+    var desc = document.createElement('div');
+    desc.className = 'reimb-item__desc';
+    desc.textContent = item.description || '';
+    row.appendChild(desc);
+
+    // Trash glyph — sits LEFT of the cycle button. Same SVG pattern as the
+    // day-popover trash for consistency.
+    var trash = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    trash.setAttribute('class', 'reimb-item__trash');
+    trash.setAttribute('viewBox', '0 0 16 16');
+    trash.setAttribute('fill', 'none');
+    trash.setAttribute('stroke', 'currentColor');
+    trash.setAttribute('stroke-width', '1.4');
+    trash.setAttribute('stroke-linecap', 'round');
+    trash.setAttribute('stroke-linejoin', 'round');
+    trash.setAttribute('role', 'button');
+    trash.setAttribute('tabindex', '0');
+    trash.setAttribute('aria-label', 'delete ' + (item.description || 'reimbursement'));
+    var trashPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    trashPath.setAttribute('d', 'M3 4h10M6 4V2.8h4V4M5 4v9h6V4M7.5 6.5v4M9 6.5v4');
+    trash.appendChild(trashPath);
+    row.appendChild(trash);
+
+    var status = item.status || 'open';
+    var cycle = document.createElement('button');
+    cycle.type = 'button';
+    cycle.className = 'reimb-cycle';
+    cycle.textContent = reimbCycleLabel(status);
+    if (status === 'received') {
+      cycle.classList.add('is-done');
+      cycle.disabled = true;
+      cycle.setAttribute('aria-disabled', 'true');
+    } else {
+      cycle.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        advanceStatus(item);
+      });
+    }
+    row.appendChild(cycle);
+
+    // Trash click → swap right side for inline confirm row.
+    var openConfirm = function (ev) {
+      ev.stopPropagation();
+      // Bail if a confirm is already open in this row.
+      if (row.querySelector('.reimb-item__confirm')) return;
+      // Hide existing right-side controls (trash + cycle).
+      trash.style.display = 'none';
+      cycle.style.display = 'none';
+
+      var confirmRow = document.createElement('div');
+      confirmRow.className = 'reimb-item__confirm';
+
+      var label = document.createElement('span');
+      label.className = 'reimb-item__confirm-label';
+      label.textContent = 'delete?';
+      confirmRow.appendChild(label);
+
+      var sep1 = document.createElement('span');
+      sep1.className = 'reimb-item__confirm-sep';
+      sep1.textContent = '\u00b7';
+      confirmRow.appendChild(sep1);
+
+      var yesBtn = document.createElement('button');
+      yesBtn.type = 'button';
+      yesBtn.className = 'reimb-item__confirm-yes';
+      yesBtn.textContent = 'yes';
+      confirmRow.appendChild(yesBtn);
+
+      var sep2 = document.createElement('span');
+      sep2.className = 'reimb-item__confirm-sep';
+      sep2.textContent = '\u00b7';
+      confirmRow.appendChild(sep2);
+
+      var noBtn = document.createElement('button');
+      noBtn.type = 'button';
+      noBtn.className = 'reimb-item__confirm-no';
+      noBtn.textContent = 'cancel';
+      confirmRow.appendChild(noBtn);
+
+      row.appendChild(confirmRow);
+
+      var restore = function () {
+        if (confirmRow.parentNode) confirmRow.parentNode.removeChild(confirmRow);
+        trash.style.display = '';
+        cycle.style.display = '';
+      };
+
+      noBtn.addEventListener('click', function (cev) {
+        cev.stopPropagation();
+        restore();
+      });
+
+      yesBtn.addEventListener('click', function (cev) {
+        cev.stopPropagation();
+        yesBtn.disabled = true;
+        noBtn.disabled = true;
+        label.textContent = 'deleting\u2026';
+        deleteReimbursement(item).catch(function () {
+          // Failure path: surface generic message + re-enable cancel so the
+          // user can dismiss the confirm row. The error itself is rendered
+          // in the panel-level error slot by deleteReimbursement.
+          label.textContent = 'couldn\u2019t delete \u00b7 cancel';
+          yesBtn.style.display = 'none';
+          sep2.style.display = 'none';
+          noBtn.disabled = false;
+        });
+      });
+    };
+    trash.addEventListener('click', openConfirm);
+    trash.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Enter' || ev.key === ' ') {
+        ev.preventDefault();
+        openConfirm(ev);
+      }
+    });
+
+    return row;
+  }
+
+  // POST a new reimbursement. Validates, then optimistically appends on
+  // success and refetches to get the canonical sort + ids.
+  function addReimbursement(description) {
+    var d = (description || '').trim();
+    setReimbError('');
+    if (!d) {
+      setReimbError('add a description.');
+      return Promise.resolve(null);
+    }
+    if (d.length > 120) {
+      setReimbError('description is too long (max 120).');
+      return Promise.resolve(null);
+    }
+    if (reimbAddBtn) reimbAddBtn.disabled = true;
+    return fetch(API_BASE + '/api/reimbursements', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ description: d })
+    }).then(function (res) {
+      return res.json().catch(function () { return null; }).then(function (data) {
+        return { ok: res.ok, status: res.status, data: data };
+      });
+    }).then(function (out) {
+      if (!out.ok || !out.data || !out.data.item) {
+        var msg = (out.data && (out.data.error || out.data.message)) ||
+                  ('couldn\u2019t add (' + out.status + ').');
+        setReimbError(msg);
+        if (reimbAddBtn) reimbAddBtn.disabled = false;
+        return null;
+      }
+      // Prepend the new item locally so the panel updates immediately. The
+      // backend's canonical sort puts open items first and most-recent on top
+      // within a group, which matches a prepend for the open bucket.
+      var newItem = out.data.item;
+      reimbursementsCache = [newItem].concat(
+        Array.isArray(reimbursementsCache) ? reimbursementsCache : []
+      );
+      try { Object.defineProperty(reimbursementsCache, '_fresh', { value: true, enumerable: false, configurable: true }); }
+      catch (_) { reimbursementsCache._fresh = true; }
+      persistReimbursementsCache();
+      if (reimbAddInput) reimbAddInput.value = '';
+      if (reimbAddBtn) reimbAddBtn.disabled = false;
+      renderReimbursements();
+      return newItem;
+    }).catch(function (err) {
+      setReimbError('network error \u2014 try again.');
+      if (reimbAddBtn) reimbAddBtn.disabled = false;
+      try { console.warn('[home] reimbursement add error:', err); } catch (_) {}
+      return null;
+    });
+  }
+
+  // PATCH an item to its next status. Optimistically updates the cache + UI,
+  // rolls back if the server says no.
+  function advanceStatus(item) {
+    if (!item || !item.id) return;
+    var current = item.status || 'open';
+    var next = REIMB_NEXT_STATUS[current];
+    if (!next) return; // 'received' is terminal
+    setReimbError('');
+    var prevStatus = current;
+    item.status = next;
+    persistReimbursementsCache();
+    renderReimbursements();
+
+    fetch(API_BASE + '/api/reimbursements/' + encodeURIComponent(item.id), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ status: next })
+    }).then(function (res) {
+      return res.json().catch(function () { return null; }).then(function (data) {
+        return { ok: res.ok, status: res.status, data: data };
+      });
+    }).then(function (out) {
+      if (!out.ok) {
+        // Rollback the optimistic update.
+        item.status = prevStatus;
+        persistReimbursementsCache();
+        renderReimbursements();
+        var msg = (out.data && (out.data.error || out.data.message)) ||
+                  ('couldn\u2019t update (' + out.status + ').');
+        setReimbError(msg);
+        return;
+      }
+      // Server may return a fuller item (e.g. updated_at) — overlay onto local.
+      if (out.data && out.data.item) {
+        Object.assign(item, out.data.item);
+        persistReimbursementsCache();
+        renderReimbursements();
+      }
+    }).catch(function (err) {
+      item.status = prevStatus;
+      persistReimbursementsCache();
+      renderReimbursements();
+      setReimbError('network error \u2014 try again.');
+      try { console.warn('[home] reimbursement patch error:', err); } catch (_) {}
+    });
+  }
+
+  // DELETE an item. Returns a promise so the inline confirm row can flip into
+  // an error state if the call fails.
+  function deleteReimbursement(item) {
+    if (!item || !item.id) return Promise.resolve(false);
+    setReimbError('');
+    return fetch(API_BASE + '/api/reimbursements/' + encodeURIComponent(item.id), {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include'
+    }).then(function (res) {
+      return res.json().catch(function () { return null; }).then(function (data) {
+        return { ok: res.ok, status: res.status, data: data };
+      });
+    }).then(function (out) {
+      if (!out.ok) {
+        var msg = (out.data && (out.data.error || out.data.message)) ||
+                  ('couldn\u2019t delete (' + out.status + ').');
+        setReimbError(msg);
+        throw new Error(msg);
+      }
+      // Drop the row from the cache + re-render.
+      reimbursementsCache = (reimbursementsCache || []).filter(function (x) {
+        return x.id !== item.id;
+      });
+      try { Object.defineProperty(reimbursementsCache, '_fresh', { value: true, enumerable: false, configurable: true }); }
+      catch (_) { reimbursementsCache._fresh = true; }
+      persistReimbursementsCache();
+      renderReimbursements();
+      return true;
+    }).catch(function (err) {
+      // Already-rendered network error message stays in place; just re-throw
+      // so the inline confirm UI can flip into "couldn't delete" state.
+      if (err && err.message && reimbError && !reimbError.textContent) {
+        setReimbError('network error \u2014 try again.');
+      }
+      try { console.warn('[home] reimbursement delete error:', err); } catch (_) {}
+      throw err;
+    });
+  }
+
+  function openReimbursements() {
+    if (!reimbPop || !reimbOverlay) return;
+    reimbPop.classList.add('open');
+    reimbOverlay.classList.add('open');
+    reimbPop.setAttribute('aria-hidden', 'false');
+    setReimbError('');
+
+    // Always render whatever's currently in cache (could be stale from
+    // localStorage, could be null) before any network call so the panel
+    // paints instantly with last-known data.
+    if (Array.isArray(reimbursementsCache)) {
+      setReimbStatus('');
+      renderReimbursements();
+    }
+
+    // Skip refetch when we already have a backend-fresh cache from this
+    // session. Otherwise hit the network and overwrite.
+    if (Array.isArray(reimbursementsCache) && reimbursementsCache._fresh) {
+      // Focus the input so users can start typing immediately.
+      if (reimbAddInput) {
+        try { reimbAddInput.focus({ preventScroll: true }); } catch (_) { reimbAddInput.focus(); }
+      }
+      return;
+    }
+    // Render a loading line if the cache is empty so the panel isn't blank.
+    if (!Array.isArray(reimbursementsCache)) setReimbStatus('loading\u2026');
+
+    fetchReimbursementsOnce().then(function () {
+      setReimbStatus('');
+      renderReimbursements();
+    }).catch(function () {
+      setReimbStatus('couldn\u2019t load \u2014 refresh and try again.');
+    });
+
+    if (reimbAddInput) {
+      try { reimbAddInput.focus({ preventScroll: true }); } catch (_) { reimbAddInput.focus(); }
+    }
+  }
+
+  function closeReimbursements() {
+    if (!reimbPop || !reimbOverlay) return;
+    reimbPop.classList.remove('open');
+    reimbOverlay.classList.remove('open');
+    reimbPop.setAttribute('aria-hidden', 'true');
+  }
+
+  function wireReimbursementsBtn() {
+    reimbBtn       = document.getElementById('reimbursements-btn');
+    reimbOverlay   = document.getElementById('reimbursements-overlay');
+    reimbPop       = document.getElementById('reimbursements-pop');
+    reimbClose     = document.getElementById('reimbursements-close');
+    reimbAddForm   = document.getElementById('reimb-add-form');
+    reimbAddInput  = document.getElementById('reimb-add-input');
+    reimbAddBtn    = document.getElementById('reimb-add-btn');
+    reimbError     = document.getElementById('reimb-error');
+    reimbStatus    = document.getElementById('reimb-status');
+    reimbGroups    = document.getElementById('reimb-groups');
+
+    if (reimbBtn)     reimbBtn.addEventListener('click', openReimbursements);
+    if (reimbClose)   reimbClose.addEventListener('click', closeReimbursements);
+    if (reimbOverlay) reimbOverlay.addEventListener('click', closeReimbursements);
+    if (reimbAddForm) {
+      reimbAddForm.addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        addReimbursement(reimbAddInput && reimbAddInput.value);
+      });
+    }
+  }
+
   // ── Add-account button wiring ───────────────────
   function wireAddAccountBtn() {
     var btn = document.getElementById('add-account-btn');
@@ -1396,6 +1870,7 @@
     wireAddAccountBtn();
     wireScheduleBtn();
     wireBalancesBtn();
+    wireReimbursementsBtn();
     // SWR: paint last-known calendar + balances instantly from localStorage
     // before any network calls. Live fetches below silently refresh.
     hydrateFromCache();
