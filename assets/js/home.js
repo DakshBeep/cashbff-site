@@ -213,7 +213,17 @@
       return res.json();
     }).then(function (data) {
       if (!data) return;
-      mergeExpenses(data.expenses || []);
+      var expenses = data.expenses || [];
+      // Canonical range refresh: PURGE any existing in-memory entries within
+      // the requested [fromISO, toISO] window before merging. Without this,
+      // entries deleted server-side (e.g. an old scheduled txn we DELETE'd
+      // from another device or a stale cache hydrated from localStorage)
+      // would stick around forever because mergeExpenses only adds/updates,
+      // never removes. The server's response IS the truth for its range.
+      PRECOMMITS = PRECOMMITS.filter(function (e) {
+        return !(e.date >= fromISO && e.date <= toISO);
+      });
+      mergeExpenses(expenses);
       renderGrid();
       // Persist the full PRECOMMITS array (not just this batch) so the cache
       // stays canonical across months. Other-month entries from prior fetches
@@ -597,7 +607,10 @@
                 credentials: 'include'
               }).then(function (res) {
                 if (res.status === 401) { location.replace('/'); return; }
-                if (!res.ok) throw new Error('delete failed ' + res.status);
+                // 404 = already gone server-side (e.g. zombie from a stale
+                // localStorage cache). Treat it as success — purge locally so
+                // the row stops haunting the UI on every reload.
+                if (!res.ok && res.status !== 404) throw new Error('delete failed ' + res.status);
                 // Remove from local state so the day popover and grid reflect
                 // the change without needing a full month refetch.
                 var idx = PRECOMMITS.indexOf(txnSnapshot);
@@ -608,6 +621,9 @@
                     return !(x.source === 'scheduled' && x.id === txnSnapshot.id);
                   });
                 }
+                // Persist the updated PRECOMMITS so the cache doesn't bring
+                // the deleted row back on next reload.
+                cacheWrite('calendar_expenses', PRECOMMITS);
                 // Pop the row out of the drawer DOM.
                 if (item.parentNode) item.parentNode.removeChild(item);
                 renderGrid();
@@ -1046,7 +1062,9 @@
         return { ok: res.ok, status: res.status, data: data };
       });
     }).then(function (out) {
-      if (!out.ok) {
+      // 404 = already gone server-side (zombie from stale cache). Treat as
+      // success so the local state purges instead of error-displaying.
+      if (!out.ok && out.status !== 404) {
         var msg = (out.data && (out.data.error || out.data.message)) ||
                   ('couldn\'t delete (' + out.status + ').');
         if (schedError) schedError.textContent = msg;
@@ -1056,8 +1074,10 @@
         }
         return;
       }
-      // Success: drop the row locally so it doesn't linger, then refetch.
+      // Success (or 404 zombie purge): drop the row locally so it doesn't
+      // linger, then refetch the visible month for canonical state.
       PRECOMMITS = PRECOMMITS.filter(function (e) { return e.id !== id; });
+      cacheWrite('calendar_expenses', PRECOMMITS);
       // Reset confirm UI before closing so the next open starts in the
       // neutral "delete" link state.
       if (schedDeleteYes) {
