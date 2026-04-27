@@ -884,6 +884,28 @@
     .row-confirm__yes:disabled,
     .row-confirm__no:disabled { opacity: 0.4; cursor: not-allowed; }
     .drawer-empty { opacity: 0.5; font-style: italic; padding: 0.4rem 0.2rem; text-align: center; font-size: 0.82rem; }
+    /* Per-day "+ schedule" button at the bottom of the day popover. Quiet
+       outlined pill so it sits below the list without competing visually
+       with the txn rows. */
+    .drawer-schedule-btn {
+      align-self: stretch;
+      margin-top: 0.6rem;
+      font-family: var(--font-body);
+      font-size: 0.76rem;
+      font-weight: 500;
+      color: var(--cash-green);
+      background: transparent;
+      border: 1px dashed rgba(1, 71, 81, 0.3);
+      border-radius: 8px;
+      padding: 0.4rem 0.6rem;
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+    .drawer-schedule-btn:hover {
+      background: rgba(1, 71, 81, 0.05);
+      border-color: var(--cash-green);
+      border-style: solid;
+    }
     .drawer-close {
       border: none; background: transparent;
       color: var(--off-black); opacity: 0.4;

@@ -397,7 +397,12 @@
           var projected = currentRunningBalance + deltaIn - deltaOut;
           var sign = projected < 0 ? '-' : '';
           var abs  = Math.abs(projected).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-          var label = sameYMD(d, today) ? 'after today' : 'after this day';
+          // Clarified label: this projection only deducts SCHEDULED outflows.
+          // Pending Plaid charges are already inside the running balance
+          // baseline (balance_available), so subtracting them again would
+          // double-count. "Your plans" = scheduled items only.
+          var label = sameYMD(d, today) ? 'after your plans today'
+                                        : 'after your plans this day';
           drawerProjected.innerHTML =
             label + ': <strong>' + sign + '$' + abs + '</strong>';
         }
@@ -622,6 +627,33 @@
         drawerList.appendChild(item);
       });
     }
+
+    // ── Per-day "+ schedule on this day" footer button ───────────
+    // Lets the user create a scheduled transaction directly from the day
+    // they're looking at, with the date pre-filled. Sits below the list.
+    // Past days still allow scheduling (you may want to log a planned thing
+    // retroactively for projection purposes — backend has no date guard).
+    var schedHere = document.createElement('button');
+    schedHere.type = 'button';
+    schedHere.className = 'drawer-schedule-btn';
+    var schedHereLabel = sameYMD(d, today) ? '+ schedule today'
+                                           : '+ schedule on this day';
+    schedHere.textContent = schedHereLabel;
+    schedHere.addEventListener('click', function (ev) {
+      ev.stopPropagation();
+      var dateStr = iso(d);
+      // Close the day popover first so the schedule popup gets focus cleanly,
+      // then open the schedule form pre-set to this date. openSchedule with
+      // no txn = create mode; we override the date input after open.
+      closeDrawer();
+      openSchedule();
+      // Defer so the form has rendered + reset before we override the date.
+      setTimeout(function () {
+        if (schedDate) schedDate.value = dateStr;
+      }, 0);
+    });
+    drawerList.appendChild(schedHere);
+
     drawer.classList.add('open');
     drawerOverlay.classList.add('open');
     drawer.setAttribute('aria-hidden', 'false');
