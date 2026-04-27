@@ -46,11 +46,18 @@
   var schedBtn, schedOverlay, schedPop, schedClose;
   var schedForm, schedDate, schedAmount, schedName, schedTypeChips,
       schedCard, schedNote, schedError, schedSubmit;
+  var balBtn, balOverlay, balPop, balClose,
+      balSummary, balStatus, balGroups, balAsOf;
 
   // Cards list for the schedule form's card select. Lazily fetched on first
   // open, then cached in memory for the page lifetime.
   var cardsCache = null;
   var cardsFetchInflight = null;
+
+  // Balances list for the balances popup. Lazily fetched on first open and
+  // reused on subsequent opens — the panel doesn't refetch on close/reopen.
+  var balancesCache = null;
+  var balancesFetchInflight = null;
 
   // Signup boundary — the earliest month the calendar lets the user nav to.
   // Set after /api/me resolves. Before that, stays null and prev-nav is allowed.
@@ -439,7 +446,7 @@
     if (drawerOverlay) drawerOverlay.addEventListener('click', closeDrawer);
     if (drawerClose)   drawerClose.addEventListener('click', closeDrawer);
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') { closeDrawer(); closeSchedule(); }
+      if (e.key === 'Escape') { closeDrawer(); closeSchedule(); closeBalances(); }
     });
   }
 
@@ -643,6 +650,240 @@
     }
   }
 
+  // ── Balances popup ───────────────────────────────
+  // Fetches /api/balances once on first open and caches the result for the
+  // page lifetime. Subsequent opens reuse the cache — no refetch on reopen.
+  function fetchBalancesOnce() {
+    if (balancesCache) return Promise.resolve(balancesCache);
+    if (balancesFetchInflight) return balancesFetchInflight;
+    balancesFetchInflight = fetch(API_BASE + '/api/balances', {
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include'
+    }).then(function (res) {
+      if (res.status === 401) return { accounts: [], summary: null }; // gateAuth handles redirect
+      if (!res.ok) throw new Error('balances fetch failed ' + res.status);
+      return res.json();
+    }).then(function (data) {
+      balancesCache = {
+        accounts: (data && Array.isArray(data.accounts)) ? data.accounts : [],
+        summary: (data && data.summary) ? data.summary : null
+      };
+      balancesFetchInflight = null;
+      return balancesCache;
+    }).catch(function (err) {
+      balancesFetchInflight = null;
+      try { console.warn('[home] balances fetch error:', err); } catch (_) {}
+      // Don't bake the failure — re-throw so the caller can show an error state
+      // and the next open retries cleanly.
+      throw err;
+    });
+    return balancesFetchInflight;
+  }
+
+  // Format a server-provided ISO timestamp as a low-key relative phrase like
+  // "2 min ago", "an hour ago", or "earlier today". Falls back to the date
+  // (e.g. "apr 21") when relative phrasing would be misleading or the input
+  // can't be parsed.
+  function humanizeAsOf(iso) {
+    if (!iso) return '';
+    var then = new Date(iso);
+    if (isNaN(then.getTime())) return '';
+    var now = new Date();
+    var diffMs = now - then;
+    if (diffMs < 0) diffMs = 0;
+    var diffSec = Math.floor(diffMs / 1000);
+    var diffMin = Math.floor(diffSec / 60);
+    var diffHr  = Math.floor(diffMin / 60);
+
+    if (diffSec < 45) return 'just now';
+    if (diffMin < 2)  return 'a min ago';
+    if (diffMin < 60) return diffMin + ' min ago';
+    if (diffHr  < 2)  return 'an hour ago';
+    // Same calendar day, more than ~2 hours back — keep it warm/loose.
+    var sameDay = then.getFullYear() === now.getFullYear() &&
+                  then.getMonth()    === now.getMonth() &&
+                  then.getDate()     === now.getDate();
+    if (sameDay) return 'earlier today';
+    if (diffHr < 24) return diffHr + ' hr ago';
+    var diffDay = Math.floor(diffHr / 24);
+    if (diffDay === 1) return 'yesterday';
+    if (diffDay < 7)  return diffDay + ' days ago';
+    // Older than a week — fall back to a short month-day stamp in lowercase.
+    return MONTHS[then.getMonth()].slice(0, 3) + ' ' + then.getDate();
+  }
+
+  // Sage/periwinkle accents are applied via CSS class (.is-credit, .is-depository).
+  function balanceRowClass(type) {
+    var t = (type || '').toLowerCase();
+    if (t === 'credit') return 'is-credit';
+    if (t === 'depository') return 'is-depository';
+    return ''; // neutral for "other"
+  }
+
+  // Pick the visible balance for a row. Credit accounts use balance_current
+  // (Plaid: positive number = amount owed). Depository uses available when
+  // present, falling back to current. Other types fall back to current.
+  function balanceForRow(acct) {
+    var t = (acct.account_type || '').toLowerCase();
+    if (t === 'depository') {
+      if (typeof acct.balance_available === 'number') return acct.balance_available;
+      if (typeof acct.balance_current   === 'number') return acct.balance_current;
+      return null;
+    }
+    if (typeof acct.balance_current === 'number') return acct.balance_current;
+    if (typeof acct.balance_available === 'number') return acct.balance_available;
+    return null;
+  }
+
+  function buildBalanceRow(acct) {
+    var row = document.createElement('div');
+    row.className = 'balance-row ' + balanceRowClass(acct.account_type);
+
+    var label = document.createElement('div');
+    label.className = 'balance-row__label';
+    var inst = acct.institution || 'account';
+    var mask = acct.mask ? ' ···' + acct.mask : '';
+    label.textContent = inst + mask;
+    row.appendChild(label);
+
+    var amt = document.createElement('div');
+    amt.className = 'balance-row__amt';
+    var bal = balanceForRow(acct);
+    if (bal === null) {
+      amt.textContent = '—';
+    } else {
+      // Plaid convention: positive credit balance = amount owed. The "cards"
+      // group heading already conveys "this is what you owe", so strip a
+      // leading minus on credit rows to keep the display clean.
+      var t = (acct.account_type || '').toLowerCase();
+      var n = (t === 'credit') ? Math.abs(bal) : bal;
+      amt.textContent = money(n);
+    }
+    row.appendChild(amt);
+
+    return row;
+  }
+
+  function renderBalances(payload) {
+    if (!balGroups || !balSummary || !balAsOf) return;
+    balGroups.innerHTML = '';
+    balAsOf.textContent = '';
+
+    var accounts = (payload && payload.accounts) || [];
+    var summary  = (payload && payload.summary)  || null;
+
+    // Empty state — surface the brand-voice prompt and skip group/list render.
+    if (!accounts.length) {
+      balSummary.classList.add('is-muted-italic');
+      balSummary.textContent = 'nothing connected yet — add an account';
+      return;
+    }
+    balSummary.classList.remove('is-muted-italic');
+
+    // Compose the summary line from totals. Backend computes totals already;
+    // this just picks the right phrasing for which side(s) are non-zero.
+    var owed = summary && typeof summary.total_owed === 'number' ? summary.total_owed : 0;
+    var inn  = summary && typeof summary.total_in   === 'number' ? summary.total_in   : 0;
+    var parts = [];
+    if (owed > 0) parts.push('you owe ' + money(owed));
+    if (inn  > 0) parts.push('you have ' + money(inn));
+    balSummary.textContent = parts.length ? parts.join(' · ') : '';
+
+    // Group by type (preserving server's credit-first ordering within group).
+    var groups = { credit: [], depository: [], other: [] };
+    accounts.forEach(function (a) {
+      var t = (a.account_type || '').toLowerCase();
+      if (t === 'credit') groups.credit.push(a);
+      else if (t === 'depository') groups.depository.push(a);
+      else groups.other.push(a);
+    });
+
+    var order = [
+      { key: 'credit',     heading: 'cards',    listId: 'balances-list-credit' },
+      { key: 'depository', heading: 'accounts', listId: 'balances-list-depository' },
+      { key: 'other',      heading: 'other',    listId: 'balances-list-other' }
+    ];
+    order.forEach(function (g) {
+      var rows = groups[g.key];
+      if (!rows.length) return;
+      var section = document.createElement('section');
+      section.className = 'balances-group';
+
+      var h = document.createElement('div');
+      h.className = 'balances-group__heading';
+      h.textContent = g.heading;
+      section.appendChild(h);
+
+      var list = document.createElement('div');
+      list.className = 'balances-list';
+      list.id = g.listId;
+      rows.forEach(function (a) { list.appendChild(buildBalanceRow(a)); });
+      section.appendChild(list);
+
+      balGroups.appendChild(section);
+    });
+
+    var asOfStr = summary && summary.as_of ? humanizeAsOf(summary.as_of) : '';
+    if (asOfStr) balAsOf.textContent = 'as of ' + asOfStr;
+  }
+
+  function setBalancesStatus(text) {
+    if (!balStatus) return;
+    balStatus.textContent = text || '';
+  }
+
+  function openBalances() {
+    if (!balPop || !balOverlay) return;
+    balPop.classList.add('open');
+    balOverlay.classList.add('open');
+    balPop.setAttribute('aria-hidden', 'false');
+
+    if (balancesCache) {
+      // Cache hit — just render and show.
+      setBalancesStatus('');
+      renderBalances(balancesCache);
+      return;
+    }
+
+    // First open: show loading state, fetch, then render or surface error.
+    if (balSummary) {
+      balSummary.textContent = '';
+      balSummary.classList.remove('is-muted-italic');
+    }
+    if (balGroups) balGroups.innerHTML = '';
+    if (balAsOf)   balAsOf.textContent = '';
+    setBalancesStatus('loading…');
+
+    fetchBalancesOnce().then(function (payload) {
+      setBalancesStatus('');
+      renderBalances(payload);
+    }).catch(function () {
+      setBalancesStatus('couldn\u2019t load — refresh and try again.');
+    });
+  }
+
+  function closeBalances() {
+    if (!balPop || !balOverlay) return;
+    balPop.classList.remove('open');
+    balOverlay.classList.remove('open');
+    balPop.setAttribute('aria-hidden', 'true');
+  }
+
+  function wireBalancesBtn() {
+    balBtn      = document.getElementById('balances-btn');
+    balOverlay  = document.getElementById('balances-overlay');
+    balPop      = document.getElementById('balances-pop');
+    balClose    = document.getElementById('balances-close');
+    balSummary  = document.getElementById('balances-summary');
+    balStatus   = document.getElementById('balances-status');
+    balGroups   = document.getElementById('balances-groups');
+    balAsOf     = document.getElementById('balances-asof');
+
+    if (balBtn)     balBtn.addEventListener('click', openBalances);
+    if (balClose)   balClose.addEventListener('click', closeBalances);
+    if (balOverlay) balOverlay.addEventListener('click', closeBalances);
+  }
+
   // ── Add-account button wiring ───────────────────
   function wireAddAccountBtn() {
     var btn = document.getElementById('add-account-btn');
@@ -660,6 +901,7 @@
     wireCalendar();
     wireAddAccountBtn();
     wireScheduleBtn();
+    wireBalancesBtn();
     renderGrid();
     // Gate the page on /api/me. If the user isn't signed in we'll have already
     // redirected to "/" — the calendar they briefly saw is acceptable; the
