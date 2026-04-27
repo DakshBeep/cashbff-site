@@ -6,10 +6,12 @@
 //      digits of the returned phone number.
 //   3. Wires the sign-out link to POST /api/logout + redirect.
 //   4. Fetches real expenses from GET /api/calendar?from=&to=. On boot the
-//      calendar + balances are first hydrated from localStorage (SWR) so the
-//      page paints instantly with last-known data, then silently refreshes.
-//      Renders them in a calendar-month grid with pills colored by type, a
-//      click-to-open day drawer, and month nav.
+//      calendar + balances are fetched fresh on every page load — no
+//      localStorage hydration. The thin progress bar at the top of
+//      home.html (#page-loader) communicates the wait while /api/me,
+//      /api/calendar, and /api/balances are in flight. Renders results in a
+//      calendar-month grid with pills colored by type, a click-to-open day
+//      drawer, and month nav. Reimbursements still use SWR (panel-scoped).
 //   5. Wires the floating "+ add account" button to the existing add-account
 //      modal via window.CashBFFAddAccount.open().
 //
@@ -21,9 +23,12 @@
   var API_BASE = 'https://api.cashbff.com';
 
   // ── Tiny SWR cache module ────────────────────────
-  // Versioned localStorage shim. Lets us hydrate the calendar + balances from
-  // last-known data on boot so the page paints instantly, then silently
-  // refreshes from the live API. Bump STORAGE_PREFIX to invalidate old keys.
+  // Versioned localStorage shim. Currently only used by reimbursements —
+  // calendar + balances were intentionally pulled off SWR (zombie scheduled
+  // txns + stale running-balance figures kept surfacing on boot before the
+  // live fetches could resolve). Helpers and the cbff_v1_ prefix are kept
+  // in case we want SWR back for those panels later. Bump STORAGE_PREFIX
+  // to invalidate old keys.
   var STORAGE_PREFIX = 'cbff_v1_';
   var CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24h — cap age so we don't hydrate truly ancient data
 
@@ -52,9 +57,45 @@
     } catch (_) {}
   }
 
-  // Expenses for the logged-in user. Empty by default; populated from
-  // localStorage on boot via hydrateFromCache(), then merged with fresh
-  // data from GET /api/calendar.
+  // ── Page-loader inflight tracker ─────────────────
+  // Drives the thin progress bar at the top of home.html. The boot sequence
+  // wraps each network call (gateAuth, fetchInitialWindow, fetchBalancesOnce)
+  // in startLoading/endLoading so the bar stays up while ANY of them is in
+  // flight and disappears when all have settled. Use .finally(endLoading)
+  // (or the polyfilled equivalent) so error paths don't leave the bar stuck.
+  var pageLoader = null; // bound on boot via wirePageLoader()
+  var inflightCount = 0;
+  function startLoading() {
+    inflightCount++;
+    if (inflightCount === 1 && pageLoader) {
+      pageLoader.classList.add('is-loading');
+    }
+  }
+  function endLoading() {
+    inflightCount = Math.max(0, inflightCount - 1);
+    if (inflightCount === 0 && pageLoader) {
+      pageLoader.classList.remove('is-loading');
+    }
+  }
+  // Run a callback on settle for any promise, regardless of whether
+  // Promise.prototype.finally is available (older Safari/Edge).
+  function settle(promise, cb) {
+    if (promise && typeof promise.finally === 'function') {
+      return promise.finally(cb);
+    }
+    return Promise.resolve(promise).then(function (v) {
+      try { cb(); } catch (_) {}
+      return v;
+    }, function (e) {
+      try { cb(); } catch (_) {}
+      throw e;
+    });
+  }
+
+  // Expenses for the logged-in user. Empty by default; populated by the
+  // /api/calendar fetch on boot. Calendar data is no longer hydrated from
+  // localStorage — the user wants a fresh load every time, with the page
+  // loader bar communicating the wait. See hydrateFromCache() below.
   var PRECOMMITS = [];
 
   // Cache of "YYYY-MM" keys whose month ranges we've already fetched, so we
@@ -108,8 +149,10 @@
 
   // Reimbursements list for the reimbursements popup. Lazily fetched on first
   // open, then evicted on every successful mutation (POST/PATCH/DELETE) so the
-  // next open refetches. Mirrors the balances/SWR pattern: hydrated from
-  // localStorage on boot for instant paint, then refreshed from the live API.
+  // next open refetches. Still SWR: hydrated from localStorage on boot for
+  // instant paint when the panel opens, then refreshed from the live API.
+  // (Calendar + balances were pulled off SWR — this panel kept it because
+  // the data is small and panel-scoped.)
   var reimbursementsCache = null;
   var reimbursementsFetchInflight = null;
 
@@ -137,33 +180,16 @@
     return PRECOMMITS.filter(function (e) { return e.date === key; });
   }
 
-  // ── SWR hydration ────────────────────────────────
-  // Read last-known calendar + balances from localStorage and seed the
-  // in-memory state so the page paints instantly on boot. Live fetches kick
-  // off afterward and overwrite this with fresh data. Safe to call before
-  // wireCalendar() — renderGrid() no-ops if grid isn't bound yet.
+  // ── SWR hydration (reimbursements only) ──────────
+  // Calendar + balances are NO LONGER hydrated from localStorage. The user
+  // wants a fresh load every time — the page-loader bar at the top of
+  // home.html signals the wait. Hydrating calendar from a stale cache was
+  // surfacing zombie scheduled txns and stale running-balance figures until
+  // the live fetches resolved. Reimbursements stays SWR (small data,
+  // panel-scoped, low risk).
+  // The cacheRead/cacheWrite helpers and the cbff_v1_ prefix are kept in
+  // case we want to bring SWR back for calendar/balances later.
   function hydrateFromCache() {
-    var cachedExpenses = cacheRead('calendar_expenses');
-    if (Array.isArray(cachedExpenses) && cachedExpenses.length) {
-      // Trust the cache as the canonical starting set — last write wrote the
-      // full PRECOMMITS, so we can replace wholesale rather than merge.
-      PRECOMMITS = cachedExpenses;
-    }
-    var cachedBalances = cacheRead('balances');
-    if (cachedBalances && Array.isArray(cachedBalances.accounts)) {
-      balancesCache = cachedBalances;
-      // Recompute the running balance baseline so the day-popover projection
-      // works immediately on cached data, before /api/balances returns.
-      var depTotal = 0, ccTotal = 0;
-      cachedBalances.accounts.forEach(function (a) {
-        var t = (a.account_type || '').toLowerCase();
-        var b = balanceForRow(a);
-        if (b === null || !isFinite(b)) return;
-        if (t === 'depository') depTotal += b;
-        else if (t === 'credit') ccTotal += b;
-      });
-      currentRunningBalance = depTotal - ccTotal;
-    }
     var cachedReimbursements = cacheRead('reimbursements');
     if (Array.isArray(cachedReimbursements)) {
       reimbursementsCache = cachedReimbursements;
@@ -225,14 +251,11 @@
       });
       mergeExpenses(expenses);
       renderGrid();
-      // Persist the full PRECOMMITS array (not just this batch) so the cache
-      // stays canonical across months. Other-month entries from prior fetches
-      // would be lost if we only stored the incoming batch.
-      cacheWrite('calendar_expenses', PRECOMMITS);
+      // No localStorage write — calendar is fresh on every load now.
       // /api/calendar may have triggered an on-demand Plaid sync server-side
       // (debounced 5min). If it did, balances may have changed too — evict
-      // the cache so the next balances open refetches fresh data instead of
-      // returning a stale pre-sync snapshot.
+      // the in-memory cache so the next balances open refetches fresh data
+      // instead of returning a stale pre-sync snapshot.
       balancesCache = null;
       balancesFetchInflight = null;
     }).catch(function (err) {
@@ -621,9 +644,9 @@
                     return !(x.source === 'scheduled' && x.id === txnSnapshot.id);
                   });
                 }
-                // Persist the updated PRECOMMITS so the cache doesn't bring
-                // the deleted row back on next reload.
-                cacheWrite('calendar_expenses', PRECOMMITS);
+                // No localStorage write — calendar is fresh on every load.
+                // The in-memory PRECOMMITS update above is enough for the
+                // current session; next reload pulls fresh from /api/calendar.
                 // Pop the row out of the drawer DOM.
                 if (item.parentNode) item.parentNode.removeChild(item);
                 renderGrid();
@@ -1077,7 +1100,7 @@
       // Success (or 404 zombie purge): drop the row locally so it doesn't
       // linger, then refetch the visible month for canonical state.
       PRECOMMITS = PRECOMMITS.filter(function (e) { return e.id !== id; });
-      cacheWrite('calendar_expenses', PRECOMMITS);
+      // No localStorage write — fresh on every load.
       // Reset confirm UI before closing so the next open starts in the
       // neutral "delete" link state.
       if (schedDeleteYes) {
@@ -1155,8 +1178,8 @@
         accounts: (data && Array.isArray(data.accounts)) ? data.accounts : [],
         summary: (data && data.summary) ? data.summary : null
       };
-      // Persist for SWR hydration on next boot.
-      cacheWrite('balances', balancesCache);
+      // No localStorage write — balances are fresh on every load. The
+      // in-memory balancesCache still serves repeat opens within a session.
       balancesFetchInflight = null;
       return balancesCache;
     }).catch(function (err) {
@@ -1885,37 +1908,48 @@
 
   // ── Boot ────────────────────────────────────────
   function boot() {
+    pageLoader = document.getElementById('page-loader');
     wireSignout();
     wireCalendar();
     wireAddAccountBtn();
     wireScheduleBtn();
     wireBalancesBtn();
     wireReimbursementsBtn();
-    // SWR: paint last-known calendar + balances instantly from localStorage
-    // before any network calls. Live fetches below silently refresh.
+    // Reimbursements is still SWR — hydrate its in-memory cache from
+    // localStorage so the panel paints instantly when opened. Calendar +
+    // balances are NOT hydrated; they wait for the live fetches below.
     hydrateFromCache();
+    // Render an empty grid up front so the layout is stable while the
+    // /api/calendar fetch runs. The page-loader bar communicates the wait.
     renderGrid();
-    // Gate the page on /api/me. If the user isn't signed in we'll have already
-    // redirected to "/" — the calendar they briefly saw is acceptable; the
-    // alternative (hiding everything until /api/me returns) would flash blank.
-    gateAuth().then(function () {
+    // Gate the page on /api/me. If the user isn't signed in we'll have
+    // already redirected to "/" — the empty calendar visible during boot is
+    // acceptable. The page-loader bar shows progress for all three boot
+    // fetches; settle() ensures error paths don't leave the bar stuck.
+    startLoading();
+    settle(gateAuth().then(function () {
       // Fetch the calendar window first — its handler triggers a debounced
       // Plaid sync server-side that may update account balances. Once that
       // promise resolves the sync has either completed or hit its 8s timeout,
       // and the cache-evict in fetchCalendarRange() ensures the balances
       // prefetch below sees fresh data instead of a pre-sync snapshot.
-      fetchInitialWindow().then(function () {
+      startLoading();
+      var calendarP = fetchInitialWindow();
+      settle(calendarP, endLoading);
+      return calendarP.then(function () {
         if (typeof fetchBalancesOnce === 'function') {
-          fetchBalancesOnce().then(function (payload) {
+          startLoading();
+          var balancesP = fetchBalancesOnce().then(function (payload) {
             if (payload) renderBalances(payload);
           }).catch(function () { /* silent — projection just stays hidden */ });
+          settle(balancesP, endLoading);
         }
       });
     }).catch(function () {
       // Network hiccup or 5xx — leave the page visible; user can retry by
       // reloading. We deliberately don't hard-redirect so a transient error
       // doesn't kick a signed-in user out.
-    });
+    }), endLoading);
   }
 
   if (document.readyState === 'loading') {

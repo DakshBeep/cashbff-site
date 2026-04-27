@@ -48,6 +48,40 @@
     a { color: inherit; text-decoration: none; }
     button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
 
+    /* ── Page loading bar ──────────────────────────── */
+    /* Thin top-of-page progress strip shown while the boot fetches
+       (/api/me, /api/calendar, /api/balances) are in flight. The home page
+       no longer hydrates calendar+balances from localStorage on boot, so
+       this bar is the user-visible signal that fresh data is loading.
+       Sits above page content (z-index 50) but below the add-account modal
+       (z-index 100), which is intentional — the bar is for the boot state,
+       modals own the foreground when open. */
+    .page-loader {
+      position: fixed; top: 0; left: 0; right: 0;
+      height: 3px;
+      background: rgba(1, 71, 81, 0.08);
+      z-index: 50;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+      overflow: hidden;
+    }
+    .page-loader.is-loading { opacity: 1; }
+    .page-loader::after {
+      content: ''; display: block;
+      height: 100%; width: 30%;
+      background: var(--cash-green);
+      border-radius: 2px;
+      animation: page-loader-sweep 1.4s ease-in-out infinite;
+    }
+    @keyframes page-loader-sweep {
+      0%   { transform: translateX(-50%); }
+      100% { transform: translateX(350%); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .page-loader::after { animation: none; width: 50%; }
+    }
+
     /* ── Top bar (wordmark + signed-in pill) ───────── */
     .bar {
       display: flex;
@@ -1407,6 +1441,7 @@
   </style>
 </head>
 <body>
+  <div class="page-loader" id="page-loader" aria-hidden="true"></div>
   <header class="bar">
     <a class="wordmark" href="/" aria-label="cash bff home">cash bff</a>
     <div class="top-right">
