@@ -140,6 +140,12 @@
       if (!data) return;
       mergeExpenses(data.expenses || []);
       renderGrid();
+      // /api/calendar may have triggered an on-demand Plaid sync server-side
+      // (debounced 5min). If it did, balances may have changed too — evict
+      // the cache so the next balances open refetches fresh data instead of
+      // returning a stale pre-sync snapshot.
+      balancesCache = null;
+      balancesFetchInflight = null;
     }).catch(function (err) {
       // Non-2xx (and non-401) or network blip: log + leave existing data in
       // place so the fallback Apr 22 entry and any prior fetches stay visible.
@@ -1181,17 +1187,18 @@
     // redirected to "/" — the calendar they briefly saw is acceptable; the
     // alternative (hiding everything until /api/me returns) would flash blank.
     gateAuth().then(function () {
-      // Only fetch calendar data once auth is confirmed, so we don't hit the
-      // endpoint for a user we're about to redirect anyway.
-      fetchInitialWindow();
-      // Prefetch balances quietly so the day-popover projection can show a
-      // "after this day: $X" line as soon as the user opens any day. The
-      // balances panel itself reuses this cached payload — no double fetch.
-      if (typeof fetchBalancesOnce === 'function') {
-        fetchBalancesOnce().then(function (payload) {
-          if (payload) renderBalances(payload);
-        }).catch(function () { /* silent — projection just stays hidden */ });
-      }
+      // Fetch the calendar window first — its handler triggers a debounced
+      // Plaid sync server-side that may update account balances. Once that
+      // promise resolves the sync has either completed or hit its 8s timeout,
+      // and the cache-evict in fetchCalendarRange() ensures the balances
+      // prefetch below sees fresh data instead of a pre-sync snapshot.
+      fetchInitialWindow().then(function () {
+        if (typeof fetchBalancesOnce === 'function') {
+          fetchBalancesOnce().then(function (payload) {
+            if (payload) renderBalances(payload);
+          }).catch(function () { /* silent — projection just stays hidden */ });
+        }
+      });
     }).catch(function () {
       // Network hiccup or 5xx — leave the page visible; user can retry by
       // reloading. We deliberately don't hard-redirect so a transient error
