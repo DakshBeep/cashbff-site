@@ -707,6 +707,15 @@
       margin-bottom: 0.35rem;
     }
     .drawer-total strong { color: var(--cash-green); opacity: 1; font-weight: 600; }
+    /* Projected-running-balance line. Only rendered for today + future days
+       when we have a running balance baseline. Tone matches drawer-total. */
+    .drawer-projected {
+      font-size: 0.74rem;
+      opacity: 0.55;
+      margin-bottom: 0.55rem;
+      letter-spacing: 0.01em;
+    }
+    .drawer-projected strong { color: var(--cash-green); font-weight: 600; opacity: 1; }
     .drawer-list { display: flex; flex-direction: column; gap: 0.4rem; }
     .drawer-item {
       display: flex;
@@ -1094,6 +1103,7 @@
       <div>
         <div class="drawer-date" id="drawer-date"></div>
         <div class="drawer-total" id="drawer-total"></div>
+        <div class="drawer-projected" id="drawer-projected"></div>
       </div>
       <button class="drawer-close" id="drawer-close" aria-label="close">&times;</button>
     </div>

@@ -43,6 +43,12 @@
   // ── DOM refs, populated on boot() ────────────────
   var grid, monthTitle, prevBtn, nextBtn;
   var drawer, drawerOverlay, drawerDate, drawerTotal, drawerList, drawerClose;
+  var drawerProjected;
+
+  // Today's running balance (depository - credit, using balanceForRow per
+  // account). Set when /api/balances resolves; null until then. Used to
+  // project per-day balance after scheduled outflows in the day popover.
+  var currentRunningBalance = null;
   var schedBtn, schedOverlay, schedPop, schedClose;
   var schedForm, schedDate, schedAmount, schedName, schedTypeChips,
       schedCard, schedNote, schedError, schedSubmit;
@@ -284,6 +290,41 @@
     } else {
       drawerTotal.innerHTML = '';
     }
+
+    // ── Projected running balance for today + future days ───────────
+    // Only computed when (1) we have a baseline running balance from
+    // /api/balances and (2) the clicked day is today or later. Past days
+    // intentionally skip the projection — keeping notes intact but no math.
+    if (drawerProjected) {
+      drawerProjected.innerHTML = '';
+      var isPastDay = d.getTime() < today.getTime();
+      if (!isPastDay && currentRunningBalance !== null) {
+        // Sum every SCHEDULED item between today and this day (inclusive).
+        // Plaid items are already reflected in the running balance baseline
+        // (settled = in balance_current; pending = in balance_available),
+        // so they're skipped here to avoid double-counting.
+        var deltaOut = 0;
+        var deltaIn = 0;
+        var fromKey = iso(today);
+        var toKey = iso(d);
+        PRECOMMITS.forEach(function (e) {
+          if (e.source !== 'scheduled') return;
+          if (e.date < fromKey || e.date > toKey) return;
+          if (e.type === 'income') deltaIn  += Number(e.amount) || 0;
+          else                     deltaOut += Number(e.amount) || 0;
+        });
+        // Only render the line if there's something scheduled in this window
+        // — otherwise today/future days look noisy with redundant projections.
+        if (deltaOut > 0 || deltaIn > 0) {
+          var projected = currentRunningBalance + deltaIn - deltaOut;
+          var sign = projected < 0 ? '-' : '';
+          var abs  = Math.abs(projected).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+          var label = sameYMD(d, today) ? 'after today' : 'after this day';
+          drawerProjected.innerHTML =
+            label + ': <strong>' + sign + '$' + abs + '</strong>';
+        }
+      }
+    }
     drawerList.innerHTML = '';
     if (!exps.length) {
       var em = document.createElement('div');
@@ -425,12 +466,13 @@
     monthTitle   = document.getElementById('month-title');
     prevBtn      = document.getElementById('prev-month');
     nextBtn      = document.getElementById('next-month');
-    drawer       = document.getElementById('drawer');
-    drawerOverlay= document.getElementById('drawer-overlay');
-    drawerDate   = document.getElementById('drawer-date');
-    drawerTotal  = document.getElementById('drawer-total');
-    drawerList   = document.getElementById('drawer-list');
-    drawerClose  = document.getElementById('drawer-close');
+    drawer        = document.getElementById('drawer');
+    drawerOverlay = document.getElementById('drawer-overlay');
+    drawerDate    = document.getElementById('drawer-date');
+    drawerTotal   = document.getElementById('drawer-total');
+    drawerProjected = document.getElementById('drawer-projected');
+    drawerList    = document.getElementById('drawer-list');
+    drawerClose   = document.getElementById('drawer-close');
 
     if (prevBtn) prevBtn.addEventListener('click', function () {
       if (atEarliestMonth()) return; // clamp — can't go back past signup month
@@ -801,6 +843,8 @@
       else if (t === 'credit') ccTotal += b;
     });
     var running = depTotal - ccTotal;
+    // Cache for the day-popover projection.
+    currentRunningBalance = running;
     if (rbBlock && rbAmt) {
       rbBlock.hidden = false;
       // Format with $ + grouping; preserve sign so underwater reads honestly.
@@ -939,6 +983,14 @@
       // Only fetch calendar data once auth is confirmed, so we don't hit the
       // endpoint for a user we're about to redirect anyway.
       fetchInitialWindow();
+      // Prefetch balances quietly so the day-popover projection can show a
+      // "after this day: $X" line as soon as the user opens any day. The
+      // balances panel itself reuses this cached payload — no double fetch.
+      if (typeof fetchBalancesOnce === 'function') {
+        fetchBalancesOnce().then(function (payload) {
+          if (payload) renderBalances(payload);
+        }).catch(function () { /* silent — projection just stays hidden */ });
+      }
     }).catch(function () {
       // Network hiccup or 5xx — leave the page visible; user can retry by
       // reloading. We deliberately don't hard-redirect so a transient error
