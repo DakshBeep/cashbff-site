@@ -5,10 +5,11 @@
 //   2. Populates the top-right chip as "···NNNN signed in" using the last 4
 //      digits of the returned phone number.
 //   3. Wires the sign-out link to POST /api/logout + redirect.
-//   4. Fetches real expenses from GET /api/calendar?from=&to= — seeded with a
-//      single fallback entry (Apr 22 income) so the demo still shows something
-//      if the backend isn't live yet. Renders them in a calendar-month grid
-//      with pills colored by type, a click-to-open day drawer, and month nav.
+//   4. Fetches real expenses from GET /api/calendar?from=&to=. On boot the
+//      calendar + balances are first hydrated from localStorage (SWR) so the
+//      page paints instantly with last-known data, then silently refreshes.
+//      Renders them in a calendar-month grid with pills colored by type, a
+//      click-to-open day drawer, and month nav.
 //   5. Wires the floating "+ add account" button to the existing add-account
 //      modal via window.CashBFFAddAccount.open().
 //
@@ -19,12 +20,42 @@
 
   var API_BASE = 'https://api.cashbff.com';
 
-  // Expenses for the logged-in user. Seeded with a single fallback entry so
-  // the demo still renders something on Apr 22 if the backend isn't live.
-  // Populated/merged from GET /api/calendar on boot + month nav.
-  var PRECOMMITS = [
-    { date: '2026-04-22', amount: 127.01, name: 'IAIC claim payment', type: 'income', confidence: 0.9, pending: false }
-  ];
+  // ── Tiny SWR cache module ────────────────────────
+  // Versioned localStorage shim. Lets us hydrate the calendar + balances from
+  // last-known data on boot so the page paints instantly, then silently
+  // refreshes from the live API. Bump STORAGE_PREFIX to invalidate old keys.
+  var STORAGE_PREFIX = 'cbff_v1_';
+  var CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24h — cap age so we don't hydrate truly ancient data
+
+  function cacheRead(key) {
+    try {
+      var raw = localStorage.getItem(STORAGE_PREFIX + key);
+      if (!raw) return null;
+      var parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed.savedAt !== 'number') return null;
+      if (Date.now() - parsed.savedAt > CACHE_TTL_MS) return null;
+      return parsed.value;
+    } catch (_) { return null; }
+  }
+  function cacheWrite(key, value) {
+    try {
+      localStorage.setItem(STORAGE_PREFIX + key, JSON.stringify({
+        savedAt: Date.now(), value: value
+      }));
+    } catch (_) { /* private mode / quota — silently skip */ }
+  }
+  function cacheClearAll() {
+    try {
+      Object.keys(localStorage).forEach(function (k) {
+        if (k.indexOf(STORAGE_PREFIX) === 0) localStorage.removeItem(k);
+      });
+    } catch (_) {}
+  }
+
+  // Expenses for the logged-in user. Empty by default; populated from
+  // localStorage on boot via hydrateFromCache(), then merged with fresh
+  // data from GET /api/calendar.
+  var PRECOMMITS = [];
 
   // Cache of "YYYY-MM" keys whose month ranges we've already fetched, so we
   // don't re-request on every prev/next nav. Initial boot fetches the last 14
@@ -96,11 +127,41 @@
     return PRECOMMITS.filter(function (e) { return e.date === key; });
   }
 
+  // ── SWR hydration ────────────────────────────────
+  // Read last-known calendar + balances from localStorage and seed the
+  // in-memory state so the page paints instantly on boot. Live fetches kick
+  // off afterward and overwrite this with fresh data. Safe to call before
+  // wireCalendar() — renderGrid() no-ops if grid isn't bound yet.
+  function hydrateFromCache() {
+    var cachedExpenses = cacheRead('calendar_expenses');
+    if (Array.isArray(cachedExpenses) && cachedExpenses.length) {
+      // Trust the cache as the canonical starting set — last write wrote the
+      // full PRECOMMITS, so we can replace wholesale rather than merge.
+      PRECOMMITS = cachedExpenses;
+    }
+    var cachedBalances = cacheRead('balances');
+    if (cachedBalances && Array.isArray(cachedBalances.accounts)) {
+      balancesCache = cachedBalances;
+      // Recompute the running balance baseline so the day-popover projection
+      // works immediately on cached data, before /api/balances returns.
+      var depTotal = 0, ccTotal = 0;
+      cachedBalances.accounts.forEach(function (a) {
+        var t = (a.account_type || '').toLowerCase();
+        var b = balanceForRow(a);
+        if (b === null || !isFinite(b)) return;
+        if (t === 'depository') depTotal += b;
+        else if (t === 'credit') ccTotal += b;
+      });
+      currentRunningBalance = depTotal - ccTotal;
+    }
+  }
+
   // ── /api/calendar fetch + merge ──────────────────
   // Merge a batch of expenses into PRECOMMITS, replacing any entries whose
-  // (date,name,amount,type) tuple already exists. That keeps the Apr 22
-  // fallback in place if the backend returns nothing for that day, but lets
-  // the backend's canonical version win when present.
+  // (date,name,amount,type) tuple already exists. Cache-hydrated rows from
+  // a previous session get overwritten by the backend's canonical version
+  // when it arrives; rows the backend doesn't return stay until the next
+  // full month-fetch evicts them.
   function mergeExpenses(batch) {
     if (!Array.isArray(batch) || !batch.length) return;
     batch.forEach(function (incoming) {
@@ -140,6 +201,10 @@
       if (!data) return;
       mergeExpenses(data.expenses || []);
       renderGrid();
+      // Persist the full PRECOMMITS array (not just this batch) so the cache
+      // stays canonical across months. Other-month entries from prior fetches
+      // would be lost if we only stored the incoming batch.
+      cacheWrite('calendar_expenses', PRECOMMITS);
       // /api/calendar may have triggered an on-demand Plaid sync server-side
       // (debounced 5min). If it did, balances may have changed too — evict
       // the cache so the next balances open refetches fresh data instead of
@@ -148,7 +213,7 @@
       balancesFetchInflight = null;
     }).catch(function (err) {
       // Non-2xx (and non-401) or network blip: log + leave existing data in
-      // place so the fallback Apr 22 entry and any prior fetches stay visible.
+      // place so any prior fetches and cache-hydrated rows stay visible.
       try { console.warn('[home] calendar fetch error:', err); } catch (_) {}
     });
   }
@@ -1028,6 +1093,8 @@
         accounts: (data && Array.isArray(data.accounts)) ? data.accounts : [],
         summary: (data && data.summary) ? data.summary : null
       };
+      // Persist for SWR hydration on next boot.
+      cacheWrite('balances', balancesCache);
       balancesFetchInflight = null;
       return balancesCache;
     }).catch(function (err) {
@@ -1293,6 +1360,9 @@
     wireAddAccountBtn();
     wireScheduleBtn();
     wireBalancesBtn();
+    // SWR: paint last-known calendar + balances instantly from localStorage
+    // before any network calls. Live fetches below silently refresh.
+    hydrateFromCache();
     renderGrid();
     // Gate the page on /api/me. If the user isn't signed in we'll have already
     // redirected to "/" — the calendar they briefly saw is acceptable; the
