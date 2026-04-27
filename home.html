@@ -348,6 +348,15 @@
       border: 1px solid #DFEDE0;
       opacity: 1;
     }
+    /* Reimburse chip — sage tint with dashed border. Combines "money in
+       eventually" (sage) with "uncertain/pending" (dashed) since it's an
+       outflow now that you expect to come back later. Matches .pill.reimburse. */
+    .type-chip[data-type="reimburse"].is-active {
+      background: #EDF6EE;
+      color: var(--cash-green);
+      border: 1px dashed var(--cash-green);
+      opacity: 1;
+    }
     .type-chip:focus-visible {
       outline: 2px solid var(--cash-green);
       outline-offset: 2px;
@@ -930,6 +939,15 @@
       color: var(--cash-green);
       font-weight: 500;
     }
+    .pill.reimburse {
+      /* Sage tint with dashed border — outflow now, expected to come back.
+         Visually says "money in eventually + uncertain timing." Matches
+         the reimburse chip in the schedule form. */
+      background: #EDF6EE;
+      color: var(--cash-green);
+      border: 1px dashed var(--cash-green);
+      font-weight: 500;
+    }
     .pill.spent {
       /* Muted, low-contrast — uncategorized everyday spending, reads as
          "a thing that happened" rather than a commitment. Distinct from
@@ -1439,6 +1457,7 @@
             <button type="button" class="type-chip" data-type="sub" role="radio" aria-checked="false">sub</button>
             <button type="button" class="type-chip is-active" data-type="planned" role="radio" aria-checked="true">planned</button>
             <button type="button" class="type-chip" data-type="spent" role="radio" aria-checked="false">spent</button>
+            <button type="button" class="type-chip" data-type="reimburse" role="radio" aria-checked="false">reimburse</button>
             <button type="button" class="type-chip" data-type="income" role="radio" aria-checked="false">income</button>
           </div>
         </div>
