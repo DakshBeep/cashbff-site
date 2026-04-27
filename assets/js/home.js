@@ -359,53 +359,44 @@
     var outflow = exps.reduce(function (s, e) {
       return e.type === 'income' ? s : s + e.amount;
     }, 0);
-    var incomeCount = exps.filter(function (e) { return e.type === 'income'; }).length;
     drawerDate.textContent = MONTHS[d.getMonth()] + ' ' + d.getDate();
-    // Day total line only appears when there's actual outflow. Income-only
-    // days are quiet — the item itself is the whole story, no commentary.
-    if (outflow > 0) {
-      drawerTotal.innerHTML = '<strong>' + money(outflow) + '</strong> on this day';
+    // Past days are intentionally quiet — no day total, no projection. Just
+    // notes/items in the list. Per-day math only matters going forward.
+    var isPastDay = d.getTime() < today.getTime();
+
+    // Sum scheduled-only items for THIS exact day (used for the projection
+    // line below). Income from scheduled adds, scheduled outflows subtract.
+    var dayScheduledOut = 0;
+    var dayScheduledIn = 0;
+    var thisDayKey = iso(d);
+    PRECOMMITS.forEach(function (e) {
+      if (e.source !== 'scheduled') return;
+      if (e.date !== thisDayKey) return;
+      if (e.type === 'income') dayScheduledIn  += Number(e.amount) || 0;
+      else                     dayScheduledOut += Number(e.amount) || 0;
+    });
+
+    // Top line: "running balance: $X" — the day total (renamed from "on this
+    // day"). Math becomes intuitive: top minus your scheduled = bottom.
+    if (!isPastDay && outflow > 0) {
+      drawerTotal.innerHTML = 'running balance: <strong>' + money(outflow) + '</strong>';
     } else {
       drawerTotal.innerHTML = '';
     }
 
-    // ── Projected running balance for today + future days ───────────
-    // Only computed when (1) we have a baseline running balance from
-    // /api/balances and (2) the clicked day is today or later. Past days
-    // intentionally skip the projection — keeping notes intact but no math.
+    // Bottom line: "after your plans this day: $Y" — top minus scheduled
+    // outflow + scheduled income, computed PER DAY (not across a window).
+    // Hidden for past days, free days, and when there's no scheduled txn.
     if (drawerProjected) {
       drawerProjected.innerHTML = '';
-      var isPastDay = d.getTime() < today.getTime();
-      if (!isPastDay && currentRunningBalance !== null) {
-        // Sum every SCHEDULED item between today and this day (inclusive).
-        // Plaid items are already reflected in the running balance baseline
-        // (settled = in balance_current; pending = in balance_available),
-        // so they're skipped here to avoid double-counting.
-        var deltaOut = 0;
-        var deltaIn = 0;
-        var fromKey = iso(today);
-        var toKey = iso(d);
-        PRECOMMITS.forEach(function (e) {
-          if (e.source !== 'scheduled') return;
-          if (e.date < fromKey || e.date > toKey) return;
-          if (e.type === 'income') deltaIn  += Number(e.amount) || 0;
-          else                     deltaOut += Number(e.amount) || 0;
-        });
-        // Only render the line if there's something scheduled in this window
-        // — otherwise today/future days look noisy with redundant projections.
-        if (deltaOut > 0 || deltaIn > 0) {
-          var projected = currentRunningBalance + deltaIn - deltaOut;
-          var sign = projected < 0 ? '-' : '';
-          var abs  = Math.abs(projected).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-          // Clarified label: this projection only deducts SCHEDULED outflows.
-          // Pending Plaid charges are already inside the running balance
-          // baseline (balance_available), so subtracting them again would
-          // double-count. "Your plans" = scheduled items only.
-          var label = sameYMD(d, today) ? 'after your plans today'
-                                        : 'after your plans this day';
-          drawerProjected.innerHTML =
-            label + ': <strong>' + sign + '$' + abs + '</strong>';
-        }
+      if (!isPastDay && outflow > 0 && (dayScheduledOut > 0 || dayScheduledIn > 0)) {
+        var afterPlans = outflow - dayScheduledOut + dayScheduledIn;
+        var sign = afterPlans < 0 ? '-' : '';
+        var abs  = Math.abs(afterPlans).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        var label = sameYMD(d, today) ? 'after your plans today'
+                                      : 'after your plans this day';
+        drawerProjected.innerHTML =
+          label + ': <strong>' + sign + '$' + abs + '</strong>';
       }
     }
     drawerList.innerHTML = '';
@@ -1259,8 +1250,21 @@
       if (t === 'depository') depTotal += b;
       else if (t === 'credit') ccTotal += b;
     });
-    var running = depTotal - ccTotal;
-    // Cache for the day-popover projection.
+    // Subtract every scheduled (planned) outflow + add every scheduled income
+    // so the running balance hero reflects "what you'll have left after every
+    // plan you've put on the calendar." Planned txns aren't in the bank yet,
+    // so they have to be applied here on the frontend — backend balances are
+    // only Plaid-derived.
+    var schedOut = 0;
+    var schedIn = 0;
+    PRECOMMITS.forEach(function (e) {
+      if (e.source !== 'scheduled') return;
+      if (e.type === 'income') schedIn  += Number(e.amount) || 0;
+      else                     schedOut += Number(e.amount) || 0;
+    });
+    var running = depTotal - ccTotal - schedOut + schedIn;
+    // Cache for downstream consumers (currently unused after the openDrawer
+    // refactor, but kept for future per-day formulas that need the baseline).
     currentRunningBalance = running;
     if (rbBlock && rbAmt) {
       rbBlock.hidden = false;
