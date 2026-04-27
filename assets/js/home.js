@@ -784,16 +784,19 @@
     balSummary.classList.remove('is-muted-italic');
 
     // ── Running balance ──────────────────────────────
-    // The "forever true" amount: every depository balance (incl. negatives /
-    // overdraft) minus every credit-card balance currently owed. Computed
-    // from the rows directly so overdrafts on checking aren't silently
-    // floored to zero (which is what summary.total_in does).
+    // The "forever true" amount: depository minus credit-card debt.
+    // Uses balanceForRow() so the per-row visible number matches what gets
+    // summed into running balance — no balance_current vs balance_available
+    // mismatch between the row display and the hero. balanceForRow prefers
+    // balance_available for depository (subtracts pending holds, the most
+    // honest "available now" figure) and balance_current for credit
+    // (Plaid convention: positive = amount owed).
     var depTotal = 0;
     var ccTotal  = 0;
     accounts.forEach(function (a) {
       var t = (a.account_type || '').toLowerCase();
-      var b = typeof a.balance_current === 'number' ? a.balance_current : Number(a.balance_current);
-      if (!isFinite(b)) return;
+      var b = balanceForRow(a);
+      if (b === null || !isFinite(b)) return;
       if (t === 'depository') depTotal += b;
       else if (t === 'credit') ccTotal += b;
     });
