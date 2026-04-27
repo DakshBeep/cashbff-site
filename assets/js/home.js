@@ -340,10 +340,9 @@
     }
     drawerList.innerHTML = '';
     if (!exps.length) {
-      var em = document.createElement('div');
-      em.className = 'drawer-empty';
-      em.textContent = 'nothing scheduled — a free day.';
-      drawerList.appendChild(em);
+      // Free day — render nothing in the list. The date header is enough; an
+      // explicit "nothing scheduled" line just adds noise to an already-quiet
+      // popover.
     } else {
       exps.forEach(function (e) {
         var item = document.createElement('div');
