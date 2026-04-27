@@ -771,14 +771,40 @@
 
     var accounts = (payload && payload.accounts) || [];
     var summary  = (payload && payload.summary)  || null;
+    var rbBlock  = document.getElementById('running-balance');
+    var rbAmt    = document.getElementById('running-balance-amount');
 
     // Empty state — surface the brand-voice prompt and skip group/list render.
     if (!accounts.length) {
+      if (rbBlock) rbBlock.hidden = true;
       balSummary.classList.add('is-muted-italic');
       balSummary.textContent = 'nothing connected yet — add an account';
       return;
     }
     balSummary.classList.remove('is-muted-italic');
+
+    // ── Running balance ──────────────────────────────
+    // The "forever true" amount: every depository balance (incl. negatives /
+    // overdraft) minus every credit-card balance currently owed. Computed
+    // from the rows directly so overdrafts on checking aren't silently
+    // floored to zero (which is what summary.total_in does).
+    var depTotal = 0;
+    var ccTotal  = 0;
+    accounts.forEach(function (a) {
+      var t = (a.account_type || '').toLowerCase();
+      var b = typeof a.balance_current === 'number' ? a.balance_current : Number(a.balance_current);
+      if (!isFinite(b)) return;
+      if (t === 'depository') depTotal += b;
+      else if (t === 'credit') ccTotal += b;
+    });
+    var running = depTotal - ccTotal;
+    if (rbBlock && rbAmt) {
+      rbBlock.hidden = false;
+      // Format with $ + grouping; preserve sign so underwater reads honestly.
+      var sign = running < 0 ? '-' : '';
+      var abs  = Math.abs(running).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+      rbAmt.textContent = sign + '$' + abs;
+    }
 
     // Compose the summary line from totals. Backend computes totals already;
     // this just picks the right phrasing for which side(s) are non-zero.

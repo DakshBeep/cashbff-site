@@ -422,6 +422,33 @@
       letter-spacing: -0.01em;
       margin-bottom: 0.4rem;
     }
+    /* Running balance — what's actually available NOW = depository - cc debt.
+       Hero of the panel; shown first, big, calm. Always cash-green text
+       (Maya anti-trigger: never red, even when underwater). */
+    .running-balance {
+      margin: 0.6rem 0 0.9rem;
+      padding: 0.85rem 1rem;
+      background: rgba(1, 71, 81, 0.05);
+      border-radius: 0.6rem;
+      border: 1px solid rgba(1, 71, 81, 0.10);
+    }
+    .running-balance .rb-label {
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: var(--off-black);
+      opacity: 0.55;
+      text-transform: lowercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.15rem;
+    }
+    .running-balance .rb-amount {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 2rem;
+      color: var(--cash-green);
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+    }
     /* Summary line under the heading — quiet, brand-voice tone. */
     .balances-summary {
       font-size: 0.82rem;
@@ -1023,6 +1050,11 @@
     <div class="balances-overlay" id="balances-overlay"></div>
     <aside class="balances-pop" id="balances-pop" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="balances-pop-title">
       <h2 id="balances-pop-title">balances</h2>
+      <!-- Hero: what's actually yours NOW — depository minus credit-card debt. -->
+      <div class="running-balance" id="running-balance" hidden>
+        <div class="rb-label">running balance</div>
+        <div class="rb-amount" id="running-balance-amount"></div>
+      </div>
       <div class="balances-summary" id="balances-summary"></div>
       <div class="balances-status" id="balances-status" aria-live="polite"></div>
       <div class="balances-groups" id="balances-groups"></div>
