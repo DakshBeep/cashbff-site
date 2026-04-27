@@ -131,19 +131,21 @@
     .arrow:hover { opacity: 1; }
     /* ── Header pill buttons (schedule + balances) ─── */
     /* Cluster the two pills on the right side of the header row so they sit
-       side-by-side with a small gap. Wraps on tight viewports to stay tidy. */
+       side-by-side with a small gap. Wraps on tight viewports to stay tidy.
+       Tightened in apr 2026: trimmed padding/gap/font-size after user feedback
+       that the chips felt crowded against the month title. */
     .header-pills {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 0.4rem;
       flex-wrap: wrap;
     }
     .schedule-btn,
     .balances-btn {
       font-family: var(--font-body);
-      font-size: 0.82rem;
+      font-size: 0.78rem;
       font-weight: 500;
-      padding: 0.45rem 0.9rem;
+      padding: 0.4rem 0.75rem;
       border-radius: 100px;
       background: transparent;
       color: var(--cash-green);
@@ -374,6 +376,67 @@
       background: var(--cash-green);
     }
     .schedule-submit:focus-visible {
+      outline: 2px solid var(--cash-green);
+      outline-offset: 2px;
+    }
+
+    /* Edit-mode delete affordance: muted cash-green link bottom-right, only
+       visible when the schedule popup is in edit mode. Clicking flips it to
+       an inline confirm row ("delete this? · yes · cancel") — no separate
+       modal stacking on a popup. */
+    .schedule-pop__footer {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 0.5rem;
+      min-height: 1.25rem;
+      margin-top: 0.5rem;
+    }
+    .schedule-pop__footer[hidden] { display: none; }
+    .schedule-delete {
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      color: var(--cash-green);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 0.15rem 0;
+      opacity: 0.55;
+      transition: opacity 0.15s ease;
+      letter-spacing: 0.01em;
+    }
+    .schedule-delete:hover { opacity: 1; }
+    .schedule-delete:focus-visible {
+      outline: 2px solid var(--cash-green);
+      outline-offset: 2px;
+    }
+    .schedule-delete-confirm {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.78rem;
+      color: var(--off-black);
+      opacity: 0.7;
+    }
+    .schedule-delete-confirm[hidden] { display: none; }
+    .schedule-delete-confirm__sep { opacity: 0.4; }
+    .schedule-delete-confirm__yes,
+    .schedule-delete-confirm__cancel {
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 0.15rem 0;
+      letter-spacing: 0.01em;
+      transition: opacity 0.15s ease;
+    }
+    .schedule-delete-confirm__yes { color: #8a2a2a; opacity: 0.85; font-weight: 500; }
+    .schedule-delete-confirm__yes:hover { opacity: 1; }
+    .schedule-delete-confirm__cancel { color: var(--cash-green); opacity: 0.6; }
+    .schedule-delete-confirm__cancel:hover { opacity: 1; }
+    .schedule-delete-confirm__yes:focus-visible,
+    .schedule-delete-confirm__cancel:focus-visible {
       outline: 2px solid var(--cash-green);
       outline-offset: 2px;
     }
@@ -754,6 +817,35 @@
       text-overflow: ellipsis;
     }
     .drawer-item .amt { font-family: var(--font-display); font-weight: 500; font-size: 0.95rem; color: var(--cash-green); white-space: nowrap; }
+    /* Scheduled items become clickable: subtle background shift + cursor +
+       a tiny pencil glyph that fades in on hover. Plaid items intentionally
+       stay non-interactive — backend doesn't support editing them yet. */
+    .drawer-item.is-scheduled {
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+    .drawer-item.is-scheduled:hover {
+      background: rgba(1, 71, 81, 0.05);
+      border-color: rgba(1, 71, 81, 0.18);
+    }
+    .drawer-item.is-scheduled:focus-visible {
+      outline: 2px solid var(--cash-green);
+      outline-offset: 2px;
+    }
+    /* Pencil glyph nudges in on hover/focus — quiet interactivity hint. */
+    .drawer-item__edit {
+      width: 0.85rem;
+      height: 0.85rem;
+      color: var(--cash-green);
+      opacity: 0;
+      flex-shrink: 0;
+      align-self: center;
+      transition: opacity 0.15s ease;
+    }
+    .drawer-item.is-scheduled:hover .drawer-item__edit,
+    .drawer-item.is-scheduled:focus-visible .drawer-item__edit {
+      opacity: 0.55;
+    }
     .drawer-empty { opacity: 0.5; font-style: italic; padding: 0.4rem 0.2rem; text-align: center; font-size: 0.82rem; }
     .drawer-close {
       border: none; background: transparent;
@@ -998,7 +1090,7 @@
         <span class="arrow" id="next-month" aria-label="next month">&rsaquo;</span>
       </div>
       <div class="header-pills">
-        <button class="schedule-btn" id="schedule-btn" type="button">+ schedule spend</button>
+        <button class="schedule-btn" id="schedule-btn" type="button">+ schedule</button>
         <button class="balances-btn" id="balances-btn" type="button" aria-haspopup="dialog" aria-controls="balances-pop">balances</button>
       </div>
     </div>
@@ -1052,6 +1144,18 @@
           <button type="submit" class="schedule-submit" id="sched-submit">+ schedule it</button>
         </div>
       </form>
+      <!-- Footer holds the edit-mode delete affordance. Hidden in create mode;
+           shown when openSchedule(txn) puts the popup into edit mode. -->
+      <div class="schedule-pop__footer" id="schedule-footer" hidden>
+        <button type="button" class="schedule-delete" id="schedule-delete">delete</button>
+        <div class="schedule-delete-confirm" id="schedule-delete-confirm" hidden>
+          <span>delete this?</span>
+          <span class="schedule-delete-confirm__sep">·</span>
+          <button type="button" class="schedule-delete-confirm__yes" id="schedule-delete-yes">yes</button>
+          <span class="schedule-delete-confirm__sep">·</span>
+          <button type="button" class="schedule-delete-confirm__cancel" id="schedule-delete-cancel">cancel</button>
+        </div>
+      </div>
       <button class="schedule-close" id="schedule-close" type="button">close</button>
     </aside>
 

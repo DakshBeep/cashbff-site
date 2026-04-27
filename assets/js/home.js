@@ -49,11 +49,18 @@
   // account). Set when /api/balances resolves; null until then. Used to
   // project per-day balance after scheduled outflows in the day popover.
   var currentRunningBalance = null;
-  var schedBtn, schedOverlay, schedPop, schedClose;
+  var schedBtn, schedOverlay, schedPop, schedClose, schedTitle;
   var schedForm, schedDate, schedAmount, schedName, schedTypeChips,
       schedCard, schedNote, schedError, schedSubmit;
+  var schedFooter, schedDeleteBtn, schedDeleteConfirm,
+      schedDeleteYes, schedDeleteCancel;
   var balBtn, balOverlay, balPop, balClose,
       balSummary, balStatus, balGroups, balAsOf;
+
+  // Edit-mode flag for the schedule popup. null = create mode (default), a
+  // string id = edit mode for that scheduled transaction. Toggled by
+  // openSchedule(txn) and reset by resetScheduleForm() / openSchedule().
+  var editingTxnId = null;
 
   // Cards list for the schedule form's card select. Lazily fetched on first
   // open, then cached in memory for the page lifetime.
@@ -338,6 +345,17 @@
         // Pending: italic on the name via the same class used on cell pills.
         if (e.pending) item.classList.add('pending-tx');
 
+        // Scheduled rows are clickable to open the edit popup. Plaid rows
+        // stay non-interactive for this pass — backend doesn't support edit
+        // there yet, so no affordance, no click handler.
+        var isEditable = e.source === 'scheduled' && e.id != null;
+        if (isEditable) {
+          item.classList.add('is-scheduled');
+          item.setAttribute('role', 'button');
+          item.setAttribute('tabindex', '0');
+          item.setAttribute('aria-label', 'edit ' + e.name);
+        }
+
         // Left-side stack: name, optional from-card chip, optional note.
         // textContent-safe construction — backend has already cleaned the
         // strings, but keep the XSS-safe path regardless.
@@ -371,13 +389,54 @@
           rowMain.appendChild(noteDiv);
         }
 
+        item.appendChild(rowMain);
+
+        // Pencil glyph for scheduled rows — fades in on hover/focus via CSS.
+        // SVG kept tiny; built with createElementNS so the path stays inert
+        // and CSP-safe (no innerHTML for executable-ish surfaces).
+        if (isEditable) {
+          var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+          svg.setAttribute('class', 'drawer-item__edit');
+          svg.setAttribute('viewBox', '0 0 16 16');
+          svg.setAttribute('fill', 'none');
+          svg.setAttribute('stroke', 'currentColor');
+          svg.setAttribute('stroke-width', '1.5');
+          svg.setAttribute('stroke-linecap', 'round');
+          svg.setAttribute('stroke-linejoin', 'round');
+          svg.setAttribute('aria-hidden', 'true');
+          var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          // simple pencil: diagonal stroke + nib triangle
+          path.setAttribute('d', 'M11.5 2.5l2 2L5 13H3v-2L11.5 2.5z');
+          svg.appendChild(path);
+          item.appendChild(svg);
+        }
+
         var amtDiv = document.createElement('div');
         amtDiv.className = 'amt';
         // Income renders with a leading "+" so it visually reads as money in.
         amtDiv.textContent = (e.type === 'income' ? '+$' : '$') + e.amount.toFixed(2);
 
-        item.appendChild(rowMain);
         item.appendChild(amtDiv);
+
+        // Wire click + keyboard for editable rows. Snapshot the txn so the
+        // closure doesn't alias the loop var.
+        if (isEditable) {
+          var txnSnapshot = e;
+          var openEdit = function (ev) {
+            ev.stopPropagation();
+            // Close the day popover first so the edit popup gets focus cleanly.
+            closeDrawer();
+            openSchedule(txnSnapshot);
+          };
+          item.addEventListener('click', openEdit);
+          item.addEventListener('keydown', function (ev) {
+            if (ev.key === 'Enter' || ev.key === ' ') {
+              ev.preventDefault();
+              openEdit(ev);
+            }
+          });
+        }
+
         drawerList.appendChild(item);
       });
     }
@@ -552,23 +611,64 @@
     return active ? (active.getAttribute('data-type') || 'planned') : 'planned';
   }
 
+  // Reset the schedule form to a clean create-mode state. Called every time
+  // the popup opens so a previous edit session never leaks into a fresh open.
   function resetScheduleForm() {
     if (!schedForm) return;
     schedForm.reset();
     if (schedDate) schedDate.value = iso(today); // default to today
     setSelectedType('planned');
     if (schedError) schedError.textContent = '';
+    editingTxnId = null;
+    if (schedTitle) schedTitle.textContent = 'schedule a spend';
     if (schedSubmit) {
       schedSubmit.disabled = false;
       schedSubmit.textContent = '+ schedule it';
     }
+    // Hide delete affordance + reset confirm row to neutral state.
+    if (schedFooter) schedFooter.hidden = true;
+    if (schedDeleteBtn) schedDeleteBtn.hidden = false;
+    if (schedDeleteConfirm) schedDeleteConfirm.hidden = true;
   }
 
-  function openSchedule() {
+  // Apply a scheduled-transaction object to the form fields. Card population
+  // is asynchronous (fetchCardsOnce), so we set the card value after it
+  // resolves; everything else is set inline.
+  function applyTxnToForm(txn) {
+    if (!txn) return;
+    if (schedDate)   schedDate.value   = txn.date || '';
+    if (schedAmount) schedAmount.value = (txn.amount != null) ? String(txn.amount) : '';
+    if (schedName)   schedName.value   = txn.name || '';
+    if (schedNote)   schedNote.value   = txn.note || '';
+    setSelectedType(txn.type || 'planned');
+    // card_account_id is applied inside the cards-fetched .then() below so
+    // the option exists in the select before we try to select it.
+  }
+
+  // Open the schedule popup. Pass a scheduled-transaction object to enter
+  // edit mode (title flips, fields prefill, delete affordance shows, submit
+  // text becomes "+ save changes"). Pass nothing for create mode.
+  function openSchedule(txn) {
     if (!schedPop || !schedOverlay) return;
     resetScheduleForm();
+
+    var isEdit = !!(txn && txn.id != null);
+    if (isEdit) {
+      editingTxnId = txn.id;
+      if (schedTitle) schedTitle.textContent = 'edit transaction';
+      if (schedSubmit) schedSubmit.textContent = '+ save changes';
+      if (schedFooter) schedFooter.hidden = false;
+      applyTxnToForm(txn);
+    }
+
     // Lazy-load cards on first open; subsequent opens reuse the cache.
-    fetchCardsOnce().then(populateCardSelect);
+    // In edit mode, set the card_account_id once options are populated.
+    fetchCardsOnce().then(function (cards) {
+      populateCardSelect(cards);
+      if (isEdit && schedCard) {
+        schedCard.value = txn.card_account_id || '';
+      }
+    });
     schedPop.classList.add('open');
     schedOverlay.classList.add('open');
     schedPop.setAttribute('aria-hidden', 'false');
@@ -584,13 +684,25 @@
     schedPop.setAttribute('aria-hidden', 'true');
   }
 
-  // Submit handler: validates inline, posts to /api/transactions/schedule,
-  // closes on success, surfaces server errors above the submit button.
+  // After a successful create / edit / delete, evict the visible month from
+  // the fetched-months cache so the calendar refetches and renders cleanly.
+  // Also drops the cached entry locally for delete so the row vanishes
+  // immediately even if the refetch is in flight.
+  function refreshAfterScheduleChange() {
+    var key = monthKey(view.getFullYear(), view.getMonth());
+    fetchedMonths.delete(key);
+    fetchMonthIfNeeded(view.getFullYear(), view.getMonth());
+  }
+
+  // Submit handler: validates inline, then POSTs (create mode) or PATCHes
+  // (edit mode) to /api/transactions/schedule[/:id]. Closes + refetches the
+  // visible month on success, surfaces server errors above the submit button.
   function handleScheduleSubmit(ev) {
     ev.preventDefault();
     if (!schedForm) return;
     if (schedError) schedError.textContent = '';
 
+    var isEdit = editingTxnId != null;
     var dateVal = (schedDate && schedDate.value || '').trim();
     var amountRaw = (schedAmount && schedAmount.value || '').trim();
     var amountNum = parseFloat(amountRaw);
@@ -612,22 +724,42 @@
       return;
     }
 
+    // For PATCH the backend accepts unchanged values, so we send the full
+    // editable set rather than diffing — simpler + robust to subtle equality
+    // bugs (string vs number id, null vs "" note). Empty string clears.
     var body = {
       date: dateVal,
       amount: Math.round(amountNum * 100) / 100,
       name: nameVal,
       type: typeVal
     };
-    if (cardVal) body.card_account_id = cardVal;
-    if (noteVal) body.note = noteVal;
-
-    if (schedSubmit) {
-      schedSubmit.disabled = true;
-      schedSubmit.textContent = 'scheduling…';
+    if (isEdit) {
+      // Always include card + note in edit mode so empty values clear them.
+      body.card_account_id = cardVal;
+      body.note = noteVal;
+    } else {
+      if (cardVal) body.card_account_id = cardVal;
+      if (noteVal) body.note = noteVal;
     }
 
-    fetch(API_BASE + '/api/transactions/schedule', {
-      method: 'POST',
+    var pendingText = isEdit ? 'saving…' : 'scheduling…';
+    var defaultText = isEdit ? '+ save changes' : '+ schedule it';
+    if (schedSubmit) {
+      schedSubmit.disabled = true;
+      schedSubmit.textContent = pendingText;
+    }
+
+    var url, method;
+    if (isEdit) {
+      url = API_BASE + '/api/transactions/schedule/' + encodeURIComponent(editingTxnId);
+      method = 'PATCH';
+    } else {
+      url = API_BASE + '/api/transactions/schedule';
+      method = 'POST';
+    }
+
+    fetch(url, {
+      method: method,
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
       body: JSON.stringify(body)
@@ -637,29 +769,87 @@
       });
     }).then(function (out) {
       if (!out.ok) {
+        var fallback = isEdit ? 'couldn\'t save (' : 'couldn\'t schedule (';
         var msg = (out.data && (out.data.error || out.data.message)) ||
-                  ('couldn\'t schedule (' + out.status + ').');
+                  (fallback + out.status + ').');
         if (schedError) schedError.textContent = msg;
         if (schedSubmit) {
           schedSubmit.disabled = false;
-          schedSubmit.textContent = '+ schedule it';
+          schedSubmit.textContent = defaultText;
         }
         return;
       }
       // Success: drop the visible month from the cache so the next render
-      // pulls the freshly-scheduled item (and anything else we may have
-      // missed). We refetch only the visible month, not every fetched month.
+      // pulls the freshly-saved item. We refetch only the visible month.
       closeSchedule();
-      var key = monthKey(view.getFullYear(), view.getMonth());
-      fetchedMonths.delete(key);
-      fetchMonthIfNeeded(view.getFullYear(), view.getMonth());
+      refreshAfterScheduleChange();
     }).catch(function (err) {
       if (schedError) schedError.textContent = 'network error — try again.';
       if (schedSubmit) {
         schedSubmit.disabled = false;
-        schedSubmit.textContent = '+ schedule it';
+        schedSubmit.textContent = defaultText;
       }
       try { console.warn('[home] schedule submit error:', err); } catch (_) {}
+    });
+  }
+
+  // Delete-confirm UI: replace the "delete" link with an inline
+  // "delete this? · yes · cancel" row. Cancel restores the link, yes fires
+  // the DELETE call, refetches, and closes the popup.
+  function showDeleteConfirm() {
+    if (schedDeleteBtn) schedDeleteBtn.hidden = true;
+    if (schedDeleteConfirm) schedDeleteConfirm.hidden = false;
+  }
+  function hideDeleteConfirm() {
+    if (schedDeleteBtn) schedDeleteBtn.hidden = false;
+    if (schedDeleteConfirm) schedDeleteConfirm.hidden = true;
+  }
+
+  function handleDeleteConfirmed() {
+    if (editingTxnId == null) return;
+    if (schedError) schedError.textContent = '';
+    if (schedDeleteYes) {
+      schedDeleteYes.disabled = true;
+      schedDeleteYes.textContent = 'deleting…';
+    }
+    var id = editingTxnId;
+    fetch(API_BASE + '/api/transactions/schedule/' + encodeURIComponent(id), {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include'
+    }).then(function (res) {
+      return res.json().catch(function () { return null; }).then(function (data) {
+        return { ok: res.ok, status: res.status, data: data };
+      });
+    }).then(function (out) {
+      if (!out.ok) {
+        var msg = (out.data && (out.data.error || out.data.message)) ||
+                  ('couldn\'t delete (' + out.status + ').');
+        if (schedError) schedError.textContent = msg;
+        if (schedDeleteYes) {
+          schedDeleteYes.disabled = false;
+          schedDeleteYes.textContent = 'yes';
+        }
+        return;
+      }
+      // Success: drop the row locally so it doesn't linger, then refetch.
+      PRECOMMITS = PRECOMMITS.filter(function (e) { return e.id !== id; });
+      // Reset confirm UI before closing so the next open starts in the
+      // neutral "delete" link state.
+      if (schedDeleteYes) {
+        schedDeleteYes.disabled = false;
+        schedDeleteYes.textContent = 'yes';
+      }
+      hideDeleteConfirm();
+      closeSchedule();
+      refreshAfterScheduleChange();
+    }).catch(function (err) {
+      if (schedError) schedError.textContent = 'network error — try again.';
+      if (schedDeleteYes) {
+        schedDeleteYes.disabled = false;
+        schedDeleteYes.textContent = 'yes';
+      }
+      try { console.warn('[home] schedule delete error:', err); } catch (_) {}
     });
   }
 
@@ -668,6 +858,7 @@
     schedOverlay   = document.getElementById('schedule-overlay');
     schedPop       = document.getElementById('schedule-pop');
     schedClose     = document.getElementById('schedule-close');
+    schedTitle     = document.getElementById('schedule-pop-title');
     schedForm      = document.getElementById('schedule-form');
     schedDate      = document.getElementById('sched-date');
     schedAmount    = document.getElementById('sched-amount');
@@ -677,11 +868,21 @@
     schedNote      = document.getElementById('sched-note');
     schedError     = document.getElementById('sched-error');
     schedSubmit    = document.getElementById('sched-submit');
+    schedFooter        = document.getElementById('schedule-footer');
+    schedDeleteBtn     = document.getElementById('schedule-delete');
+    schedDeleteConfirm = document.getElementById('schedule-delete-confirm');
+    schedDeleteYes     = document.getElementById('schedule-delete-yes');
+    schedDeleteCancel  = document.getElementById('schedule-delete-cancel');
 
-    if (schedBtn)     schedBtn.addEventListener('click', openSchedule);
+    // Bare chip click opens create mode — wrap so we don't leak the click
+    // event into openSchedule's optional-txn parameter.
+    if (schedBtn)     schedBtn.addEventListener('click', function () { openSchedule(); });
     if (schedClose)   schedClose.addEventListener('click', closeSchedule);
     if (schedOverlay) schedOverlay.addEventListener('click', closeSchedule);
     if (schedForm)    schedForm.addEventListener('submit', handleScheduleSubmit);
+    if (schedDeleteBtn)    schedDeleteBtn.addEventListener('click', showDeleteConfirm);
+    if (schedDeleteCancel) schedDeleteCancel.addEventListener('click', hideDeleteConfirm);
+    if (schedDeleteYes)    schedDeleteYes.addEventListener('click', handleDeleteConfirmed);
     if (schedTypeChips) {
       schedTypeChips.addEventListener('click', function (ev) {
         var btn = ev.target && ev.target.closest && ev.target.closest('.type-chip');
