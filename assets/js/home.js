@@ -396,10 +396,30 @@
 
         item.appendChild(rowMain);
 
-        // Pencil glyph for scheduled rows — fades in on hover/focus via CSS.
-        // SVG kept tiny; built with createElementNS so the path stays inert
-        // and CSP-safe (no innerHTML for executable-ish surfaces).
+        // Trash + pencil glyphs for scheduled rows — fade in on hover/focus
+        // via CSS. Built with createElementNS so the SVGs stay inert and
+        // CSP-safe (no innerHTML for executable-ish surfaces).
         if (isEditable) {
+          // Trash glyph — sits LEFT of the pencil, click triggers inline
+          // "delete? yes / cancel" confirm in the row's right-side area.
+          var trash = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+          trash.setAttribute('class', 'drawer-item__trash');
+          trash.setAttribute('viewBox', '0 0 16 16');
+          trash.setAttribute('fill', 'none');
+          trash.setAttribute('stroke', 'currentColor');
+          trash.setAttribute('stroke-width', '1.4');
+          trash.setAttribute('stroke-linecap', 'round');
+          trash.setAttribute('stroke-linejoin', 'round');
+          trash.setAttribute('role', 'button');
+          trash.setAttribute('tabindex', '0');
+          trash.setAttribute('aria-label', 'delete ' + e.name);
+          var trashPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          // simple bin: lid line + body box + 2 inner stripes
+          trashPath.setAttribute('d', 'M3 4h10M6 4V2.8h4V4M5 4v9h6V4M7.5 6.5v4M9 6.5v4');
+          trash.appendChild(trashPath);
+          item.appendChild(trash);
+
+          // Pencil glyph — opens edit popup (existing behavior).
           var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
           svg.setAttribute('class', 'drawer-item__edit');
           svg.setAttribute('viewBox', '0 0 16 16');
@@ -410,7 +430,6 @@
           svg.setAttribute('stroke-linejoin', 'round');
           svg.setAttribute('aria-hidden', 'true');
           var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-          // simple pencil: diagonal stroke + nib triangle
           path.setAttribute('d', 'M11.5 2.5l2 2L5 13H3v-2L11.5 2.5z');
           svg.appendChild(path);
           item.appendChild(svg);
@@ -420,7 +439,6 @@
         amtDiv.className = 'amt';
         // Income renders with a leading "+" so it visually reads as money in.
         amtDiv.textContent = (e.type === 'income' ? '+$' : '$') + e.amount.toFixed(2);
-
         item.appendChild(amtDiv);
 
         // Wire click + keyboard for editable rows. Snapshot the txn so the
@@ -433,11 +451,105 @@
             closeDrawer();
             openSchedule(txnSnapshot);
           };
+          // Whole-row click → edit, except clicks ON the trash icon get
+          // intercepted below (stopPropagation in the trash handler).
           item.addEventListener('click', openEdit);
           item.addEventListener('keydown', function (ev) {
             if (ev.key === 'Enter' || ev.key === ' ') {
               ev.preventDefault();
               openEdit(ev);
+            }
+          });
+
+          // Wire the trash icon: click → render an inline confirm in this row.
+          // Stop propagation so the row-level edit handler doesn't fire.
+          var openConfirm = function (ev) {
+            ev.stopPropagation();
+            // Hide the existing right-side controls (trash + pencil + amount)
+            // and inject an inline "delete this? · yes · cancel" line.
+            var existingRight = item.querySelectorAll(
+              '.drawer-item__trash, .drawer-item__edit, .amt'
+            );
+            existingRight.forEach(function (n) { n.style.display = 'none'; });
+
+            // Already a confirm in this row? bail.
+            if (item.querySelector('.row-confirm')) return;
+
+            var confirmRow = document.createElement('div');
+            confirmRow.className = 'row-confirm';
+
+            var label = document.createElement('span');
+            label.className = 'row-confirm__label';
+            label.textContent = 'delete this?';
+            confirmRow.appendChild(label);
+
+            var yesBtn = document.createElement('button');
+            yesBtn.type = 'button';
+            yesBtn.className = 'row-confirm__yes';
+            yesBtn.textContent = 'yes';
+            confirmRow.appendChild(yesBtn);
+
+            var sep = document.createElement('span');
+            sep.className = 'row-confirm__sep';
+            sep.textContent = '·';
+            confirmRow.appendChild(sep);
+
+            var noBtn = document.createElement('button');
+            noBtn.type = 'button';
+            noBtn.className = 'row-confirm__no';
+            noBtn.textContent = 'cancel';
+            confirmRow.appendChild(noBtn);
+
+            item.appendChild(confirmRow);
+
+            var restore = function () {
+              if (confirmRow.parentNode) confirmRow.parentNode.removeChild(confirmRow);
+              existingRight.forEach(function (n) { n.style.display = ''; });
+            };
+
+            noBtn.addEventListener('click', function (cev) {
+              cev.stopPropagation();
+              restore();
+            });
+
+            yesBtn.addEventListener('click', function (cev) {
+              cev.stopPropagation();
+              yesBtn.disabled = true;
+              noBtn.disabled = true;
+              label.textContent = 'deleting…';
+              fetch(API_BASE + '/api/transactions/schedule/' + encodeURIComponent(txnSnapshot.id), {
+                method: 'DELETE',
+                credentials: 'include'
+              }).then(function (res) {
+                if (res.status === 401) { location.replace('/'); return; }
+                if (!res.ok) throw new Error('delete failed ' + res.status);
+                // Remove from local state so the day popover and grid reflect
+                // the change without needing a full month refetch.
+                var idx = PRECOMMITS.indexOf(txnSnapshot);
+                if (idx >= 0) PRECOMMITS.splice(idx, 1);
+                else {
+                  // Fallback: filter by id.
+                  PRECOMMITS = PRECOMMITS.filter(function (x) {
+                    return !(x.source === 'scheduled' && x.id === txnSnapshot.id);
+                  });
+                }
+                // Pop the row out of the drawer DOM.
+                if (item.parentNode) item.parentNode.removeChild(item);
+                renderGrid();
+              }).catch(function (err) {
+                try { console.warn('[home] delete failed:', err); } catch (_) {}
+                label.textContent = 'couldn\u2019t delete · cancel';
+                yesBtn.style.display = 'none';
+                sep.style.display = 'none';
+                noBtn.disabled = false;
+              });
+            });
+          };
+          trash.addEventListener('click', openConfirm);
+          trash.addEventListener('keydown', function (ev) {
+            if (ev.key === 'Enter' || ev.key === ' ') {
+              ev.preventDefault();
+              openConfirm(ev);
             }
           });
         }

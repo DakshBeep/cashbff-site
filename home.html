@@ -833,7 +833,8 @@
       outline-offset: 2px;
     }
     /* Pencil glyph nudges in on hover/focus — quiet interactivity hint. */
-    .drawer-item__edit {
+    .drawer-item__edit,
+    .drawer-item__trash {
       width: 0.85rem;
       height: 0.85rem;
       color: var(--cash-green);
@@ -841,11 +842,47 @@
       flex-shrink: 0;
       align-self: center;
       transition: opacity 0.15s ease;
+      cursor: pointer;
     }
+    .drawer-item__trash { margin-right: 0.15rem; }
     .drawer-item.is-scheduled:hover .drawer-item__edit,
-    .drawer-item.is-scheduled:focus-visible .drawer-item__edit {
+    .drawer-item.is-scheduled:focus-visible .drawer-item__edit,
+    .drawer-item.is-scheduled:hover .drawer-item__trash,
+    .drawer-item.is-scheduled:focus-visible .drawer-item__trash {
       opacity: 0.55;
     }
+    .drawer-item__trash:hover,
+    .drawer-item__trash:focus-visible { opacity: 0.95 !important; }
+    /* Inline "delete this? · yes · cancel" confirm row, replaces the right-
+       side icons + amount when trash is clicked. */
+    .row-confirm {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.78rem;
+      margin-left: auto;
+      color: var(--cash-green);
+    }
+    .row-confirm__label { opacity: 0.7; font-weight: 500; }
+    .row-confirm__sep { opacity: 0.35; }
+    .row-confirm__yes,
+    .row-confirm__no {
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      color: var(--cash-green);
+      background: transparent;
+      border: none;
+      padding: 0.05rem 0.15rem;
+      cursor: pointer;
+      font-weight: 500;
+      opacity: 0.85;
+      transition: opacity 0.15s ease;
+    }
+    .row-confirm__yes:hover,
+    .row-confirm__no:hover { opacity: 1; }
+    .row-confirm__yes { color: var(--cash-green); text-decoration: underline; }
+    .row-confirm__yes:disabled,
+    .row-confirm__no:disabled { opacity: 0.4; cursor: not-allowed; }
     .drawer-empty { opacity: 0.5; font-style: italic; padding: 0.4rem 0.2rem; text-align: center; font-size: 0.82rem; }
     .drawer-close {
       border: none; background: transparent;
