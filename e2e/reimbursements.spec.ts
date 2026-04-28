@@ -14,8 +14,13 @@
 //   #reimb-add-form            submits POST
 //   .reimb-item                row, has data-id + data-status
 //   .reimb-cycle               button on the right that advances status
+//   .reimb-back                ↩ undo button on advanced rows
 //   .reimb-item__trash         delete glyph
-//   .reimb-item__confirm-yes   confirms delete inline
+//   .reimb-item__confirm-yes   confirms delete + status changes inline
+//
+// NB: as of the mis-click safety patch, clicking .reimb-cycle no longer
+// PATCHes immediately — it opens an inline confirm; .reimb-item__confirm-yes
+// fires the PATCH. .reimb-back works the same way for going backward.
 //
 // Cleanup: items live in the `reimbursements` table (separate from
 // scheduled). The auth-helper sweep only touches scheduled rows, so this
@@ -126,9 +131,14 @@ test.describe('reimbursements panel', () => {
     await expect(row).toHaveAttribute('data-status', 'open');
 
     // ── Advance: open → submitted ──────────────────────────
-    // The cycle button reads "submit claim →" while status is open.
+    // The cycle button reads "submit claim →" while status is open. Clicking
+    // it now opens an inline confirm; we then click "yes" to fire the PATCH.
     let cycleBtn = row.locator('.reimb-cycle');
     await expect(cycleBtn).toContainText(/submit/i);
+    await cycleBtn.click();
+    let yesAdvance = row.locator('.reimb-item__confirm-yes');
+    await expect(yesAdvance).toBeVisible();
+    await expect(row.locator('.reimb-item__confirm-label')).toContainText(/submit claim\?/i);
     await Promise.all([
       page.waitForResponse(
         (r) =>
@@ -137,13 +147,17 @@ test.describe('reimbursements panel', () => {
           r.ok(),
         { timeout: 15_000 },
       ),
-      cycleBtn.click(),
+      yesAdvance.click(),
     ]);
     await expect(row).toHaveAttribute('data-status', 'submitted');
 
     // ── Advance: submitted → received ──────────────────────
     cycleBtn = row.locator('.reimb-cycle');
     await expect(cycleBtn).toContainText(/got\s*EOB|got eob/i);
+    await cycleBtn.click();
+    yesAdvance = row.locator('.reimb-item__confirm-yes');
+    await expect(yesAdvance).toBeVisible();
+    await expect(row.locator('.reimb-item__confirm-label')).toContainText(/mark received\?/i);
     await Promise.all([
       page.waitForResponse(
         (r) =>
@@ -152,12 +166,48 @@ test.describe('reimbursements panel', () => {
           r.ok(),
         { timeout: 15_000 },
       ),
-      cycleBtn.click(),
+      yesAdvance.click(),
     ]);
     await expect(row).toHaveAttribute('data-status', 'received');
     // Terminal: button is disabled + reads "done".
     await expect(row.locator('.reimb-cycle')).toBeDisabled();
     await expect(row.locator('.reimb-cycle')).toContainText(/done/i);
+
+    // ── Back-arrow undo: received → submitted ──────────────
+    // The ↩ button is invisible at rest; force-click since hover is flaky.
+    await row.locator('.reimb-back').click({ force: true });
+    let yesBack = row.locator('.reimb-item__confirm-yes');
+    await expect(yesBack).toBeVisible();
+    await expect(row.locator('.reimb-item__confirm-label')).toContainText(/back to submitted\?/i);
+    await Promise.all([
+      page.waitForResponse(
+        (r) =>
+          r.url().includes('/api/reimbursements') &&
+          r.request().method() === 'PATCH' &&
+          r.ok(),
+        { timeout: 15_000 },
+      ),
+      yesBack.click(),
+    ]);
+    await expect(row).toHaveAttribute('data-status', 'submitted');
+
+    // Re-advance back to received so the delete leg of the test still
+    // exercises the trash-on-received path.
+    cycleBtn = row.locator('.reimb-cycle');
+    await cycleBtn.click();
+    yesAdvance = row.locator('.reimb-item__confirm-yes');
+    await expect(yesAdvance).toBeVisible();
+    await Promise.all([
+      page.waitForResponse(
+        (r) =>
+          r.url().includes('/api/reimbursements') &&
+          r.request().method() === 'PATCH' &&
+          r.ok(),
+        { timeout: 15_000 },
+      ),
+      yesAdvance.click(),
+    ]);
+    await expect(row).toHaveAttribute('data-status', 'received');
 
     // ── Delete via trash + inline confirm ──────────────────
     // Trash sits to the left of the cycle btn. Force click — the glyph is

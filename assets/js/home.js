@@ -855,6 +855,9 @@
     if (drawerClose)   drawerClose.addEventListener('click', closeDrawer);
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') {
+        // If the reimbursements panel has an open inline confirm, ESC dismisses
+        // just that — the panel itself stays open so the user can keep working.
+        if (dismissOpenReimbConfirms()) return;
         closeDrawer();
         closeSchedule();
         closeBalances();
@@ -1515,6 +1518,24 @@
     if (status === 'submitted') return 'got EOB \u2192';
     return 'done';
   }
+  // Question copy for the inline confirm when advancing forward. Mirrors the
+  // verb in the cycle button so the user knows exactly what "yes" means.
+  function reimbAdvanceConfirmLabel(status) {
+    if (status === 'open')      return 'submit claim?';
+    if (status === 'submitted') return 'mark received?';
+    return '';
+  }
+  // Question copy for the back-arrow undo confirm.
+  function reimbBackConfirmLabel(status) {
+    if (status === 'submitted') return 'back to open?';
+    if (status === 'received')  return 'back to submitted?';
+    return '';
+  }
+  // Previous-status map for the back-arrow. open has no predecessor.
+  var REIMB_PREV_STATUS = {
+    submitted: 'open',
+    received:  'submitted'
+  };
 
   function persistReimbursementsCache() {
     if (Array.isArray(reimbursementsCache)) {
@@ -1609,6 +1630,43 @@
     });
   }
 
+  // Build an inline "label · yes · cancel" confirm row, mirroring the
+  // day-popover .row-confirm pattern. Returns { node, label, yes, no, sep2 }
+  // so callers can flip into a "loading…" or "couldn't… · cancel" state.
+  function buildReimbConfirmRow(labelText) {
+    var confirmRow = document.createElement('div');
+    confirmRow.className = 'reimb-item__confirm';
+
+    var label = document.createElement('span');
+    label.className = 'reimb-item__confirm-label';
+    label.textContent = labelText;
+    confirmRow.appendChild(label);
+
+    var sep1 = document.createElement('span');
+    sep1.className = 'reimb-item__confirm-sep';
+    sep1.textContent = '\u00b7';
+    confirmRow.appendChild(sep1);
+
+    var yesBtn = document.createElement('button');
+    yesBtn.type = 'button';
+    yesBtn.className = 'reimb-item__confirm-yes';
+    yesBtn.textContent = 'yes';
+    confirmRow.appendChild(yesBtn);
+
+    var sep2 = document.createElement('span');
+    sep2.className = 'reimb-item__confirm-sep';
+    sep2.textContent = '\u00b7';
+    confirmRow.appendChild(sep2);
+
+    var noBtn = document.createElement('button');
+    noBtn.type = 'button';
+    noBtn.className = 'reimb-item__confirm-no';
+    noBtn.textContent = 'cancel';
+    confirmRow.appendChild(noBtn);
+
+    return { node: confirmRow, label: label, yes: yesBtn, no: noBtn, sep2: sep2 };
+  }
+
   function buildReimbItem(item) {
     var row = document.createElement('div');
     row.className = 'reimb-item';
@@ -1620,8 +1678,7 @@
     desc.textContent = item.description || '';
     row.appendChild(desc);
 
-    // Trash glyph — sits LEFT of the cycle button. Same SVG pattern as the
-    // day-popover trash for consistency.
+    // Trash glyph — leftmost on hover, same SVG pattern as the day popover.
     var trash = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     trash.setAttribute('class', 'reimb-item__trash');
     trash.setAttribute('viewBox', '0 0 16 16');
@@ -1639,6 +1696,23 @@
     row.appendChild(trash);
 
     var status = item.status || 'open';
+
+    // Back-arrow button — only on rows that have already advanced. Sits LEFT
+    // of the cycle button, fades in on hover/focus-within (same pattern as
+    // the trash glyph) so it stays out of the way at rest.
+    var back = null;
+    if (status === 'submitted' || status === 'received') {
+      back = document.createElement('button');
+      back.type = 'button';
+      back.className = 'reimb-back';
+      back.textContent = '\u21a9'; // ↩
+      back.setAttribute(
+        'aria-label',
+        status === 'submitted' ? 'move back to open' : 'move back to submitted'
+      );
+      row.appendChild(back);
+    }
+
     var cycle = document.createElement('button');
     cycle.type = 'button';
     cycle.className = 'reimb-cycle';
@@ -1647,91 +1721,126 @@
       cycle.classList.add('is-done');
       cycle.disabled = true;
       cycle.setAttribute('aria-disabled', 'true');
-    } else {
-      cycle.addEventListener('click', function (ev) {
-        ev.stopPropagation();
-        advanceStatus(item);
-      });
     }
     row.appendChild(cycle);
 
-    // Trash click → swap right side for inline confirm row.
-    var openConfirm = function (ev) {
-      ev.stopPropagation();
+    // Show the inline confirm row in place of the right-side controls. The
+    // controls (trash, back, cycle) are hidden and restored by `restore()`.
+    // `kind` is one of 'delete' | 'advance' | 'back' so we can wire the
+    // correct yes-handler. Returns nothing — callers don't need the node.
+    var openInlineConfirm = function (kind) {
       // Bail if a confirm is already open in this row.
       if (row.querySelector('.reimb-item__confirm')) return;
-      // Hide existing right-side controls (trash + cycle).
+
+      var labelText;
+      if (kind === 'delete')       labelText = 'delete?';
+      else if (kind === 'advance') labelText = reimbAdvanceConfirmLabel(item.status || 'open');
+      else if (kind === 'back')    labelText = reimbBackConfirmLabel(item.status || 'open');
+      if (!labelText) return;
+
+      // Hide existing right-side controls.
       trash.style.display = 'none';
+      if (back) back.style.display = 'none';
       cycle.style.display = 'none';
 
-      var confirmRow = document.createElement('div');
-      confirmRow.className = 'reimb-item__confirm';
-
-      var label = document.createElement('span');
-      label.className = 'reimb-item__confirm-label';
-      label.textContent = 'delete?';
-      confirmRow.appendChild(label);
-
-      var sep1 = document.createElement('span');
-      sep1.className = 'reimb-item__confirm-sep';
-      sep1.textContent = '\u00b7';
-      confirmRow.appendChild(sep1);
-
-      var yesBtn = document.createElement('button');
-      yesBtn.type = 'button';
-      yesBtn.className = 'reimb-item__confirm-yes';
-      yesBtn.textContent = 'yes';
-      confirmRow.appendChild(yesBtn);
-
-      var sep2 = document.createElement('span');
-      sep2.className = 'reimb-item__confirm-sep';
-      sep2.textContent = '\u00b7';
-      confirmRow.appendChild(sep2);
-
-      var noBtn = document.createElement('button');
-      noBtn.type = 'button';
-      noBtn.className = 'reimb-item__confirm-no';
-      noBtn.textContent = 'cancel';
-      confirmRow.appendChild(noBtn);
-
-      row.appendChild(confirmRow);
+      var c = buildReimbConfirmRow(labelText);
+      row.appendChild(c.node);
 
       var restore = function () {
-        if (confirmRow.parentNode) confirmRow.parentNode.removeChild(confirmRow);
+        if (c.node.parentNode) c.node.parentNode.removeChild(c.node);
         trash.style.display = '';
+        if (back) back.style.display = '';
         cycle.style.display = '';
       };
 
-      noBtn.addEventListener('click', function (cev) {
+      // Track this confirm row so a panel-level ESC can dismiss it.
+      c.node._reimbCancel = restore;
+
+      // Move focus to "yes" so Enter confirms and Tab/Shift-Tab moves to
+      // cancel. ESC is handled at the panel level.
+      try { c.yes.focus({ preventScroll: true }); } catch (_) { c.yes.focus(); }
+
+      c.no.addEventListener('click', function (cev) {
         cev.stopPropagation();
         restore();
       });
 
-      yesBtn.addEventListener('click', function (cev) {
+      c.yes.addEventListener('click', function (cev) {
         cev.stopPropagation();
-        yesBtn.disabled = true;
-        noBtn.disabled = true;
-        label.textContent = 'deleting\u2026';
-        deleteReimbursement(item).catch(function () {
-          // Failure path: surface generic message + re-enable cancel so the
-          // user can dismiss the confirm row. The error itself is rendered
-          // in the panel-level error slot by deleteReimbursement.
-          label.textContent = 'couldn\u2019t delete \u00b7 cancel';
-          yesBtn.style.display = 'none';
-          sep2.style.display = 'none';
-          noBtn.disabled = false;
-        });
+        c.yes.disabled = true;
+        c.no.disabled = true;
+        if (kind === 'delete') {
+          c.label.textContent = 'deleting\u2026';
+          deleteReimbursement(item).catch(function () {
+            c.label.textContent = 'couldn\u2019t delete \u00b7 cancel';
+            c.yes.style.display = 'none';
+            c.sep2.style.display = 'none';
+            c.no.disabled = false;
+          });
+          return;
+        }
+        // Forward + back share the same code path — both PATCH the row to a
+        // target status, optimistically update the cache, and re-render.
+        // changeStatus rolls back on failure and surfaces the error in the
+        // panel-level error slot, so we just let the row re-render naturally.
+        var target;
+        if (kind === 'advance') target = REIMB_NEXT_STATUS[item.status || 'open'];
+        else                    target = REIMB_PREV_STATUS[item.status || 'open'];
+        if (!target) { restore(); return; }
+        changeStatus(item, target);
+        // changeStatus calls renderReimbursements() synchronously, which
+        // rebuilds this row from scratch — restore() is unnecessary.
       });
     };
-    trash.addEventListener('click', openConfirm);
+
+    // Cycle (forward) — only wire when there's a next status. Native
+    // <button> clicks fire on Enter/Space already, so we don't need an
+    // extra keydown handler here (unlike the SVG trash, which is not a
+    // button element).
+    if (status !== 'received') {
+      cycle.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        openInlineConfirm('advance');
+      });
+    }
+
+    // Back-arrow — wire only when present (submitted + received rows).
+    // Same story: native <button> handles keyboard activation natively.
+    if (back) {
+      back.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        openInlineConfirm('back');
+      });
+    }
+
+    // Trash → delete confirm. (keyboard already supported via tabindex on the
+    // SVG; Enter/Space mirrors the day-popover pattern.)
+    var openDeleteConfirm = function (ev) {
+      ev.stopPropagation();
+      openInlineConfirm('delete');
+    };
+    trash.addEventListener('click', openDeleteConfirm);
     trash.addEventListener('keydown', function (ev) {
       if (ev.key === 'Enter' || ev.key === ' ') {
         ev.preventDefault();
-        openConfirm(ev);
+        openDeleteConfirm(ev);
       }
     });
 
     return row;
+  }
+
+  // Dismiss any open inline-confirm rows in the reimbursements panel. Wired
+  // to the global ESC handler so the user can always back out of a confirm
+  // without committing. Returns true if at least one confirm was dismissed.
+  function dismissOpenReimbConfirms() {
+    if (!reimbGroups) return false;
+    var confirms = reimbGroups.querySelectorAll('.reimb-item__confirm');
+    if (!confirms.length) return false;
+    Array.prototype.forEach.call(confirms, function (n) {
+      if (typeof n._reimbCancel === 'function') n._reimbCancel();
+    });
+    return true;
   }
 
   // POST a new reimbursement. Validates, then optimistically appends on
@@ -1787,13 +1896,15 @@
     });
   }
 
-  // PATCH an item to its next status. Optimistically updates the cache + UI,
-  // rolls back if the server says no.
-  function advanceStatus(item) {
+  // PATCH an item to a target status (forward via the cycle button or
+  // backward via the ↩ undo button). Optimistically updates the cache + UI,
+  // rolls back if the server says no. The PATCH endpoint accepts movement in
+  // any direction (open ↔ submitted ↔ received) so the same code path works
+  // for both advance and back.
+  function changeStatus(item, next) {
     if (!item || !item.id) return;
     var current = item.status || 'open';
-    var next = REIMB_NEXT_STATUS[current];
-    if (!next) return; // 'received' is terminal
+    if (!next || next === current) return;
     setReimbError('');
     var prevStatus = current;
     item.status = next;

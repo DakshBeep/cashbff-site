@@ -808,20 +808,24 @@
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    /* Status-cycle button — quiet text-link affordance on the right. Greyed
-       out + non-interactive on the "received" terminal state. */
+    /* Status-cycle button — quiet text-link affordance on the right. We
+       intentionally hold opacity at 0.7 at rest (was 0.75) and use a normal
+       font weight so the button still reads as clickable but doesn't pull
+       the eye like a primary action — accidental status advances are worse
+       than a sliver of friction. Greyed out + non-interactive on the
+       "received" terminal state via .is-done. */
     .reimb-cycle {
       flex-shrink: 0;
       font-family: var(--font-body);
       font-size: 0.74rem;
-      font-weight: 500;
+      font-weight: 400;
       color: var(--cash-green);
       background: transparent;
       border: none;
       cursor: pointer;
       padding: 0.2rem 0.3rem;
       letter-spacing: 0.01em;
-      opacity: 0.75;
+      opacity: 0.7;
       transition: opacity 0.15s ease;
     }
     .reimb-cycle:hover { opacity: 1; }
@@ -833,6 +837,30 @@
       cursor: default;
       opacity: 0.4;
       pointer-events: none;
+    }
+    /* Back-arrow undo button — sits LEFT of the cycle button on rows that
+       have already advanced. Invisible at rest, fades in when the row is
+       hovered or any control inside it gets focus (mirrors trash). */
+    .reimb-back {
+      flex-shrink: 0;
+      font-family: var(--font-body);
+      font-size: 0.95rem;
+      line-height: 1;
+      color: var(--cash-green);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 0.1rem 0.25rem;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+    }
+    .reimb-item:hover .reimb-back,
+    .reimb-item:focus-within .reimb-back { opacity: 0.55; }
+    .reimb-back:hover,
+    .reimb-back:focus-visible { opacity: 0.95 !important; }
+    .reimb-back:focus-visible {
+      outline: 2px solid var(--cash-green);
+      outline-offset: 2px;
     }
     /* Trash + inline confirm — mirror the day-popover row pattern. */
     .reimb-item__trash {
