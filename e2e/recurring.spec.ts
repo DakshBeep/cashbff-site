@@ -34,6 +34,10 @@ const MOCK_SUGGESTIONS = {
       cadence_days: 30,
       last_charge_date: '2026-04-14',
       suggested_at: '2026-04-15T00:00:00Z',
+      // Phase-5: provenance fields surfaced via the LEFT JOIN with
+      // account_balances. The UI renders "from {Institution} ···{mask}".
+      from_institution: 'Bank of America',
+      from_mask: '1234',
     },
     {
       merchant: 'mock_audible',
@@ -43,6 +47,8 @@ const MOCK_SUGGESTIONS = {
       cadence_days: 30,
       last_charge_date: '2026-04-20',
       suggested_at: '2026-04-22T00:00:00Z',
+      from_institution: null,
+      from_mask: null,
     },
   ],
 };
@@ -142,6 +148,28 @@ test.describe('recurring tab smoke', () => {
     await expect(
       firstCard.locator('.recurring-suggestion__confirm')
     ).toContainText('add to recurring');
+
+    // ── Phase-5 provenance line: "from Bank of America ···1234" ──
+    // Renders only when both from_institution and from_mask are present.
+    const provenance = firstCard.locator('.recurring-suggestion__meta');
+    await expect(provenance).toBeVisible();
+    await expect(provenance).toContainText('from Bank of America');
+    await expect(provenance).toContainText('1234');
+
+    // ── Phase-5 confirms the OLD "saw this last on..." line is gone ──
+    // The reasoning meta line was deleted in Phase 5; the only meta line
+    // now is the provenance line above.
+    await expect(firstCard.locator('.recurring-suggestion__meta'))
+      .not.toContainText('saw this last on');
+    await expect(firstCard.locator('.recurring-suggestion__meta'))
+      .not.toContainText('cadence');
+
+    // ── Second card has no from_* → no provenance line at all ────
+    const secondCard = page.locator(
+      '#recurring-suggestions-list .recurring-suggestion'
+    ).nth(1);
+    await expect(secondCard).toBeVisible();
+    await expect(secondCard.locator('.recurring-suggestion__meta')).toHaveCount(0);
 
     // The chip badge should reflect the count.
     const badge = page.locator('#recurring-btn-count');

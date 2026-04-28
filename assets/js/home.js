@@ -2688,17 +2688,19 @@
     amtField.appendChild(amtInput);
     card.appendChild(amtField);
 
-    // ── Reasoning line ──────────────────────────────────
-    var meta = document.createElement('div');
-    meta.className = 'recurring-suggestion__meta';
-    var lastSeen = item.last_charge_date
-      ? formatRecurringDate(item.last_charge_date)
-      : '—';
-    var cadence = (typeof item.cadence_days === 'number' && item.cadence_days > 0)
-      ? Math.round(item.cadence_days)
-      : '—';
-    meta.textContent = 'saw this last on ' + lastSeen + ' \u00b7 cadence \u007e' + cadence + 'd';
-    card.appendChild(meta);
+    // ── "from {Institution} ···{mask}" provenance line ───
+    // Phase 5: replaces the old "saw this last on…" reasoning line. Only
+    // rendered when both fields are present; if either is missing we omit
+    // the row entirely (no "from undefined ···" rendering).
+    if (typeof item.from_institution === 'string'
+        && item.from_institution.length > 0
+        && typeof item.from_mask === 'string'
+        && item.from_mask.length > 0) {
+      var meta = document.createElement('div');
+      meta.className = 'recurring-suggestion__meta';
+      meta.textContent = 'from ' + item.from_institution + ' \u00b7\u00b7\u00b7' + item.from_mask;
+      card.appendChild(meta);
+    }
 
     // ── Inline error row ────────────────────────────────
     var err = document.createElement('div');
@@ -2850,6 +2852,19 @@
     amt.textContent = '$' + amtNum.toFixed(2);
     meta.appendChild(amt);
     main.appendChild(meta);
+
+    // ── "from {Institution} ···{mask}" provenance line ───
+    // Phase 5: only rendered when both fields are present.
+    if (typeof item.from_institution === 'string'
+        && item.from_institution.length > 0
+        && typeof item.from_mask === 'string'
+        && item.from_mask.length > 0) {
+      var fromLine = document.createElement('div');
+      fromLine.className = 'recurring-stream__from';
+      fromLine.textContent = 'from ' + item.from_institution + ' \u00b7\u00b7\u00b7' + item.from_mask;
+      main.appendChild(fromLine);
+    }
+
     row.appendChild(main);
 
     var actions = document.createElement('div');
