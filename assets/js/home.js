@@ -156,9 +156,29 @@
   var reimbursementsCache = null;
   var reimbursementsFetchInflight = null;
 
-  // Signup boundary — the earliest month the calendar lets the user nav to.
-  // Set after /api/me resolves. Before that, stays null and prev-nav is allowed.
+  // Earliest month the calendar lets the user nav back to. Initialized from
+  // signup_month (via /api/me). Then extended backward whenever a calendar
+  // fetch surfaces transactions older than the current boundary — Plaid's
+  // historical sync is often deeper than the user's CashBFF signup date,
+  // and that data is still genuinely theirs to see.
   var earliestViewableMonth = null;
+
+  function extendEarliestFromData() {
+    if (!PRECOMMITS.length) return;
+    var earliestDate = null;
+    for (var i = 0; i < PRECOMMITS.length; i++) {
+      var d = PRECOMMITS[i].date;
+      if (!d) continue;
+      if (earliestDate === null || d < earliestDate) earliestDate = d;
+    }
+    if (!earliestDate) return;
+    var parts = earliestDate.split('-');
+    var dataMonth = new Date(Number(parts[0]), Number(parts[1]) - 1, 1);
+    if (!earliestViewableMonth || dataMonth.getTime() < earliestViewableMonth.getTime()) {
+      earliestViewableMonth = dataMonth;
+      updatePrevArrowState();
+    }
+  }
 
   // ── Small helpers ────────────────────────────────
   function iso(d) {
@@ -250,6 +270,11 @@
         return !(e.date >= fromISO && e.date <= toISO);
       });
       mergeExpenses(expenses);
+      // Extend earliestViewableMonth backward if this batch contained txns
+      // from before the signup-month clamp. Plaid's historical sync often
+      // pulls 12-24 months of bank-side data, all of which is genuinely the
+      // user's — they should be able to navigate to it.
+      extendEarliestFromData();
       renderGrid();
       // No localStorage write — calendar is fresh on every load now.
       // /api/calendar may have triggered an on-demand Plaid sync server-side
@@ -273,17 +298,35 @@
   // the common case where today is mid-month-ish; the month-key cache then
   // suppresses a redundant refetch when the user stays on this month.
   function fetchInitialWindow() {
-    // Fetch the FULL current month + 30 days into the next month so the
-    // initial calendar view never has half-empty days (the old "last 14
-    // days only" behavior left Apr 1-13 blank when today was Apr 27).
-    // Also covers near-future scheduled txns + reimburse-type entries.
-    var year = today.getFullYear();
-    var month = today.getMonth();
-    var start = new Date(year, month, 1);
-    var end = new Date(year, month + 2, 0); // last day of NEXT month
-    fetchedMonths.add(monthKey(year, month));
-    fetchedMonths.add(monthKey(year, month + 1));
-    return fetchCalendarRange(iso(start), iso(end));
+    // Backfill ALL the user's data on boot — past 350 days + next 2 months.
+    // /api/calendar caps a single request at 365 days, so we issue TWO
+    // parallel range fetches and merge. Covers the full Plaid historical
+    // sync (typically 12-24 months of bank-side data) AND near-future
+    // scheduled/reimburse txns. fetchedMonths is marked for every spanned
+    // month so prev/next nav doesn't redundantly refetch.
+    var todayLocal = new Date(today);
+    var todayISO = iso(todayLocal);
+
+    var pastStart = new Date(todayLocal);
+    pastStart.setDate(pastStart.getDate() - 350);
+
+    var futStart = new Date(todayLocal);
+    futStart.setDate(futStart.getDate() + 1);
+    var futEnd = new Date(todayLocal.getFullYear(), todayLocal.getMonth() + 3, 0);
+
+    // Mark every spanned month as already-fetched so month nav uses the
+    // initial fetch's data and doesn't kick a redundant request.
+    var d = new Date(pastStart.getFullYear(), pastStart.getMonth(), 1);
+    var stop = new Date(futEnd.getFullYear(), futEnd.getMonth(), 1);
+    while (d.getTime() <= stop.getTime()) {
+      fetchedMonths.add(monthKey(d.getFullYear(), d.getMonth()));
+      d.setMonth(d.getMonth() + 1);
+    }
+
+    return Promise.all([
+      fetchCalendarRange(iso(pastStart), todayISO),
+      fetchCalendarRange(iso(futStart), iso(futEnd)),
+    ]);
   }
 
   // Month-scoped fetch on prev/next nav. Computes the full month range
