@@ -208,50 +208,32 @@
       outline-offset: 3px;
     }
 
-    /* ── Secondary chip lane (lists) ─────────────────
-       to-do + recurring sit in their own row beneath the month title so the
-       primary "money tools" lane stays uncrowded. Slightly quieter at rest
-       (lower border opacity) to communicate "secondary" without losing the
-       brand pill shape. The lane itself fades in just below the header row
-       and wraps cleanly on narrow viewports. */
-    .lists-row {
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-      flex-wrap: wrap;
-      margin: -0.6rem 0 1.4rem;
-    }
-    .lists-row__label {
-      font-size: 0.7rem;
-      font-weight: 500;
-      color: var(--cash-green);
-      opacity: 0.5;
-      text-transform: lowercase;
-      letter-spacing: 0.04em;
-      margin-right: 0.15rem;
-    }
-    .todo-btn,
-    .recurring-btn {
-      border-color: rgba(1, 71, 81, 0.18);
-      opacity: 0.85;
-    }
+    /* to-do + recurring chips share the same outlined cash-green pill style
+       as the other header chips (schedule / balances / reimbursements). All
+       five live in the same `.header-pills` cluster — kept visually uniform
+       per user request, no muted-secondary treatment.
+       (block left intentionally empty — base styles above cover both.) */
     .todo-btn:hover,
     .recurring-btn:hover {
       opacity: 1;
     }
-    /* Tiny count badge on the to-do chip — only shows when there are open
-       items. Inline with the chip text so it stays calm at a glance. */
+    /* Round count dot on the to-do chip — only shows when there are open
+       items. Sits inline with the chip label like a notification badge. */
     .todo-btn__count {
-      display: inline-block;
-      margin-left: 0.3rem;
-      padding: 0.05rem 0.35rem;
-      border-radius: 100px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-left: 0.4rem;
+      min-width: 1.05rem;
+      height: 1.05rem;
+      padding: 0 0.3rem;
+      border-radius: 999px;
       background: var(--cash-green);
       color: var(--vanilla);
-      font-size: 0.68rem;
-      font-weight: 500;
-      line-height: 1.4;
-      vertical-align: 0.05em;
+      font-size: 0.65rem;
+      font-weight: 600;
+      line-height: 1;
+      letter-spacing: 0;
     }
     .todo-btn__count[hidden] { display: none; }
 
@@ -1826,19 +1808,13 @@
       </div>
       <div class="header-pills">
         <button class="schedule-btn" id="schedule-btn" type="button">+ schedule</button>
+        <button class="todo-btn" id="todo-btn" type="button" aria-haspopup="dialog" aria-controls="todo-pop">
+          to-do<span class="todo-btn__count" id="todo-btn-count" hidden></span>
+        </button>
         <button class="balances-btn" id="balances-btn" type="button" aria-haspopup="dialog" aria-controls="balances-pop">balances</button>
         <button class="reimbursements-btn" id="reimbursements-btn" type="button" aria-haspopup="dialog" aria-controls="reimbursements-pop">reimbursements</button>
+        <button class="recurring-btn" id="recurring-btn" type="button" aria-haspopup="dialog" aria-controls="recurring-pop">recurring</button>
       </div>
-    </div>
-
-    <!-- Secondary chip lane: lists. Sits below the header row so the right-
-         side "money tools" chips don't get crowded. -->
-    <div class="lists-row" aria-label="lists">
-      <span class="lists-row__label">lists</span>
-      <button class="todo-btn" id="todo-btn" type="button" aria-haspopup="dialog" aria-controls="todo-pop">
-        to-do<span class="todo-btn__count" id="todo-btn-count" hidden></span>
-      </button>
-      <button class="recurring-btn" id="recurring-btn" type="button" aria-haspopup="dialog" aria-controls="recurring-pop">recurring</button>
     </div>
 
     <!-- Schedule spend popup — real form, posts to /api/transactions/schedule. -->
