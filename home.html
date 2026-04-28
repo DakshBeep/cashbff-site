@@ -176,7 +176,9 @@
     }
     .schedule-btn,
     .balances-btn,
-    .reimbursements-btn {
+    .reimbursements-btn,
+    .todo-btn,
+    .recurring-btn {
       font-family: var(--font-body);
       font-size: 0.78rem;
       font-weight: 500;
@@ -191,16 +193,67 @@
     }
     .schedule-btn:hover,
     .balances-btn:hover,
-    .reimbursements-btn:hover {
+    .reimbursements-btn:hover,
+    .todo-btn:hover,
+    .recurring-btn:hover {
       background: rgba(1, 71, 81, 0.05);
       border-color: var(--cash-green);
     }
     .schedule-btn:focus-visible,
     .balances-btn:focus-visible,
-    .reimbursements-btn:focus-visible {
+    .reimbursements-btn:focus-visible,
+    .todo-btn:focus-visible,
+    .recurring-btn:focus-visible {
       outline: 2px solid var(--cash-green);
       outline-offset: 3px;
     }
+
+    /* ── Secondary chip lane (lists) ─────────────────
+       to-do + recurring sit in their own row beneath the month title so the
+       primary "money tools" lane stays uncrowded. Slightly quieter at rest
+       (lower border opacity) to communicate "secondary" without losing the
+       brand pill shape. The lane itself fades in just below the header row
+       and wraps cleanly on narrow viewports. */
+    .lists-row {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+      margin: -0.6rem 0 1.4rem;
+    }
+    .lists-row__label {
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: var(--cash-green);
+      opacity: 0.5;
+      text-transform: lowercase;
+      letter-spacing: 0.04em;
+      margin-right: 0.15rem;
+    }
+    .todo-btn,
+    .recurring-btn {
+      border-color: rgba(1, 71, 81, 0.18);
+      opacity: 0.85;
+    }
+    .todo-btn:hover,
+    .recurring-btn:hover {
+      opacity: 1;
+    }
+    /* Tiny count badge on the to-do chip — only shows when there are open
+       items. Inline with the chip text so it stays calm at a glance. */
+    .todo-btn__count {
+      display: inline-block;
+      margin-left: 0.3rem;
+      padding: 0.05rem 0.35rem;
+      border-radius: 100px;
+      background: var(--cash-green);
+      color: var(--vanilla);
+      font-size: 0.68rem;
+      font-weight: 500;
+      line-height: 1.4;
+      vertical-align: 0.05em;
+    }
+    .todo-btn__count[hidden] { display: none; }
 
     /* Placeholder popup — same paper-tint + feel as the day popover. */
     .schedule-overlay {
@@ -926,6 +979,292 @@
     }
     .reimbursements-pop .reimbursements-close:hover { opacity: 1; }
 
+    /* ── To-do popup (paper-tint, mirrors schedule + reimbursements) ──── */
+    .todo-overlay,
+    .recurring-overlay {
+      position: fixed; inset: 0;
+      background: rgba(26, 23, 23, 0.18);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease;
+      z-index: 40;
+    }
+    .todo-overlay.open,
+    .recurring-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .todo-pop,
+    .recurring-pop {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%) scale(0.96);
+      opacity: 0;
+      pointer-events: none;
+      background: #F3EAD6;
+      border: 1px solid rgba(1, 71, 81, 0.12);
+      border-radius: 0.85rem;
+      padding: 1.5rem 1.5rem 1.25rem;
+      max-width: 24rem;
+      width: calc(100% - 2.5rem);
+      max-height: min(80vh, 36rem);
+      overflow-y: auto;
+      box-shadow: 0 16px 40px rgba(26, 23, 23, 0.18);
+      transition: transform 0.18s ease, opacity 0.18s ease;
+      z-index: 41;
+    }
+    .todo-pop.open,
+    .recurring-pop.open {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .todo-pop h2,
+    .recurring-pop h2 {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.3rem;
+      color: var(--cash-green);
+      letter-spacing: -0.01em;
+      margin-bottom: 0.4rem;
+    }
+    .todo-subtitle,
+    .recurring-subtitle {
+      font-size: 0.82rem;
+      color: var(--off-black);
+      opacity: 0.7;
+      line-height: 1.4;
+      margin-bottom: 1rem;
+    }
+    /* Add row — input + "+ add" pill button. Mirrors .reimb-add. */
+    .todo-add {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin-bottom: 1rem;
+    }
+    .todo-add__input {
+      flex: 1;
+      min-width: 0;
+      padding: 0.55rem 0.75rem;
+      border-radius: 10px;
+      border: 1.5px solid rgba(26,23,23,0.12);
+      background: rgba(252,250,242,0.8);
+      font-family: inherit;
+      font-size: 0.92rem;
+      color: var(--off-black);
+      transition: border-color 0.15s ease, background 0.15s ease;
+    }
+    .todo-add__input:focus {
+      outline: none;
+      border-color: var(--cash-green);
+      background: #fff;
+    }
+    .todo-add__input::placeholder { color: rgba(26,23,23,0.4); }
+    .todo-add__btn {
+      flex-shrink: 0;
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      font-weight: 500;
+      padding: 0.55rem 0.85rem;
+      border-radius: 100px;
+      background: var(--cash-green);
+      color: var(--vanilla);
+      border: none;
+      cursor: pointer;
+      transition: background 0.15s ease, opacity 0.15s ease;
+      letter-spacing: 0.01em;
+    }
+    .todo-add__btn:hover { background: #023239; }
+    .todo-add__btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      background: var(--cash-green);
+    }
+    .todo-add__btn:focus-visible {
+      outline: 2px solid var(--cash-green);
+      outline-offset: 2px;
+    }
+    .todo-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+    /* Row layout: checkbox · text · trash. Background sits on vanilla so the
+       row reads as "a note on paper", same as drawer / reimb items. */
+    .todo-item {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      padding: 0.5rem 0.65rem;
+      background: var(--vanilla);
+      border: 1px solid rgba(1, 71, 81, 0.05);
+      border-radius: 0.4rem;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+    .todo-item:focus-within {
+      border-color: rgba(1, 71, 81, 0.18);
+    }
+    /* Custom circular checkbox — visual only; the real <input> is sr-only.
+       Sage-green fill + checkmark when done. */
+    .todo-checkbox {
+      flex-shrink: 0;
+      position: relative;
+      width: 1.05rem;
+      height: 1.05rem;
+      border-radius: 100px;
+      border: 1.5px solid rgba(1, 71, 81, 0.35);
+      background: transparent;
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease;
+      padding: 0;
+    }
+    .todo-checkbox:hover { border-color: var(--cash-green); }
+    .todo-checkbox:focus-visible {
+      outline: 2px solid var(--cash-green);
+      outline-offset: 2px;
+    }
+    .todo-item.is-done .todo-checkbox {
+      background: #DFEDE0; /* sage wash, same as .pill.income */
+      border-color: var(--cash-green);
+    }
+    /* Checkmark — only painted when .is-done. Subtle SVG-as-mask via
+       background-image so we don't need an extra DOM node. */
+    .todo-item.is-done .todo-checkbox::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3e%3cpath fill='none' stroke='%23014751' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M2.5 6.5l2.5 2.5 4.5-5'/%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: 0.85rem;
+    }
+    .todo-item__text {
+      flex: 1;
+      min-width: 0;
+      font-family: var(--font-body);
+      font-size: 0.86rem;
+      font-weight: 500;
+      color: var(--off-black);
+      line-height: 1.35;
+      word-break: break-word;
+      transition: opacity 0.15s ease;
+    }
+    .todo-item.is-done .todo-item__text {
+      text-decoration: line-through;
+      text-decoration-color: rgba(1, 71, 81, 0.55);
+      text-decoration-thickness: 1.5px;
+      opacity: 0.5;
+    }
+    /* Trash glyph — same SVG shape + fade-in pattern as .reimb-item__trash. */
+    .todo-item__trash {
+      width: 0.85rem;
+      height: 0.85rem;
+      color: var(--cash-green);
+      opacity: 0;
+      flex-shrink: 0;
+      align-self: center;
+      transition: opacity 0.15s ease;
+      cursor: pointer;
+    }
+    .todo-item:hover .todo-item__trash,
+    .todo-item:focus-within .todo-item__trash { opacity: 0.55; }
+    .todo-item__trash:hover,
+    .todo-item__trash:focus-visible { opacity: 0.95 !important; }
+    /* Empty state — italic, muted, calm. Matches .reimb-empty in tone. */
+    .todo-empty {
+      font-size: 0.85rem;
+      font-style: italic;
+      opacity: 0.55;
+      padding: 0.4rem 0.2rem;
+    }
+    .todo-error {
+      font-size: 0.78rem;
+      color: #8a2a2a;
+      min-height: 0;
+      margin-top: -0.6rem;
+      margin-bottom: 0.8rem;
+    }
+    .todo-error:empty { display: none; }
+    .todo-pop .todo-close,
+    .recurring-pop .recurring-close {
+      font-family: var(--font-body);
+      font-size: 0.82rem;
+      color: var(--cash-green);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 0.25rem 0;
+      opacity: 0.7;
+      transition: opacity 0.15s ease;
+      align-self: flex-start;
+      margin-top: 0.9rem;
+    }
+    .todo-pop .todo-close:hover,
+    .recurring-pop .recurring-close:hover { opacity: 1; }
+
+    /* ── Recurring popup (placeholder) ──────────────
+       Empty-state-only for now: short brand-voice paragraph + two faint
+       dotted-outline cards that communicate "what shape of thing lives here"
+       without implying any data. The cards are decorative — pointer-events
+       off so they don't read as clickable. */
+    .recurring-body {
+      font-size: 0.85rem;
+      color: var(--off-black);
+      opacity: 0.78;
+      line-height: 1.55;
+      margin-bottom: 1.1rem;
+    }
+    .recurring-body p + p { margin-top: 0.55rem; }
+    .recurring-placeholder {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-bottom: 0.4rem;
+    }
+    .recurring-shape {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.6rem;
+      padding: 0.7rem 0.85rem;
+      border: 1.5px dashed rgba(1, 71, 81, 0.22);
+      border-radius: 0.5rem;
+      background: rgba(252, 250, 242, 0.55);
+      pointer-events: none;
+      user-select: none;
+    }
+    .recurring-shape__name {
+      font-family: var(--font-body);
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--cash-green);
+      opacity: 0.55;
+      letter-spacing: 0.01em;
+    }
+    .recurring-shape__meta {
+      font-family: var(--font-body);
+      font-size: 0.74rem;
+      color: var(--off-black);
+      opacity: 0.4;
+      letter-spacing: 0.02em;
+    }
+    .recurring-shape__amt {
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: 0.95rem;
+      color: var(--cash-green);
+      opacity: 0.5;
+      white-space: nowrap;
+    }
+    .recurring-soon {
+      font-size: 0.74rem;
+      font-style: italic;
+      opacity: 0.5;
+      margin-top: 0.6rem;
+      letter-spacing: 0.01em;
+    }
+
     .weekday-row {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
@@ -1492,6 +1831,16 @@
       </div>
     </div>
 
+    <!-- Secondary chip lane: lists. Sits below the header row so the right-
+         side "money tools" chips don't get crowded. -->
+    <div class="lists-row" aria-label="lists">
+      <span class="lists-row__label">lists</span>
+      <button class="todo-btn" id="todo-btn" type="button" aria-haspopup="dialog" aria-controls="todo-pop">
+        to-do<span class="todo-btn__count" id="todo-btn-count" hidden></span>
+      </button>
+      <button class="recurring-btn" id="recurring-btn" type="button" aria-haspopup="dialog" aria-controls="recurring-pop">recurring</button>
+    </div>
+
     <!-- Schedule spend popup — real form, posts to /api/transactions/schedule. -->
     <div class="schedule-overlay" id="schedule-overlay"></div>
     <aside class="schedule-pop" id="schedule-pop" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="schedule-pop-title">
@@ -1595,6 +1944,52 @@
       <div class="reimb-status" id="reimb-status" aria-live="polite"></div>
       <div class="reimb-groups" id="reimb-groups"></div>
       <button class="reimbursements-close" id="reimbursements-close" type="button">close</button>
+    </aside>
+
+    <!-- To-do popup — localStorage-backed mockup. No backend yet. -->
+    <div class="todo-overlay" id="todo-overlay"></div>
+    <aside class="todo-pop" id="todo-pop" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="todo-pop-title">
+      <h2 id="todo-pop-title">to-do</h2>
+      <p class="todo-subtitle">things you want to handle.</p>
+      <form class="todo-add" id="todo-add-form" novalidate>
+        <input
+          class="todo-add__input"
+          type="text"
+          id="todo-add-input"
+          name="text"
+          maxlength="120"
+          placeholder="add something to handle&hellip;"
+          autocomplete="off"
+          required>
+        <button type="submit" class="todo-add__btn" id="todo-add-btn">+ add</button>
+      </form>
+      <div class="todo-error" id="todo-error" aria-live="polite"></div>
+      <div class="todo-list" id="todo-list" role="list"></div>
+      <button class="todo-close" id="todo-close" type="button">close</button>
+    </aside>
+
+    <!-- Recurring popup — placeholder. No data yet; just communicates shape. -->
+    <div class="recurring-overlay" id="recurring-overlay"></div>
+    <aside class="recurring-pop" id="recurring-pop" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="recurring-pop-title">
+      <h2 id="recurring-pop-title">recurring</h2>
+      <div class="recurring-body">
+        <p>the things that hit your account on a rhythm &mdash; rent, netflix, the gym, that 14.99 you forgot about.</p>
+        <p>we&rsquo;ll surface them here automatically + let you add ones we miss.</p>
+      </div>
+      <div class="recurring-placeholder" aria-hidden="true">
+        <div class="recurring-shape">
+          <span class="recurring-shape__name">[ recurring &middot; monthly ]</span>
+          <span class="recurring-shape__meta">next: &mdash;&mdash;</span>
+          <span class="recurring-shape__amt">$&mdash;.&mdash;&mdash;</span>
+        </div>
+        <div class="recurring-shape">
+          <span class="recurring-shape__name">[ recurring &middot; weekly ]</span>
+          <span class="recurring-shape__meta">next: &mdash;&mdash;</span>
+          <span class="recurring-shape__amt">$&mdash;.&mdash;&mdash;</span>
+        </div>
+      </div>
+      <p class="recurring-soon">coming soon.</p>
+      <button class="recurring-close" id="recurring-close" type="button">close</button>
     </aside>
 
     <div class="weekday-row" aria-hidden="true">

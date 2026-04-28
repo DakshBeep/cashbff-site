@@ -131,6 +131,15 @@
   var reimbBtn, reimbOverlay, reimbPop, reimbClose,
       reimbAddForm, reimbAddInput, reimbAddBtn,
       reimbError, reimbStatus, reimbGroups;
+  // To-do popup (localStorage-backed mockup; no backend yet).
+  var todoBtn, todoBtnCount, todoOverlay, todoPop, todoClose,
+      todoAddForm, todoAddInput, todoAddBtn, todoError, todoList;
+  // Recurring popup (placeholder — open/close only, no data yet).
+  var recurringBtn, recurringOverlay, recurringPop, recurringClose;
+  // To-do items live in localStorage under cbff_v1_todos via the existing
+  // cacheRead/cacheWrite helpers. Shape: [{ id, text, done, created_at }].
+  // null on boot until ensureTodosLoaded() seeds from cache + adds the example.
+  var todosCache = null;
 
   // Edit-mode flag for the schedule popup. null = create mode (default), a
   // string id = edit mode for that scheduled transaction. Toggled by
@@ -213,6 +222,11 @@
     var cachedReimbursements = cacheRead('reimbursements');
     if (Array.isArray(cachedReimbursements)) {
       reimbursementsCache = cachedReimbursements;
+    }
+    // To-dos are mockup-only — same cache helper, no backend hydration.
+    var cachedTodos = cacheRead('todos');
+    if (Array.isArray(cachedTodos)) {
+      todosCache = cachedTodos;
     }
   }
 
@@ -858,10 +872,15 @@
         // If the reimbursements panel has an open inline confirm, ESC dismisses
         // just that — the panel itself stays open so the user can keep working.
         if (dismissOpenReimbConfirms()) return;
+        // Same idea for the to-do panel: an inline delete-confirm gets
+        // dismissed first before ESC bubbles up to closing the whole panel.
+        if (dismissOpenTodoConfirms()) return;
         closeDrawer();
         closeSchedule();
         closeBalances();
         closeReimbursements();
+        closeTodo();
+        closeRecurring();
       }
     });
   }
@@ -2055,6 +2074,349 @@
     }
   }
 
+  // ── To-do popup (localStorage-only mockup) ──────
+  // Backed by cbff_v1_todos via cacheRead/cacheWrite. Schema:
+  //   [{ id: string, text: string, done: boolean, created_at: number }]
+  // Open tasks render first, completed at the bottom (greyed + struck through).
+  // First open ever seeds an example task so the panel doesn't feel empty.
+  // Once the user deletes everything, we DON'T re-seed — they meant to clear.
+  var TODO_EXAMPLE_TEXT = 'call insurance about copay refund';
+
+  function persistTodos() {
+    if (Array.isArray(todosCache)) cacheWrite('todos', todosCache);
+  }
+
+  // Lazy-init the cache + seed the example. Called by openTodo() so the seed
+  // happens on first open rather than on boot — keeps the work off the
+  // critical path. Returns the current array (never null after this runs).
+  function ensureTodosLoaded() {
+    if (!Array.isArray(todosCache)) {
+      var cached = cacheRead('todos');
+      todosCache = Array.isArray(cached) ? cached : [];
+    }
+    if (todosCache.length === 0 && !cacheRead('todos_seeded')) {
+      todosCache = [{
+        id: 'seed-' + Date.now(),
+        text: TODO_EXAMPLE_TEXT,
+        done: false,
+        created_at: Date.now()
+      }];
+      // Mark seeded so we don't re-add the example after the user clears the
+      // list. They explicitly emptied it; respect that.
+      cacheWrite('todos_seeded', true);
+      persistTodos();
+    }
+    return todosCache;
+  }
+
+  function setTodoError(text) {
+    if (todoError) todoError.textContent = text || '';
+  }
+
+  // Stable ID — Date.now()+random suffix is plenty for a localStorage mockup
+  // and avoids needing crypto.randomUUID for older browsers.
+  function newTodoId() {
+    return 't_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
+  }
+
+  // Update the small count badge on the chip. Only visible when there's at
+  // least one open (un-done) item, so the chip stays calm when the list is
+  // empty or fully completed.
+  function updateTodoBadge() {
+    if (!todoBtnCount) return;
+    var openCount = (todosCache || []).reduce(function (n, t) {
+      return n + (t && !t.done ? 1 : 0);
+    }, 0);
+    if (openCount > 0) {
+      todoBtnCount.textContent = String(openCount);
+      todoBtnCount.hidden = false;
+    } else {
+      todoBtnCount.textContent = '';
+      todoBtnCount.hidden = true;
+    }
+  }
+
+  // Sort: open tasks first (newest at top), completed below (newest at top).
+  function sortedTodos() {
+    var items = Array.isArray(todosCache) ? todosCache.slice() : [];
+    items.sort(function (a, b) {
+      var ad = a && a.done ? 1 : 0;
+      var bd = b && b.done ? 1 : 0;
+      if (ad !== bd) return ad - bd;
+      return (b.created_at || 0) - (a.created_at || 0);
+    });
+    return items;
+  }
+
+  function buildTodoConfirmRow(labelText) {
+    var confirmRow = document.createElement('div');
+    confirmRow.className = 'row-confirm';
+
+    var label = document.createElement('span');
+    label.className = 'row-confirm__label';
+    label.textContent = labelText;
+    confirmRow.appendChild(label);
+
+    var sep1 = document.createElement('span');
+    sep1.className = 'row-confirm__sep';
+    sep1.textContent = '\u00b7';
+    confirmRow.appendChild(sep1);
+
+    var yesBtn = document.createElement('button');
+    yesBtn.type = 'button';
+    yesBtn.className = 'row-confirm__yes';
+    yesBtn.textContent = 'yes';
+    confirmRow.appendChild(yesBtn);
+
+    var sep2 = document.createElement('span');
+    sep2.className = 'row-confirm__sep';
+    sep2.textContent = '\u00b7';
+    confirmRow.appendChild(sep2);
+
+    var noBtn = document.createElement('button');
+    noBtn.type = 'button';
+    noBtn.className = 'row-confirm__no';
+    noBtn.textContent = 'cancel';
+    confirmRow.appendChild(noBtn);
+
+    return { node: confirmRow, label: label, yes: yesBtn, no: noBtn };
+  }
+
+  function buildTodoItem(item) {
+    var row = document.createElement('div');
+    row.className = 'todo-item';
+    row.setAttribute('role', 'listitem');
+    row.setAttribute('data-id', item.id);
+    if (item.done) row.classList.add('is-done');
+
+    // Custom round checkbox — visual button, real toggle role via aria.
+    var box = document.createElement('button');
+    box.type = 'button';
+    box.className = 'todo-checkbox';
+    box.setAttribute('role', 'checkbox');
+    box.setAttribute('aria-checked', item.done ? 'true' : 'false');
+    box.setAttribute('aria-label',
+      (item.done ? 'mark not done: ' : 'mark done: ') + (item.text || ''));
+    row.appendChild(box);
+
+    var text = document.createElement('span');
+    text.className = 'todo-item__text';
+    text.textContent = item.text || '';
+    row.appendChild(text);
+
+    // Trash glyph — same SVG approach as the reimb item, fades in on hover.
+    var trash = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    trash.setAttribute('class', 'todo-item__trash');
+    trash.setAttribute('viewBox', '0 0 16 16');
+    trash.setAttribute('fill', 'none');
+    trash.setAttribute('stroke', 'currentColor');
+    trash.setAttribute('stroke-width', '1.4');
+    trash.setAttribute('stroke-linecap', 'round');
+    trash.setAttribute('stroke-linejoin', 'round');
+    trash.setAttribute('role', 'button');
+    trash.setAttribute('tabindex', '0');
+    trash.setAttribute('aria-label', 'delete: ' + (item.text || 'task'));
+    var trashPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    trashPath.setAttribute('d', 'M3 4h10M6 4V2.8h4V4M5 4v9h6V4M7.5 6.5v4M9 6.5v4');
+    trash.appendChild(trashPath);
+    row.appendChild(trash);
+
+    // Toggle done on checkbox click. Updates cache + re-renders so completed
+    // items drop to the bottom of the list.
+    box.addEventListener('click', function (ev) {
+      ev.stopPropagation();
+      toggleTodo(item.id);
+    });
+
+    // Delete: open inline confirm (mirrors row-confirm pattern from day popover).
+    var openDeleteConfirm = function (ev) {
+      ev.stopPropagation();
+      if (row.querySelector('.row-confirm')) return;
+      // Hide trash + (optionally) checkbox label so the confirm row reads cleanly.
+      trash.style.display = 'none';
+      var c = buildTodoConfirmRow('delete?');
+      row.appendChild(c.node);
+      var restore = function () {
+        if (c.node.parentNode) c.node.parentNode.removeChild(c.node);
+        trash.style.display = '';
+      };
+      c.node._todoCancel = restore;
+      try { c.yes.focus({ preventScroll: true }); } catch (_) { c.yes.focus(); }
+      c.no.addEventListener('click', function (cev) {
+        cev.stopPropagation();
+        restore();
+      });
+      c.yes.addEventListener('click', function (cev) {
+        cev.stopPropagation();
+        deleteTodo(item.id);
+        // deleteTodo re-renders synchronously; row gets rebuilt or removed.
+      });
+    };
+    trash.addEventListener('click', openDeleteConfirm);
+    trash.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Enter' || ev.key === ' ') {
+        ev.preventDefault();
+        openDeleteConfirm(ev);
+      }
+    });
+
+    return row;
+  }
+
+  function renderTodos() {
+    if (!todoList) return;
+    todoList.innerHTML = '';
+    var items = sortedTodos();
+    if (!items.length) {
+      var empty = document.createElement('div');
+      empty.className = 'todo-empty';
+      empty.textContent = 'nothing to handle right now.';
+      todoList.appendChild(empty);
+      updateTodoBadge();
+      return;
+    }
+    items.forEach(function (it) { todoList.appendChild(buildTodoItem(it)); });
+    updateTodoBadge();
+  }
+
+  function addTodo(text) {
+    var t = (text || '').trim();
+    setTodoError('');
+    if (!t) {
+      setTodoError('add something to handle.');
+      return;
+    }
+    if (t.length > 120) {
+      setTodoError('too long (max 120).');
+      return;
+    }
+    if (!Array.isArray(todosCache)) todosCache = [];
+    todosCache.push({
+      id: newTodoId(),
+      text: t,
+      done: false,
+      created_at: Date.now()
+    });
+    persistTodos();
+    if (todoAddInput) todoAddInput.value = '';
+    renderTodos();
+  }
+
+  function toggleTodo(id) {
+    if (!Array.isArray(todosCache)) return;
+    for (var i = 0; i < todosCache.length; i++) {
+      if (todosCache[i] && todosCache[i].id === id) {
+        todosCache[i].done = !todosCache[i].done;
+        break;
+      }
+    }
+    persistTodos();
+    renderTodos();
+  }
+
+  function deleteTodo(id) {
+    if (!Array.isArray(todosCache)) return;
+    todosCache = todosCache.filter(function (t) { return !t || t.id !== id; });
+    persistTodos();
+    renderTodos();
+  }
+
+  // ESC-dismissable inline confirms inside the to-do panel. Returns true if
+  // anything was dismissed so the global ESC handler can short-circuit.
+  function dismissOpenTodoConfirms() {
+    if (!todoList) return false;
+    var confirms = todoList.querySelectorAll('.row-confirm');
+    if (!confirms.length) return false;
+    Array.prototype.forEach.call(confirms, function (n) {
+      if (typeof n._todoCancel === 'function') n._todoCancel();
+    });
+    return true;
+  }
+
+  function openTodo() {
+    if (!todoPop || !todoOverlay) return;
+    ensureTodosLoaded();
+    todoPop.classList.add('open');
+    todoOverlay.classList.add('open');
+    todoPop.setAttribute('aria-hidden', 'false');
+    setTodoError('');
+    renderTodos();
+    if (todoAddInput) {
+      try { todoAddInput.focus({ preventScroll: true }); } catch (_) { todoAddInput.focus(); }
+    }
+  }
+
+  function closeTodo() {
+    if (!todoPop || !todoOverlay) return;
+    todoPop.classList.remove('open');
+    todoOverlay.classList.remove('open');
+    todoPop.setAttribute('aria-hidden', 'true');
+    setTodoError('');
+  }
+
+  function wireTodoBtn() {
+    todoBtn       = document.getElementById('todo-btn');
+    todoBtnCount  = document.getElementById('todo-btn-count');
+    todoOverlay   = document.getElementById('todo-overlay');
+    todoPop       = document.getElementById('todo-pop');
+    todoClose     = document.getElementById('todo-close');
+    todoAddForm   = document.getElementById('todo-add-form');
+    todoAddInput  = document.getElementById('todo-add-input');
+    todoAddBtn    = document.getElementById('todo-add-btn');
+    todoError     = document.getElementById('todo-error');
+    todoList      = document.getElementById('todo-list');
+
+    if (todoBtn)     todoBtn.addEventListener('click', openTodo);
+    if (todoClose)   todoClose.addEventListener('click', closeTodo);
+    if (todoOverlay) todoOverlay.addEventListener('click', closeTodo);
+    if (todoAddForm) {
+      todoAddForm.addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        addTodo(todoAddInput && todoAddInput.value);
+      });
+    }
+    // Initialize the badge on boot so the count is right before first open.
+    // ensureTodosLoaded() seeds the example on the very first render path,
+    // but we only render the chip badge once todos are loaded — which we
+    // defer until the panel opens. Read the cache directly here so the badge
+    // shows for returning users without forcing a seed on boot.
+    var cached = cacheRead('todos');
+    if (Array.isArray(cached)) {
+      todosCache = cached;
+      updateTodoBadge();
+    }
+  }
+
+  // ── Recurring popup (placeholder) ───────────────
+  // Open/close only — no data, no list yet. Body markup is static in HTML.
+  function openRecurring() {
+    if (!recurringPop || !recurringOverlay) return;
+    recurringPop.classList.add('open');
+    recurringOverlay.classList.add('open');
+    recurringPop.setAttribute('aria-hidden', 'false');
+    if (recurringClose) {
+      try { recurringClose.focus({ preventScroll: true }); } catch (_) { recurringClose.focus(); }
+    }
+  }
+
+  function closeRecurring() {
+    if (!recurringPop || !recurringOverlay) return;
+    recurringPop.classList.remove('open');
+    recurringOverlay.classList.remove('open');
+    recurringPop.setAttribute('aria-hidden', 'true');
+  }
+
+  function wireRecurringBtn() {
+    recurringBtn     = document.getElementById('recurring-btn');
+    recurringOverlay = document.getElementById('recurring-overlay');
+    recurringPop     = document.getElementById('recurring-pop');
+    recurringClose   = document.getElementById('recurring-close');
+
+    if (recurringBtn)     recurringBtn.addEventListener('click', openRecurring);
+    if (recurringClose)   recurringClose.addEventListener('click', closeRecurring);
+    if (recurringOverlay) recurringOverlay.addEventListener('click', closeRecurring);
+  }
+
   // ── Add-account button wiring ───────────────────
   function wireAddAccountBtn() {
     var btn = document.getElementById('add-account-btn');
@@ -2075,6 +2437,8 @@
     wireScheduleBtn();
     wireBalancesBtn();
     wireReimbursementsBtn();
+    wireTodoBtn();
+    wireRecurringBtn();
     // Reimbursements is still SWR — hydrate its in-memory cache from
     // localStorage so the panel paints instantly when opened. Calendar +
     // balances are NOT hydrated; they wait for the live fetches below.
