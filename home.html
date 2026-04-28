@@ -227,9 +227,11 @@
     .recurring-btn:hover {
       opacity: 1;
     }
-    /* Round count dot on the to-do chip — only shows when there are open
-       items. Sits inline with the chip label like a notification badge. */
-    .todo-btn__count {
+    /* Round count dot on the to-do + recurring chips — only shows when there
+       are open items / suggestions. Sits inline with the chip label like a
+       notification badge. */
+    .todo-btn__count,
+    .recurring-btn__count {
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -245,7 +247,8 @@
       line-height: 1;
       letter-spacing: 0;
     }
-    .todo-btn__count[hidden] { display: none; }
+    .todo-btn__count[hidden],
+    .recurring-btn__count[hidden] { display: none; }
 
     /* Placeholder popup — same paper-tint + feel as the day popover. */
     .schedule-overlay {
@@ -1210,67 +1213,481 @@
     .todo-pop .todo-close:hover,
     .recurring-pop .recurring-close:hover { opacity: 1; }
 
-    /* ── Recurring popup (placeholder) ──────────────
-       Empty-state-only for now: short brand-voice paragraph + two faint
-       dotted-outline cards that communicate "what shape of thing lives here"
-       without implying any data. The cards are decorative — pointer-events
-       off so they don't read as clickable. */
-    .recurring-body {
+    /* ── Recurring popup (real data) ────────────────
+       Two stacked sections: "to review" (suggestion cards) + "your recurring"
+       (confirmed compact rows). Cards mirror .reimb-item / .todo-item visual
+       weight; the inline confirm pattern reuses .row-confirm. */
+    .recurring-status {
       font-size: 0.85rem;
-      color: var(--off-black);
-      opacity: 0.78;
-      line-height: 1.55;
+      font-style: italic;
+      opacity: 0.55;
+      padding: 0 0 0.6rem;
+    }
+    .recurring-status:empty { display: none; }
+    .recurring-section {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
       margin-bottom: 1.1rem;
     }
-    .recurring-body p + p { margin-top: 0.55rem; }
-    .recurring-placeholder {
+    .recurring-section:last-of-type { margin-bottom: 0.4rem; }
+    .recurring-section__heading {
+      display: flex;
+      align-items: baseline;
+      gap: 0.4rem;
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: 0.9rem;
+      color: var(--cash-green);
+      letter-spacing: 0;
+      text-transform: lowercase;
+      opacity: 0.85;
+    }
+    .recurring-section__count {
+      font-family: var(--font-body);
+      font-weight: 500;
+      font-size: 0.78rem;
+      opacity: 0.55;
+    }
+    /* Suggestion card — three labeled fields stacked, plus a muted "we saw
+       this on …" line and two action buttons. */
+    .recurring-suggestion {
       display: flex;
       flex-direction: column;
       gap: 0.5rem;
-      margin-bottom: 0.4rem;
+      padding: 0.85rem 0.9rem 0.95rem;
+      background: var(--vanilla);
+      border: 1px solid rgba(1, 71, 81, 0.05);
+      border-radius: 0.55rem;
+      box-shadow: 0 1px 0 rgba(26, 23, 23, 0.04);
     }
-    .recurring-shape {
+    .recurring-suggestions-list {
       display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.6rem;
-      padding: 0.7rem 0.85rem;
-      border: 1.5px dashed rgba(1, 71, 81, 0.22);
-      border-radius: 0.5rem;
-      background: rgba(252, 250, 242, 0.55);
-      pointer-events: none;
-      user-select: none;
+      flex-direction: column;
+      gap: 0.55rem;
     }
-    .recurring-shape__name {
+    .recurring-suggestion__field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+    .recurring-suggestion__label {
+      font-family: var(--font-body);
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--cash-green);
+      opacity: 0.55;
+    }
+    .recurring-suggestion__input {
+      width: 100%;
+      padding: 0.45rem 0.6rem;
+      border-radius: 8px;
+      border: 1.5px solid rgba(26, 23, 23, 0.12);
+      background: rgba(252, 250, 242, 0.85);
+      font-family: inherit;
+      font-size: 0.9rem;
+      color: var(--off-black);
+      transition: border-color 0.15s ease, background 0.15s ease;
+      box-sizing: border-box;
+    }
+    .recurring-suggestion__input:focus {
+      outline: none;
+      border-color: var(--cash-green);
+      background: #fff;
+    }
+    .recurring-suggestion__field--amount {
+      position: relative;
+    }
+    .recurring-suggestion__field--amount .recurring-suggestion__input {
+      padding-left: 1.1rem;
+    }
+    .recurring-suggestion__amount-prefix {
+      position: absolute;
+      left: 0.55rem;
+      bottom: 0.45rem;
+      font-size: 0.9rem;
+      color: var(--off-black);
+      opacity: 0.55;
+      pointer-events: none;
+    }
+    .recurring-suggestion__meta {
+      font-size: 0.72rem;
+      font-style: italic;
+      color: var(--off-black);
+      opacity: 0.55;
+      letter-spacing: 0.01em;
+      line-height: 1.4;
+    }
+    .recurring-suggestion__actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      margin-top: 0.2rem;
+    }
+    .recurring-suggestion__confirm {
+      width: 100%;
+      padding: 0.55rem 0.85rem;
+      border-radius: 100px;
+      background: var(--cash-green);
+      color: var(--vanilla);
+      border: none;
+      cursor: pointer;
       font-family: var(--font-body);
       font-size: 0.82rem;
       font-weight: 500;
-      color: var(--cash-green);
-      opacity: 0.55;
       letter-spacing: 0.01em;
+      transition: background 0.15s ease, opacity 0.15s ease;
     }
-    .recurring-shape__meta {
+    .recurring-suggestion__confirm:hover { background: #023239; }
+    .recurring-suggestion__confirm:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+    .recurring-suggestion__dismiss {
+      align-self: flex-start;
       font-family: var(--font-body);
-      font-size: 0.74rem;
-      color: var(--off-black);
-      opacity: 0.4;
-      letter-spacing: 0.02em;
-    }
-    .recurring-shape__amt {
-      font-family: var(--font-display);
-      font-weight: 500;
-      font-size: 0.95rem;
+      font-size: 0.78rem;
       color: var(--cash-green);
-      opacity: 0.5;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 0.15rem 0;
+      opacity: 0.7;
+      transition: opacity 0.15s ease;
+    }
+    .recurring-suggestion__dismiss:hover { opacity: 1; }
+    .recurring-suggestion__error {
+      font-size: 0.74rem;
+      color: #8a2a2a;
+      min-height: 0;
+    }
+    .recurring-suggestion__error:empty { display: none; }
+    /* Inline confirm row tucks in below the actions, replacing them while
+       open. Reuses .row-confirm styles defined elsewhere. */
+    .recurring-suggestion__confirm-row {
+      margin-left: 0;
+      justify-content: flex-start;
+    }
+    /* Confirmed stream row — compact, looks like a to-do. */
+    .recurring-streams-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+    .recurring-stream {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      padding: 0.5rem 0.65rem;
+      background: var(--vanilla);
+      border: 1px solid rgba(1, 71, 81, 0.05);
+      border-radius: 0.4rem;
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+    .recurring-stream:hover {
+      border-color: rgba(1, 71, 81, 0.18);
+    }
+    .recurring-stream:focus-within {
+      border-color: rgba(1, 71, 81, 0.18);
+    }
+    .recurring-stream__dot {
+      flex-shrink: 0;
+      width: 1.05rem;
+      height: 1.05rem;
+      border-radius: 100px;
+      background: #DFEDE0;
+      border: 1.5px solid var(--cash-green);
+      position: relative;
+    }
+    .recurring-stream__dot::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3e%3cpath fill='none' stroke='%23014751' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M2.5 6.5l2.5 2.5 4.5-5'/%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: 0.85rem;
+    }
+    .recurring-stream__main {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+    .recurring-stream__name {
+      font-family: var(--font-body);
+      font-size: 0.86rem;
+      font-weight: 500;
+      color: var(--off-black);
+      line-height: 1.3;
+      overflow: hidden;
+      text-overflow: ellipsis;
       white-space: nowrap;
     }
-    .recurring-soon {
-      font-size: 0.74rem;
-      font-style: italic;
-      opacity: 0.5;
-      margin-top: 0.6rem;
+    .recurring-stream__meta {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      flex-wrap: wrap;
+    }
+    .recurring-stream__pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.1rem 0.45rem;
+      border-radius: 999px;
+      background: rgba(1, 71, 81, 0.08);
+      color: var(--cash-green);
+      font-family: var(--font-body);
+      font-size: 0.7rem;
+      font-weight: 500;
       letter-spacing: 0.01em;
     }
+    .recurring-stream__amt {
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: 0.82rem;
+      color: var(--cash-green);
+      white-space: nowrap;
+    }
+    .recurring-stream__actions {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      flex-shrink: 0;
+    }
+    .recurring-stream__edit,
+    .recurring-stream__trash {
+      width: 0.85rem;
+      height: 0.85rem;
+      color: var(--cash-green);
+      opacity: 0;
+      flex-shrink: 0;
+      align-self: center;
+      transition: opacity 0.15s ease;
+      cursor: pointer;
+    }
+    .recurring-stream:hover .recurring-stream__edit,
+    .recurring-stream:focus-within .recurring-stream__edit,
+    .recurring-stream:hover .recurring-stream__trash,
+    .recurring-stream:focus-within .recurring-stream__trash { opacity: 0.55; }
+    .recurring-stream__edit:hover,
+    .recurring-stream__edit:focus-visible,
+    .recurring-stream__trash:hover,
+    .recurring-stream__trash:focus-visible { opacity: 0.95 !important; }
+    /* Empty-state lines — italicised soft text inside each section. */
+    .recurring-empty {
+      font-size: 0.85rem;
+      font-style: italic;
+      opacity: 0.55;
+      padding: 0.4rem 0.2rem;
+      line-height: 1.4;
+    }
+
+    /* ── Rollover modal ─────────────────────────────
+       Mirrors .schedule-pop chrome (overlay + centered card). One merchant
+       per modal. Three stacked actions. Inline edit-date form expands in
+       place; dismiss "x" snoozes 24h. */
+    .rollover-overlay {
+      position: fixed; inset: 0;
+      background: rgba(26, 23, 23, 0.32);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.18s ease;
+      z-index: 60;
+    }
+    .rollover-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .rollover-pop {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%) scale(0.96);
+      opacity: 0;
+      pointer-events: none;
+      background: #F3EAD6;
+      border: 1px solid rgba(1, 71, 81, 0.12);
+      border-radius: 0.85rem;
+      padding: 1.5rem 1.5rem 1.25rem;
+      max-width: 22rem;
+      width: calc(100% - 2.5rem);
+      max-height: min(80vh, 30rem);
+      overflow-y: auto;
+      box-shadow: 0 16px 40px rgba(26, 23, 23, 0.25);
+      transition: transform 0.18s ease, opacity 0.18s ease;
+      z-index: 61;
+    }
+    .rollover-pop.open {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .rollover-dismiss {
+      position: absolute;
+      top: 0.7rem; right: 0.85rem;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      font-size: 1.2rem;
+      line-height: 1;
+      color: var(--cash-green);
+      opacity: 0.5;
+      padding: 0.15rem 0.35rem;
+      transition: opacity 0.15s ease;
+    }
+    .rollover-dismiss:hover { opacity: 1; }
+    .rollover-title {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.2rem;
+      color: var(--cash-green);
+      letter-spacing: -0.01em;
+      margin: 0 1.5rem 0.35rem 0;
+      line-height: 1.25;
+    }
+    .rollover-sub {
+      font-size: 0.82rem;
+      color: var(--off-black);
+      opacity: 0.7;
+      line-height: 1.4;
+      margin-bottom: 1rem;
+    }
+    .rollover-error {
+      font-size: 0.78rem;
+      color: #8a2a2a;
+      margin-bottom: 0.55rem;
+    }
+    .rollover-error:empty { display: none; }
+    .rollover-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .rollover-yes {
+      width: 100%;
+      padding: 0.65rem 0.85rem;
+      border-radius: 100px;
+      background: var(--cash-green);
+      color: var(--vanilla);
+      border: none;
+      cursor: pointer;
+      font-family: var(--font-body);
+      font-size: 0.88rem;
+      font-weight: 500;
+      letter-spacing: 0.01em;
+      transition: background 0.15s ease, opacity 0.15s ease;
+    }
+    .rollover-yes:hover { background: #023239; }
+    .rollover-yes:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+    .rollover-edit-date {
+      width: 100%;
+      padding: 0.55rem 0.85rem;
+      border-radius: 100px;
+      background: transparent;
+      color: var(--cash-green);
+      border: 1px solid rgba(1, 71, 81, 0.28);
+      cursor: pointer;
+      font-family: var(--font-body);
+      font-size: 0.84rem;
+      font-weight: 500;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+    .rollover-edit-date:hover {
+      background: rgba(1, 71, 81, 0.05);
+      border-color: var(--cash-green);
+    }
+    .rollover-not-recurring {
+      align-self: center;
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      color: var(--cash-green);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 0.4rem 0;
+      opacity: 0.7;
+      transition: opacity 0.15s ease;
+      margin-top: 0.2rem;
+    }
+    .rollover-not-recurring:hover { opacity: 1; }
+    .rollover-edit-form {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      padding: 0.7rem 0;
+    }
+    .rollover-edit-form[hidden] { display: none; }
+    .rollover-edit-form__label {
+      font-family: var(--font-body);
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--cash-green);
+      opacity: 0.65;
+    }
+    .rollover-edit-form__input {
+      width: 100%;
+      padding: 0.55rem 0.7rem;
+      border-radius: 8px;
+      border: 1.5px solid rgba(26, 23, 23, 0.12);
+      background: rgba(252, 250, 242, 0.85);
+      font-family: inherit;
+      font-size: 0.9rem;
+      color: var(--off-black);
+      box-sizing: border-box;
+    }
+    .rollover-edit-form__input:focus {
+      outline: none;
+      border-color: var(--cash-green);
+      background: #fff;
+    }
+    .rollover-edit-form__actions {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .rollover-edit-form__submit {
+      flex-shrink: 0;
+      padding: 0.45rem 0.85rem;
+      border-radius: 100px;
+      background: var(--cash-green);
+      color: var(--vanilla);
+      border: none;
+      cursor: pointer;
+      font-family: var(--font-body);
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+    .rollover-edit-form__submit:hover { background: #023239; }
+    .rollover-edit-form__cancel {
+      font-family: var(--font-body);
+      font-size: 0.8rem;
+      color: var(--cash-green);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      opacity: 0.7;
+      transition: opacity 0.15s ease;
+    }
+    .rollover-edit-form__cancel:hover { opacity: 1; }
+    .rollover-not-recurring-confirm {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.5rem 0;
+      font-size: 0.82rem;
+      color: var(--cash-green);
+      justify-content: center;
+    }
+    .rollover-not-recurring-confirm[hidden] { display: none; }
 
     /* ── Wallet popup (paper-tint, mirrors balances + reimbursements) ──── */
     .wallet-overlay {
@@ -2222,7 +2639,9 @@
         </button>
         <button class="balances-btn" id="balances-btn" type="button" aria-haspopup="dialog" aria-controls="balances-pop">balances</button>
         <button class="reimbursements-btn" id="reimbursements-btn" type="button" aria-haspopup="dialog" aria-controls="reimbursements-pop">reimbursements</button>
-        <button class="recurring-btn" id="recurring-btn" type="button" aria-haspopup="dialog" aria-controls="recurring-pop">recurring</button>
+        <button class="recurring-btn" id="recurring-btn" type="button" aria-haspopup="dialog" aria-controls="recurring-pop">
+          recurring<span class="recurring-btn__count" id="recurring-btn-count" hidden></span>
+        </button>
         <button class="wallet-btn" id="wallet-btn" type="button" aria-haspopup="dialog" aria-controls="wallet-pop" aria-label="wallet">&#128093;</button>
       </div>
     </div>
@@ -2354,28 +2773,61 @@
       <button class="todo-close" id="todo-close" type="button">close</button>
     </aside>
 
-    <!-- Recurring popup — placeholder. No data yet; just communicates shape. -->
+    <!-- Recurring popup — backed by /api/recurring/{suggestions,streams}.
+         Two sections: "to review" (suggestion cards the bridge surfaced)
+         and "your recurring" (confirmed streams that are already on the
+         calendar). Edit a confirmed row by clicking it -> opens the schedule
+         popover in edit mode (linked_scheduled_txn_id). -->
     <div class="recurring-overlay" id="recurring-overlay"></div>
     <aside class="recurring-pop" id="recurring-pop" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="recurring-pop-title">
       <h2 id="recurring-pop-title">recurring</h2>
-      <div class="recurring-body">
-        <p>the things that hit your account on a rhythm &mdash; rent, netflix, the gym, that 14.99 you forgot about.</p>
-        <p>we&rsquo;ll surface them here automatically + let you add ones we miss.</p>
-      </div>
-      <div class="recurring-placeholder" aria-hidden="true">
-        <div class="recurring-shape">
-          <span class="recurring-shape__name">[ recurring &middot; monthly ]</span>
-          <span class="recurring-shape__meta">next: &mdash;&mdash;</span>
-          <span class="recurring-shape__amt">$&mdash;.&mdash;&mdash;</span>
+      <p class="recurring-subtitle">the things that hit your account on a rhythm &mdash; we surface them, you confirm.</p>
+      <div class="recurring-status" id="recurring-status" aria-live="polite"></div>
+      <section class="recurring-section" id="recurring-suggestions-section">
+        <div class="recurring-section__heading">
+          <span>to review</span><span class="recurring-section__count" id="recurring-suggestions-count">(0)</span>
         </div>
-        <div class="recurring-shape">
-          <span class="recurring-shape__name">[ recurring &middot; weekly ]</span>
-          <span class="recurring-shape__meta">next: &mdash;&mdash;</span>
-          <span class="recurring-shape__amt">$&mdash;.&mdash;&mdash;</span>
+        <div class="recurring-suggestions-list" id="recurring-suggestions-list"></div>
+      </section>
+      <section class="recurring-section" id="recurring-streams-section">
+        <div class="recurring-section__heading">
+          <span>your recurring</span><span class="recurring-section__count" id="recurring-streams-count">(0)</span>
         </div>
-      </div>
-      <p class="recurring-soon">coming soon.</p>
+        <div class="recurring-streams-list" id="recurring-streams-list"></div>
+      </section>
       <button class="recurring-close" id="recurring-close" type="button">close</button>
+    </aside>
+
+    <!-- Rollover modal — single-merchant prompt fired AFTER auth + every time
+         the recurring tab opens. Mirrors #schedule-pop chrome (overlay +
+         centered card) but uses a brand-voice question + three stacked
+         actions. Snooze (24h) is the tiny "x" in the top-right. -->
+    <div class="rollover-overlay" id="rollover-overlay"></div>
+    <aside class="rollover-pop" id="rollover-pop" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="rollover-pop-title">
+      <button type="button" class="rollover-dismiss" id="rollover-dismiss" aria-label="snooze 24h">&times;</button>
+      <h2 id="rollover-pop-title" class="rollover-title">did this charge again?</h2>
+      <p class="rollover-sub" id="rollover-sub">we expected this on &mdash;&mdash;.</p>
+      <div class="rollover-error" id="rollover-error" aria-live="polite"></div>
+      <div class="rollover-actions" id="rollover-actions">
+        <button type="button" class="rollover-yes" id="rollover-yes">yes, it charged</button>
+        <button type="button" class="rollover-edit-date" id="rollover-edit-date">change the date</button>
+        <button type="button" class="rollover-not-recurring" id="rollover-not-recurring">not recurring anymore</button>
+      </div>
+      <form class="rollover-edit-form" id="rollover-edit-form" hidden novalidate>
+        <label class="rollover-edit-form__label" for="rollover-new-date">new date</label>
+        <input class="rollover-edit-form__input" type="date" id="rollover-new-date" required>
+        <div class="rollover-edit-form__actions">
+          <button type="submit" class="rollover-edit-form__submit" id="rollover-edit-submit">save</button>
+          <button type="button" class="rollover-edit-form__cancel" id="rollover-edit-cancel">cancel</button>
+        </div>
+      </form>
+      <div class="rollover-not-recurring-confirm" id="rollover-not-recurring-confirm" hidden>
+        <span class="row-confirm__label">really?</span>
+        <span class="row-confirm__sep">&middot;</span>
+        <button type="button" class="row-confirm__yes" id="rollover-not-recurring-yes">yes, it&rsquo;s gone</button>
+        <span class="row-confirm__sep">&middot;</span>
+        <button type="button" class="row-confirm__no" id="rollover-not-recurring-no">cancel</button>
+      </div>
     </aside>
 
     <!-- Wallet popup — linked Plaid accounts + manually-tracked cards. -->

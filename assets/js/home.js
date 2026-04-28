@@ -134,8 +134,30 @@
   // To-do popup (localStorage-backed mockup; no backend yet).
   var todoBtn, todoBtnCount, todoOverlay, todoPop, todoClose,
       todoAddForm, todoAddInput, todoAddBtn, todoError, todoList;
-  // Recurring popup (placeholder — open/close only, no data yet).
-  var recurringBtn, recurringOverlay, recurringPop, recurringClose;
+  // Recurring popup — backed by /api/recurring/{suggestions,streams}.
+  // Cache shape:
+  //   recurringSuggestionsCache: array of {merchant, display_name, amount,
+  //                                        next_due_date, cadence_days,
+  //                                        last_charge_date, suggested_at}
+  //   recurringStreamsCache:    array of suggestion + {confirmed_at,
+  //                                                    linked_scheduled_txn_id}
+  // Both are SWR (hydrated from localStorage on boot, refetched on first
+  // open + every successful mutation).
+  var recurringBtn, recurringBtnCount, recurringOverlay, recurringPop,
+      recurringClose, recurringStatus,
+      recurringSuggestionsList, recurringSuggestionsCount,
+      recurringStreamsList, recurringStreamsCount;
+  var recurringSuggestionsCache = null;
+  var recurringSuggestionsFetchInflight = null;
+  var recurringStreamsCache = null;
+  var recurringStreamsFetchInflight = null;
+  // Rollover modal — single-merchant prompt, walks through prompts one-by-one.
+  var rolloverOverlay, rolloverPop, rolloverDismiss, rolloverTitle,
+      rolloverSub, rolloverError,
+      rolloverActions, rolloverYes, rolloverEditDateBtn, rolloverNotRecurring,
+      rolloverEditForm, rolloverNewDate, rolloverEditSubmit, rolloverEditCancel,
+      rolloverNotRecurringConfirm, rolloverNotRecurringYes, rolloverNotRecurringNo;
+  var rolloverCurrent = null; // the prompt currently being shown
   // Wallet popup — linked Plaid accounts (read-only) + manually-tracked cards.
   // Backed by /api/wallet for read, /api/tracked-accounts (POST/DELETE) for
   // mutations on the user-added cards.
@@ -257,6 +279,16 @@
     if (cachedWallet && typeof cachedWallet === 'object') {
       walletCache = cachedWallet;
     }
+    // Recurring suggestions + streams — SWR. Last-known list paints the panel
+    // instantly on first open; the live GET refreshes both panels.
+    var cachedRecurringSuggestions = cacheRead('recurring_suggestions');
+    if (Array.isArray(cachedRecurringSuggestions)) {
+      recurringSuggestionsCache = cachedRecurringSuggestions;
+    }
+    var cachedRecurringStreams = cacheRead('recurring_streams');
+    if (Array.isArray(cachedRecurringStreams)) {
+      recurringStreamsCache = cachedRecurringStreams;
+    }
   }
 
   // ── /api/calendar fetch + merge ──────────────────
@@ -335,6 +367,20 @@
 
   function monthKey(year, month) {
     return year + '-' + String(month + 1).padStart(2, '0');
+  }
+
+  // Derive a monthKey ("YYYY-MM") from an ISO date string ("YYYY-MM-DD").
+  // Returns null on missing/malformed input. Used by mutation paths to
+  // invalidate the fetchedMonths cache for months other than the visible one
+  // (e.g. confirming a stream whose next_due_date is in a different month).
+  function monthKeyFromIso(isoDate) {
+    if (!isoDate || typeof isoDate !== 'string') return null;
+    var parts = isoDate.slice(0, 10).split('-');
+    if (parts.length !== 3) return null;
+    var y = Number(parts[0]);
+    var m = Number(parts[1]);
+    if (!isFinite(y) || !isFinite(m) || m < 1 || m > 12) return null;
+    return monthKey(y, m - 1);
   }
 
   // Initial fetch: last 14 days through today. Covers the current month in
@@ -898,6 +944,14 @@
     if (drawerClose)   drawerClose.addEventListener('click', closeDrawer);
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') {
+        // Rollover modal traps ESC: when it's open the user MUST pick an
+        // action (or click the X-dismiss which fires snooze). Don't let ESC
+        // silently close it — dismiss via snooze instead so the server
+        // knows to wait 24h before re-prompting.
+        if (rolloverPop && rolloverPop.classList.contains('open')) {
+          if (rolloverDismiss) rolloverDismiss.click();
+          return;
+        }
         // If the reimbursements panel has an open inline confirm, ESC dismisses
         // just that — the panel itself stays open so the user can keep working.
         if (dismissOpenReimbConfirms()) return;
@@ -1149,6 +1203,25 @@
       // pulls the freshly-saved item. We refetch only the visible month.
       closeSchedule();
       refreshAfterScheduleChange();
+      // If this edit originated from a recurring-stream row, mirror the
+      // change onto the stream so the recurring panel + future calendar
+      // refetches stay in sync. We deliberately ignore failures here — the
+      // calendar has already been updated by the PATCH above; a PATCH-stream
+      // failure just means the stream's cached values may drift one cycle.
+      if (isEdit && pendingRecurringEdit
+          && Number(pendingRecurringEdit.scheduledId) === Number(editingTxnId)) {
+        var merch = pendingRecurringEdit.merchant;
+        pendingRecurringEdit = null;
+        try {
+          patchRecurringStream(merch, {
+            display_name: body.name,
+            next_due_date: body.date,
+            amount: body.amount
+          }).catch(function () {});
+        } catch (_) {}
+      } else {
+        pendingRecurringEdit = null;
+      }
     }).catch(function (err) {
       if (schedError) schedError.textContent = 'network error — try again.';
       if (schedSubmit) {
@@ -2428,16 +2501,726 @@
     }
   }
 
-  // ── Recurring popup (placeholder) ───────────────
-  // Open/close only — no data, no list yet. Body markup is static in HTML.
+  // ── Recurring popup (real data) ─────────────────
+  // Two sections: "to review" (suggestions backed by /api/recurring/suggestions)
+  // + "your recurring" (confirmed streams backed by /api/recurring/streams).
+  // SWR: hydrate from localStorage on boot, refetch on first open + after
+  // every successful mutation. The badge on the chip shows # of suggestions.
+
+  function persistRecurringSuggestionsCache() {
+    if (Array.isArray(recurringSuggestionsCache)) {
+      cacheWrite('recurring_suggestions', recurringSuggestionsCache);
+    }
+  }
+  function persistRecurringStreamsCache() {
+    if (Array.isArray(recurringStreamsCache)) {
+      cacheWrite('recurring_streams', recurringStreamsCache);
+    }
+  }
+
+  function setRecurringStatus(text) {
+    if (recurringStatus) recurringStatus.textContent = text || '';
+  }
+
+  function updateRecurringBadge() {
+    if (!recurringBtnCount) return;
+    var count = Array.isArray(recurringSuggestionsCache)
+      ? recurringSuggestionsCache.length
+      : 0;
+    if (count > 0) {
+      recurringBtnCount.textContent = String(count);
+      recurringBtnCount.hidden = false;
+    } else {
+      recurringBtnCount.textContent = '';
+      recurringBtnCount.hidden = true;
+    }
+  }
+
+  function fetchRecurringSuggestionsOnce(opts) {
+    var force = !!(opts && opts.force);
+    if (!force && Array.isArray(recurringSuggestionsCache)
+        && recurringSuggestionsCache._fresh) {
+      return Promise.resolve(recurringSuggestionsCache);
+    }
+    if (recurringSuggestionsFetchInflight) return recurringSuggestionsFetchInflight;
+    recurringSuggestionsFetchInflight = fetch(
+      API_BASE + '/api/recurring/suggestions',
+      { headers: { 'Content-Type': 'application/json' }, credentials: 'include' }
+    ).then(function (res) {
+      if (res.status === 401) return { items: [] };
+      if (!res.ok) throw new Error('recurring suggestions fetch failed ' + res.status);
+      return res.json();
+    }).then(function (data) {
+      var items = (data && Array.isArray(data.items)) ? data.items : [];
+      recurringSuggestionsCache = items;
+      try {
+        Object.defineProperty(recurringSuggestionsCache, '_fresh',
+          { value: true, enumerable: false, configurable: true });
+      } catch (_) { recurringSuggestionsCache._fresh = true; }
+      persistRecurringSuggestionsCache();
+      recurringSuggestionsFetchInflight = null;
+      updateRecurringBadge();
+      return recurringSuggestionsCache;
+    }).catch(function (err) {
+      recurringSuggestionsFetchInflight = null;
+      try { console.warn('[home] recurring suggestions fetch error:', err); } catch (_) {}
+      throw err;
+    });
+    return recurringSuggestionsFetchInflight;
+  }
+
+  function fetchRecurringStreamsOnce(opts) {
+    var force = !!(opts && opts.force);
+    if (!force && Array.isArray(recurringStreamsCache)
+        && recurringStreamsCache._fresh) {
+      return Promise.resolve(recurringStreamsCache);
+    }
+    if (recurringStreamsFetchInflight) return recurringStreamsFetchInflight;
+    recurringStreamsFetchInflight = fetch(
+      API_BASE + '/api/recurring/streams',
+      { headers: { 'Content-Type': 'application/json' }, credentials: 'include' }
+    ).then(function (res) {
+      if (res.status === 401) return { items: [] };
+      if (!res.ok) throw new Error('recurring streams fetch failed ' + res.status);
+      return res.json();
+    }).then(function (data) {
+      var items = (data && Array.isArray(data.items)) ? data.items : [];
+      recurringStreamsCache = items;
+      try {
+        Object.defineProperty(recurringStreamsCache, '_fresh',
+          { value: true, enumerable: false, configurable: true });
+      } catch (_) { recurringStreamsCache._fresh = true; }
+      persistRecurringStreamsCache();
+      recurringStreamsFetchInflight = null;
+      return recurringStreamsCache;
+    }).catch(function (err) {
+      recurringStreamsFetchInflight = null;
+      try { console.warn('[home] recurring streams fetch error:', err); } catch (_) {}
+      throw err;
+    });
+    return recurringStreamsFetchInflight;
+  }
+
+  // Format an ISO yyyy-mm-dd as "may 14" (lowercase short month).
+  function formatRecurringDate(iso) {
+    if (!iso || typeof iso !== 'string') return '—';
+    var parts = iso.slice(0, 10).split('-');
+    if (parts.length !== 3) return iso;
+    var months = ['jan','feb','mar','apr','may','jun',
+                  'jul','aug','sep','oct','nov','dec'];
+    var mi = Number(parts[1]) - 1;
+    if (mi < 0 || mi > 11) return iso;
+    return months[mi] + ' ' + Number(parts[2]);
+  }
+
+  // Default a missing next_due_date to today + 30 days, ISO. Used by the
+  // suggestion card when the bridge couldn't infer one (rare but possible).
+  function defaultNextDueIso() {
+    var d = new Date();
+    d.setDate(d.getDate() + 30);
+    return iso(d);
+  }
+
+  function buildRecurringSuggestionCard(item) {
+    var card = document.createElement('div');
+    card.className = 'recurring-suggestion';
+    card.setAttribute('data-merchant', item.merchant || '');
+
+    // ── Name field (editable text) ──────────────────────
+    var nameField = document.createElement('div');
+    nameField.className = 'recurring-suggestion__field';
+    var nameLabel = document.createElement('label');
+    nameLabel.className = 'recurring-suggestion__label';
+    nameLabel.textContent = 'name';
+    var nameInput = document.createElement('input');
+    nameInput.className = 'recurring-suggestion__input';
+    nameInput.type = 'text';
+    nameInput.maxLength = 80;
+    nameInput.value = (typeof item.display_name === 'string' && item.display_name.length > 0)
+      ? item.display_name
+      : (item.merchant || '');
+    nameLabel.htmlFor = 'rec-sug-name-' + (item.merchant || '');
+    nameInput.id = nameLabel.htmlFor;
+    nameField.appendChild(nameLabel);
+    nameField.appendChild(nameInput);
+    card.appendChild(nameField);
+
+    // ── Date field (next charge) ────────────────────────
+    var dateField = document.createElement('div');
+    dateField.className = 'recurring-suggestion__field';
+    var dateLabel = document.createElement('label');
+    dateLabel.className = 'recurring-suggestion__label';
+    dateLabel.textContent = 'next charge';
+    var dateInput = document.createElement('input');
+    dateInput.className = 'recurring-suggestion__input';
+    dateInput.type = 'date';
+    dateInput.value = (typeof item.next_due_date === 'string' && item.next_due_date.length >= 10)
+      ? item.next_due_date.slice(0, 10)
+      : defaultNextDueIso();
+    dateLabel.htmlFor = 'rec-sug-date-' + (item.merchant || '');
+    dateInput.id = dateLabel.htmlFor;
+    dateField.appendChild(dateLabel);
+    dateField.appendChild(dateInput);
+    card.appendChild(dateField);
+
+    // ── Amount field ────────────────────────────────────
+    var amtField = document.createElement('div');
+    amtField.className = 'recurring-suggestion__field recurring-suggestion__field--amount';
+    var amtLabel = document.createElement('label');
+    amtLabel.className = 'recurring-suggestion__label';
+    amtLabel.textContent = 'amount';
+    var amtPrefix = document.createElement('span');
+    amtPrefix.className = 'recurring-suggestion__amount-prefix';
+    amtPrefix.textContent = '$';
+    var amtInput = document.createElement('input');
+    amtInput.className = 'recurring-suggestion__input';
+    amtInput.type = 'number';
+    amtInput.step = '0.01';
+    amtInput.min = '0';
+    amtInput.inputMode = 'decimal';
+    amtInput.placeholder = '0.00';
+    var amt = (typeof item.amount === 'number' && isFinite(item.amount)) ? item.amount : 0;
+    amtInput.value = amt > 0 ? amt.toFixed(2) : '0';
+    amtLabel.htmlFor = 'rec-sug-amt-' + (item.merchant || '');
+    amtInput.id = amtLabel.htmlFor;
+    amtField.appendChild(amtLabel);
+    amtField.appendChild(amtPrefix);
+    amtField.appendChild(amtInput);
+    card.appendChild(amtField);
+
+    // ── Reasoning line ──────────────────────────────────
+    var meta = document.createElement('div');
+    meta.className = 'recurring-suggestion__meta';
+    var lastSeen = item.last_charge_date
+      ? formatRecurringDate(item.last_charge_date)
+      : '—';
+    var cadence = (typeof item.cadence_days === 'number' && item.cadence_days > 0)
+      ? Math.round(item.cadence_days)
+      : '—';
+    meta.textContent = 'saw this last on ' + lastSeen + ' \u00b7 cadence \u007e' + cadence + 'd';
+    card.appendChild(meta);
+
+    // ── Inline error row ────────────────────────────────
+    var err = document.createElement('div');
+    err.className = 'recurring-suggestion__error';
+    card.appendChild(err);
+
+    // ── Actions ─────────────────────────────────────────
+    var actions = document.createElement('div');
+    actions.className = 'recurring-suggestion__actions';
+
+    var confirmBtn = document.createElement('button');
+    confirmBtn.type = 'button';
+    confirmBtn.className = 'recurring-suggestion__confirm';
+    confirmBtn.textContent = '\u2713 add to recurring';
+    actions.appendChild(confirmBtn);
+
+    var dismissBtn = document.createElement('button');
+    dismissBtn.type = 'button';
+    dismissBtn.className = 'recurring-suggestion__dismiss';
+    dismissBtn.textContent = 'not recurring';
+    actions.appendChild(dismissBtn);
+
+    card.appendChild(actions);
+
+    // ── Behaviour: confirm flow ─────────────────────────
+    confirmBtn.addEventListener('click', function () {
+      err.textContent = '';
+      var nameVal = (nameInput.value || '').trim();
+      var dateVal = (dateInput.value || '').trim();
+      var amtRaw = (amtInput.value || '').trim();
+      var amtNum = parseFloat(amtRaw);
+      if (!nameVal) { err.textContent = 'give it a name.'; return; }
+      if (!dateVal) { err.textContent = 'pick a next-charge date.'; return; }
+      if (!amtRaw || isNaN(amtNum) || amtNum < 0) {
+        err.textContent = 'enter an amount of zero or more.';
+        return;
+      }
+      confirmBtn.disabled = true;
+      dismissBtn.disabled = true;
+      var prevText = confirmBtn.textContent;
+      confirmBtn.textContent = 'adding\u2026';
+      confirmRecurringSuggestion(item.merchant, {
+        display_name: nameVal,
+        next_due_date: dateVal,
+        amount: Math.round(amtNum * 100) / 100
+      }).then(function () {
+        // Cache + UI refresh handled by the shared post-mutation flow.
+      }).catch(function (e) {
+        confirmBtn.disabled = false;
+        dismissBtn.disabled = false;
+        confirmBtn.textContent = prevText;
+        err.textContent = (e && e.userMessage) || 'couldn\u2019t add \u2014 try again.';
+      });
+    });
+
+    // ── Behaviour: inline dismiss confirm ──────────────
+    dismissBtn.addEventListener('click', function () {
+      err.textContent = '';
+      // Bail if a confirm is already up.
+      if (card.querySelector('.recurring-suggestion__confirm-row')) return;
+      // Hide the action buttons and inject a row-confirm under the meta line.
+      actions.style.display = 'none';
+      var confirmRow = document.createElement('div');
+      confirmRow.className = 'row-confirm recurring-suggestion__confirm-row';
+
+      var label = document.createElement('span');
+      label.className = 'row-confirm__label';
+      label.textContent = 'really?';
+      confirmRow.appendChild(label);
+
+      var sep1 = document.createElement('span');
+      sep1.className = 'row-confirm__sep';
+      sep1.textContent = '\u00b7';
+      confirmRow.appendChild(sep1);
+
+      var yes = document.createElement('button');
+      yes.type = 'button';
+      yes.className = 'row-confirm__yes';
+      yes.textContent = 'yes, dismiss';
+      confirmRow.appendChild(yes);
+
+      var sep2 = document.createElement('span');
+      sep2.className = 'row-confirm__sep';
+      sep2.textContent = '\u00b7';
+      confirmRow.appendChild(sep2);
+
+      var no = document.createElement('button');
+      no.type = 'button';
+      no.className = 'row-confirm__no';
+      no.textContent = 'cancel';
+      confirmRow.appendChild(no);
+
+      card.appendChild(confirmRow);
+
+      var restore = function () {
+        if (confirmRow.parentNode) confirmRow.parentNode.removeChild(confirmRow);
+        actions.style.display = '';
+      };
+
+      no.addEventListener('click', restore);
+      yes.addEventListener('click', function () {
+        yes.disabled = true;
+        no.disabled = true;
+        label.textContent = 'dismissing\u2026';
+        dismissRecurringSuggestion(item.merchant).then(function () {
+          // Cache + UI refresh handled by the shared post-mutation flow.
+        }).catch(function () {
+          label.textContent = 'couldn\u2019t dismiss \u00b7 cancel';
+          yes.style.display = 'none';
+          sep2.style.display = 'none';
+          no.disabled = false;
+        });
+      });
+    });
+
+    return card;
+  }
+
+  function buildRecurringStreamRow(item) {
+    var row = document.createElement('div');
+    row.className = 'recurring-stream';
+    row.setAttribute('data-merchant', item.merchant || '');
+    row.setAttribute('role', 'button');
+    row.setAttribute('tabindex', '0');
+
+    var dot = document.createElement('span');
+    dot.className = 'recurring-stream__dot';
+    dot.setAttribute('aria-hidden', 'true');
+    row.appendChild(dot);
+
+    var main = document.createElement('div');
+    main.className = 'recurring-stream__main';
+    var name = document.createElement('div');
+    name.className = 'recurring-stream__name';
+    name.textContent = (typeof item.display_name === 'string' && item.display_name.length > 0)
+      ? item.display_name
+      : (item.merchant || '');
+    main.appendChild(name);
+
+    var meta = document.createElement('div');
+    meta.className = 'recurring-stream__meta';
+    var pill = document.createElement('span');
+    pill.className = 'recurring-stream__pill';
+    pill.textContent = 'next: ' + formatRecurringDate(item.next_due_date);
+    meta.appendChild(pill);
+    var amt = document.createElement('span');
+    amt.className = 'recurring-stream__amt';
+    var amtNum = (typeof item.amount === 'number' && isFinite(item.amount)) ? item.amount : 0;
+    amt.textContent = '$' + amtNum.toFixed(2);
+    meta.appendChild(amt);
+    main.appendChild(meta);
+    row.appendChild(main);
+
+    var actions = document.createElement('div');
+    actions.className = 'recurring-stream__actions';
+
+    // Pencil — opens the schedule popover in edit mode for the linked txn.
+    var edit = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    edit.setAttribute('class', 'recurring-stream__edit');
+    edit.setAttribute('viewBox', '0 0 16 16');
+    edit.setAttribute('fill', 'none');
+    edit.setAttribute('stroke', 'currentColor');
+    edit.setAttribute('stroke-width', '1.4');
+    edit.setAttribute('stroke-linecap', 'round');
+    edit.setAttribute('stroke-linejoin', 'round');
+    edit.setAttribute('role', 'button');
+    edit.setAttribute('tabindex', '0');
+    edit.setAttribute('aria-label', 'edit ' + (item.display_name || item.merchant || ''));
+    var editPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    editPath.setAttribute('d', 'M11.5 2.5l2 2L5 13H3v-2L11.5 2.5z');
+    edit.appendChild(editPath);
+    actions.appendChild(edit);
+
+    // Trash — inline confirm row → DELETE /streams/:merchant.
+    var trash = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    trash.setAttribute('class', 'recurring-stream__trash');
+    trash.setAttribute('viewBox', '0 0 16 16');
+    trash.setAttribute('fill', 'none');
+    trash.setAttribute('stroke', 'currentColor');
+    trash.setAttribute('stroke-width', '1.4');
+    trash.setAttribute('stroke-linecap', 'round');
+    trash.setAttribute('stroke-linejoin', 'round');
+    trash.setAttribute('role', 'button');
+    trash.setAttribute('tabindex', '0');
+    trash.setAttribute('aria-label', 'remove ' + (item.display_name || item.merchant || ''));
+    var trashPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    trashPath.setAttribute('d', 'M3 4h10M6 4V2.8h4V4M5 4v9h6V4M7.5 6.5v4M9 6.5v4');
+    trash.appendChild(trashPath);
+    actions.appendChild(trash);
+    row.appendChild(actions);
+
+    // Open the schedule popover in edit mode when the row body is clicked.
+    // We don't have the full scheduled txn object on hand (only the linked id +
+    // a name + date + amount + the merchant key), so we synthesize a minimal
+    // one that the schedule form can render. After save, the schedule form's
+    // PATCH handles the calendar side; we then PATCH the recurring stream so
+    // the two stay in sync.
+    var openEditFlow = function (ev) {
+      if (ev) ev.stopPropagation();
+      if (!item.linked_scheduled_txn_id) {
+        // No linked scheduled txn — fall back to editing the stream directly
+        // by patching with a fresh date prompt. Rare; happens if cron deleted
+        // the linked row out from under us.
+        var dateOnly = window.prompt('new date (yyyy-mm-dd)', item.next_due_date || '');
+        if (!dateOnly) return;
+        patchRecurringStream(item.merchant, { next_due_date: dateOnly })
+          .catch(function () {});
+        return;
+      }
+      var synthesized = {
+        id: item.linked_scheduled_txn_id,
+        date: item.next_due_date,
+        amount: amtNum,
+        name: name.textContent,
+        type: 'sub',
+        card_account_id: null,
+        note: null
+      };
+      // Wire the post-edit hook so any save also patches the stream.
+      pendingRecurringEdit = {
+        merchant: item.merchant,
+        scheduledId: item.linked_scheduled_txn_id
+      };
+      openSchedule(synthesized);
+    };
+    row.addEventListener('click', function (ev) {
+      // Ignore clicks that landed on the trash/edit icons (they handle
+      // themselves below).
+      if (ev.target === trash || trash.contains(ev.target)) return;
+      if (ev.target === edit || edit.contains(ev.target)) return;
+      openEditFlow(ev);
+    });
+    row.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Enter' || ev.key === ' ') {
+        ev.preventDefault();
+        openEditFlow(ev);
+      }
+    });
+    edit.addEventListener('click', openEditFlow);
+
+    // Trash → inline confirm row → DELETE /streams/:merchant.
+    trash.addEventListener('click', function (ev) {
+      ev.stopPropagation();
+      if (row.querySelector('.row-confirm')) return;
+      // Hide the right-hand action icons + tuck the confirm row in there.
+      actions.style.display = 'none';
+
+      var confirmRow = document.createElement('div');
+      confirmRow.className = 'row-confirm';
+      var label = document.createElement('span');
+      label.className = 'row-confirm__label';
+      label.textContent = 'remove?';
+      confirmRow.appendChild(label);
+      var sep1 = document.createElement('span');
+      sep1.className = 'row-confirm__sep';
+      sep1.textContent = '\u00b7';
+      confirmRow.appendChild(sep1);
+      var yes = document.createElement('button');
+      yes.type = 'button';
+      yes.className = 'row-confirm__yes';
+      yes.textContent = 'yes';
+      confirmRow.appendChild(yes);
+      var sep2 = document.createElement('span');
+      sep2.className = 'row-confirm__sep';
+      sep2.textContent = '\u00b7';
+      confirmRow.appendChild(sep2);
+      var no = document.createElement('button');
+      no.type = 'button';
+      no.className = 'row-confirm__no';
+      no.textContent = 'cancel';
+      confirmRow.appendChild(no);
+      row.appendChild(confirmRow);
+
+      var restore = function () {
+        if (confirmRow.parentNode) confirmRow.parentNode.removeChild(confirmRow);
+        actions.style.display = '';
+      };
+      no.addEventListener('click', function (cev) {
+        cev.stopPropagation();
+        restore();
+      });
+      yes.addEventListener('click', function (cev) {
+        cev.stopPropagation();
+        yes.disabled = true;
+        no.disabled = true;
+        label.textContent = 'removing\u2026';
+        deleteRecurringStream(item.merchant).catch(function () {
+          label.textContent = 'couldn\u2019t remove \u00b7 cancel';
+          yes.style.display = 'none';
+          sep2.style.display = 'none';
+          no.disabled = false;
+        });
+      });
+    });
+
+    return row;
+  }
+
+  // Holds the pending {merchant, scheduledId} when the user opens the schedule
+  // popover from a stream row. After a successful PATCH on the scheduled txn,
+  // patchScheduleSubmit() consults this and PATCHes the stream too.
+  var pendingRecurringEdit = null;
+
+  function renderRecurring() {
+    if (recurringSuggestionsList) {
+      recurringSuggestionsList.innerHTML = '';
+      var suggestions = Array.isArray(recurringSuggestionsCache)
+        ? recurringSuggestionsCache : [];
+      if (recurringSuggestionsCount) {
+        recurringSuggestionsCount.textContent = '(' + suggestions.length + ')';
+      }
+      if (!suggestions.length) {
+        var empty1 = document.createElement('div');
+        empty1.className = 'recurring-empty';
+        empty1.textContent = 'all caught up \u2014 we\u2019ll surface new ones as we see them.';
+        recurringSuggestionsList.appendChild(empty1);
+      } else {
+        suggestions.forEach(function (it) {
+          recurringSuggestionsList.appendChild(buildRecurringSuggestionCard(it));
+        });
+      }
+    }
+    if (recurringStreamsList) {
+      recurringStreamsList.innerHTML = '';
+      var streams = Array.isArray(recurringStreamsCache)
+        ? recurringStreamsCache : [];
+      if (recurringStreamsCount) {
+        recurringStreamsCount.textContent = '(' + streams.length + ')';
+      }
+      if (!streams.length) {
+        var empty2 = document.createElement('div');
+        empty2.className = 'recurring-empty';
+        empty2.textContent = 'nothing tracked yet \u2014 start with a suggestion above \ud83d\udc46';
+        recurringStreamsList.appendChild(empty2);
+      } else {
+        streams.forEach(function (it) {
+          recurringStreamsList.appendChild(buildRecurringStreamRow(it));
+        });
+      }
+    }
+    updateRecurringBadge();
+  }
+
+  // After every successful mutation (confirm/dismiss/patch/delete) we re-fetch
+  // both lists so the cached _fresh marker is honest and the calendar's
+  // visible-month cache is invalidated so a `sub` row appears immediately.
+  // `extraDates` is an optional array of ISO date strings (next_due_date
+  // before/after) — months derived from those are also evicted, so a stream
+  // whose next_due_date sits in a different month than the visible one still
+  // refreshes its calendar pills without a hard reload. Pass both old and new
+  // dates on PATCHes that move a stream across months.
+  function reloadRecurringAfterMutation(extraDates) {
+    // Drop _fresh so the next fetchOnce hits the network.
+    if (recurringSuggestionsCache) {
+      try { recurringSuggestionsCache._fresh = false; } catch (_) {}
+    }
+    if (recurringStreamsCache) {
+      try { recurringStreamsCache._fresh = false; } catch (_) {}
+    }
+    var p1 = fetchRecurringSuggestionsOnce({ force: true });
+    var p2 = fetchRecurringStreamsOnce({ force: true });
+    return Promise.all([p1, p2]).then(function () {
+      renderRecurring();
+      // Force a calendar refetch for the visible month so a fresh "sub" row
+      // appears (or vanishes) without a hard reload.
+      try {
+        var visibleKey = monthKey(view.getFullYear(), view.getMonth());
+        var keysToEvict = [visibleKey];
+        if (Array.isArray(extraDates)) {
+          extraDates.forEach(function (iso) {
+            var k = monthKeyFromIso(iso);
+            if (k && keysToEvict.indexOf(k) === -1) keysToEvict.push(k);
+          });
+        }
+        keysToEvict.forEach(function (k) { fetchedMonths.delete(k); });
+        // Always refetch the visible month so the user sees fresh pills now.
+        fetchMonthIfNeeded(view.getFullYear(), view.getMonth());
+        // Refetch any other affected month so a calendar nav to it is fresh.
+        keysToEvict.forEach(function (k) {
+          if (k === visibleKey) return;
+          var p = k.split('-');
+          var y = Number(p[0]);
+          var m = Number(p[1]);
+          if (isFinite(y) && isFinite(m)) fetchMonthIfNeeded(y, m - 1);
+        });
+      } catch (_) {}
+    });
+  }
+
+  // Look up a stream's current next_due_date from the cache (used by
+  // mutation paths so they can invalidate the prior month's calendar cache
+  // when a PATCH moves the date across a month boundary, or a DELETE
+  // removes a pill in some non-visible month).
+  function streamNextDueIso(merchant) {
+    if (!Array.isArray(recurringStreamsCache)) return null;
+    for (var i = 0; i < recurringStreamsCache.length; i++) {
+      var s = recurringStreamsCache[i];
+      if (s && s.merchant === merchant) {
+        return (typeof s.next_due_date === 'string') ? s.next_due_date : null;
+      }
+    }
+    return null;
+  }
+
+  function confirmRecurringSuggestion(merchant, edits) {
+    var url = API_BASE + '/api/recurring/suggestions/'
+      + encodeURIComponent(merchant) + '/confirm';
+    var newDate = (edits && typeof edits.next_due_date === 'string')
+      ? edits.next_due_date : null;
+    return fetch(url, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(edits || {})
+    }).then(function (res) {
+      if (res.status === 401) { location.replace('/'); throw new Error('unauthed'); }
+      if (!res.ok) {
+        return res.json().catch(function () { return {}; }).then(function (data) {
+          var err = new Error('confirm failed ' + res.status);
+          err.userMessage = (data && data.error) || 'couldn\u2019t add.';
+          throw err;
+        });
+      }
+      return res.json();
+    }).then(function () {
+      // Confirming creates a new stream + linked scheduled txn at next_due_date.
+      // Pass that date so its month's calendar cache is also invalidated.
+      return reloadRecurringAfterMutation(newDate ? [newDate] : null);
+    });
+  }
+
+  function dismissRecurringSuggestion(merchant) {
+    var url = API_BASE + '/api/recurring/suggestions/'
+      + encodeURIComponent(merchant) + '/dismiss';
+    return fetch(url, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' }
+    }).then(function (res) {
+      if (res.status === 401) { location.replace('/'); throw new Error('unauthed'); }
+      if (!res.ok) throw new Error('dismiss failed ' + res.status);
+      return res.json();
+    }).then(function () {
+      return reloadRecurringAfterMutation();
+    });
+  }
+
+  function patchRecurringStream(merchant, edits) {
+    var url = API_BASE + '/api/recurring/streams/' + encodeURIComponent(merchant);
+    // Capture the prior next_due_date BEFORE the request — we need both old
+    // and new dates so the calendar cache is invalidated for both months
+    // when a PATCH moves the stream across a month boundary.
+    var priorDate = streamNextDueIso(merchant);
+    var newDate = (edits && typeof edits.next_due_date === 'string')
+      ? edits.next_due_date : null;
+    return fetch(url, {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(edits || {})
+    }).then(function (res) {
+      if (res.status === 401) { location.replace('/'); throw new Error('unauthed'); }
+      if (!res.ok) throw new Error('patch failed ' + res.status);
+      return res.json();
+    }).then(function () {
+      var dates = [];
+      if (priorDate) dates.push(priorDate);
+      if (newDate)   dates.push(newDate);
+      return reloadRecurringAfterMutation(dates.length ? dates : null);
+    });
+  }
+
+  function deleteRecurringStream(merchant) {
+    var url = API_BASE + '/api/recurring/streams/' + encodeURIComponent(merchant);
+    // Capture the stream's next_due_date before delete so the calendar cache
+    // for that month is invalidated and the now-orphaned pill clears even
+    // when the user is viewing a different month.
+    var priorDate = streamNextDueIso(merchant);
+    return fetch(url, {
+      method: 'DELETE',
+      credentials: 'include'
+    }).then(function (res) {
+      if (res.status === 401) { location.replace('/'); throw new Error('unauthed'); }
+      if (!res.ok && res.status !== 404) throw new Error('delete failed ' + res.status);
+      return res.json().catch(function () { return {}; });
+    }).then(function () {
+      return reloadRecurringAfterMutation(priorDate ? [priorDate] : null);
+    });
+  }
+
   function openRecurring() {
     if (!recurringPop || !recurringOverlay) return;
     recurringPop.classList.add('open');
     recurringOverlay.classList.add('open');
     recurringPop.setAttribute('aria-hidden', 'false');
-    if (recurringClose) {
-      try { recurringClose.focus({ preventScroll: true }); } catch (_) { recurringClose.focus(); }
+    setRecurringStatus('');
+
+    // Paint whatever's in cache up front so the panel doesn't blink empty.
+    if (Array.isArray(recurringSuggestionsCache) || Array.isArray(recurringStreamsCache)) {
+      renderRecurring();
     }
+    // Skip refetch when both caches are backend-fresh from this session.
+    var sFresh = Array.isArray(recurringSuggestionsCache) && recurringSuggestionsCache._fresh;
+    var stFresh = Array.isArray(recurringStreamsCache) && recurringStreamsCache._fresh;
+    if (!sFresh || !stFresh) {
+      if (!Array.isArray(recurringSuggestionsCache) && !Array.isArray(recurringStreamsCache)) {
+        setRecurringStatus('loading\u2026');
+      }
+      Promise.all([
+        fetchRecurringSuggestionsOnce(),
+        fetchRecurringStreamsOnce()
+      ]).then(function () {
+        setRecurringStatus('');
+        renderRecurring();
+      }).catch(function () {
+        setRecurringStatus('couldn\u2019t load \u2014 refresh and try again.');
+      });
+    }
+    // Re-check rollover prompts on every recurring open. Spec: rollover
+    // modal must show if there's anything pending, even if user opens the
+    // tab from the chip directly.
+    loadRolloverPrompts();
   }
 
   function closeRecurring() {
@@ -2448,14 +3231,291 @@
   }
 
   function wireRecurringBtn() {
-    recurringBtn     = document.getElementById('recurring-btn');
-    recurringOverlay = document.getElementById('recurring-overlay');
-    recurringPop     = document.getElementById('recurring-pop');
-    recurringClose   = document.getElementById('recurring-close');
+    recurringBtn               = document.getElementById('recurring-btn');
+    recurringBtnCount          = document.getElementById('recurring-btn-count');
+    recurringOverlay           = document.getElementById('recurring-overlay');
+    recurringPop               = document.getElementById('recurring-pop');
+    recurringClose             = document.getElementById('recurring-close');
+    recurringStatus            = document.getElementById('recurring-status');
+    recurringSuggestionsList   = document.getElementById('recurring-suggestions-list');
+    recurringSuggestionsCount  = document.getElementById('recurring-suggestions-count');
+    recurringStreamsList       = document.getElementById('recurring-streams-list');
+    recurringStreamsCount      = document.getElementById('recurring-streams-count');
 
     if (recurringBtn)     recurringBtn.addEventListener('click', openRecurring);
     if (recurringClose)   recurringClose.addEventListener('click', closeRecurring);
     if (recurringOverlay) recurringOverlay.addEventListener('click', closeRecurring);
+
+    // If a hydrated cache exists, paint the badge up front so a returning user
+    // sees the "review N" pill without waiting for the live fetch.
+    updateRecurringBadge();
+  }
+
+  // ── Rollover modal ──────────────────────────────
+  // Single-merchant per modal. Walks through the queue one at a time. Fires
+  // after gateAuth resolves AND on every openRecurring(). Each respond-action
+  // re-fetches the queue; if more items remain, the next is shown.
+  function setRolloverError(text) {
+    if (rolloverError) rolloverError.textContent = text || '';
+  }
+
+  function resetRolloverFormState() {
+    if (rolloverEditForm) rolloverEditForm.hidden = true;
+    if (rolloverNotRecurringConfirm) rolloverNotRecurringConfirm.hidden = true;
+    if (rolloverActions) rolloverActions.style.display = '';
+    // Restore button labels + enabled state. Click handlers swap textContent
+    // to "saving…" while the POST is in flight; if the same button needs to
+    // be reused for the next prompt in the queue (modal reopens after the
+    // network call resolves), we must reset them back to their original copy.
+    // Strings here mirror the markup in home.html.
+    if (rolloverYes) {
+      rolloverYes.disabled = false;
+      rolloverYes.textContent = 'yes, it charged';
+    }
+    if (rolloverEditSubmit) {
+      rolloverEditSubmit.disabled = false;
+      rolloverEditSubmit.textContent = 'save';
+    }
+    if (rolloverNotRecurringYes) {
+      rolloverNotRecurringYes.disabled = false;
+      rolloverNotRecurringYes.textContent = 'yes, it\u2019s gone';
+    }
+    if (rolloverDismiss) {
+      rolloverDismiss.disabled = false;
+    }
+    setRolloverError('');
+  }
+
+  function openRolloverModal(prompt) {
+    if (!rolloverPop || !rolloverOverlay) return;
+    if (!prompt || !prompt.merchant) return;
+    rolloverCurrent = prompt;
+    resetRolloverFormState();
+    var displayName = (typeof prompt.display_name === 'string' && prompt.display_name.length > 0)
+      ? prompt.display_name : (prompt.merchant || '');
+    if (rolloverTitle) {
+      rolloverTitle.textContent = 'did ' + displayName + ' charge again?';
+    }
+    if (rolloverSub) {
+      rolloverSub.textContent = 'we expected this on '
+        + formatRecurringDate(prompt.next_due_date) + '.';
+    }
+    if (rolloverNewDate) {
+      rolloverNewDate.value = (typeof prompt.next_due_date === 'string')
+        ? prompt.next_due_date.slice(0, 10) : '';
+    }
+    rolloverPop.classList.add('open');
+    rolloverOverlay.classList.add('open');
+    rolloverPop.setAttribute('aria-hidden', 'false');
+    if (rolloverYes) {
+      try { rolloverYes.focus({ preventScroll: true }); } catch (_) { rolloverYes.focus(); }
+    }
+  }
+
+  function closeRolloverModal() {
+    if (!rolloverPop || !rolloverOverlay) return;
+    rolloverPop.classList.remove('open');
+    rolloverOverlay.classList.remove('open');
+    rolloverPop.setAttribute('aria-hidden', 'true');
+    rolloverCurrent = null;
+    resetRolloverFormState();
+  }
+
+  function loadRolloverPrompts() {
+    return fetch(API_BASE + '/api/recurring/rollover-prompts', {
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include'
+    }).then(function (res) {
+      if (res.status === 401) return { items: [] };
+      if (!res.ok) throw new Error('rollover prompts fetch failed ' + res.status);
+      return res.json();
+    }).then(function (data) {
+      var items = (data && Array.isArray(data.items)) ? data.items : [];
+      if (!items.length) {
+        // No more prompts — close the modal if it was open.
+        if (rolloverPop && rolloverPop.classList.contains('open')) {
+          closeRolloverModal();
+        }
+        return;
+      }
+      // Show the FIRST prompt. If the modal is already open and showing the
+      // same merchant, leave it alone (idempotent re-opens).
+      if (rolloverCurrent && rolloverCurrent.merchant === items[0].merchant
+          && rolloverPop && rolloverPop.classList.contains('open')) {
+        return;
+      }
+      openRolloverModal(items[0]);
+    }).catch(function (err) {
+      try { console.warn('[home] rollover prompts fetch error:', err); } catch (_) {}
+    });
+  }
+
+  function respondRollover(merchant, action, nextDueDate) {
+    var url = API_BASE + '/api/recurring/rollover-prompts/'
+      + encodeURIComponent(merchant) + '/respond';
+    var body = { action: action };
+    if (action === 'edit-date' && nextDueDate) body.next_due_date = nextDueDate;
+    return fetch(url, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    }).then(function (res) {
+      if (res.status === 401) { location.replace('/'); throw new Error('unauthed'); }
+      if (!res.ok) {
+        return res.json().catch(function () { return {}; }).then(function (data) {
+          var err = new Error('rollover respond failed ' + res.status);
+          err.userMessage = (data && data.error) || 'couldn\u2019t save.';
+          throw err;
+        });
+      }
+      return res.json();
+    }).then(function () {
+      // Refresh streams + recurring panel + calendar (a new linked txn may
+      // have been created at observed_date + cadence_days).
+      try {
+        if (recurringStreamsCache) recurringStreamsCache._fresh = false;
+      } catch (_) {}
+      try {
+        if (recurringSuggestionsCache) recurringSuggestionsCache._fresh = false;
+      } catch (_) {}
+      var refreshes = [
+        fetchRecurringStreamsOnce({ force: true }).catch(function () {}),
+        fetchRecurringSuggestionsOnce({ force: true }).catch(function () {})
+      ];
+      return Promise.all(refreshes).then(function () {
+        renderRecurring();
+        try {
+          var key = monthKey(view.getFullYear(), view.getMonth());
+          fetchedMonths.delete(key);
+          fetchMonthIfNeeded(view.getFullYear(), view.getMonth());
+        } catch (_) {}
+        // Move on to the next prompt (or close the modal if none).
+        return loadRolloverPrompts();
+      });
+    });
+  }
+
+  function wireRolloverModal() {
+    rolloverOverlay              = document.getElementById('rollover-overlay');
+    rolloverPop                  = document.getElementById('rollover-pop');
+    rolloverDismiss              = document.getElementById('rollover-dismiss');
+    rolloverTitle                = document.getElementById('rollover-pop-title');
+    rolloverSub                  = document.getElementById('rollover-sub');
+    rolloverError                = document.getElementById('rollover-error');
+    rolloverActions              = document.getElementById('rollover-actions');
+    rolloverYes                  = document.getElementById('rollover-yes');
+    rolloverEditDateBtn          = document.getElementById('rollover-edit-date');
+    rolloverNotRecurring         = document.getElementById('rollover-not-recurring');
+    rolloverEditForm             = document.getElementById('rollover-edit-form');
+    rolloverNewDate              = document.getElementById('rollover-new-date');
+    rolloverEditSubmit           = document.getElementById('rollover-edit-submit');
+    rolloverEditCancel           = document.getElementById('rollover-edit-cancel');
+    rolloverNotRecurringConfirm  = document.getElementById('rollover-not-recurring-confirm');
+    rolloverNotRecurringYes      = document.getElementById('rollover-not-recurring-yes');
+    rolloverNotRecurringNo       = document.getElementById('rollover-not-recurring-no');
+
+    // Don't bind overlay-click-close here. Spec requires explicit choice of
+    // the four actions; clicking the backdrop should NOT silently dismiss.
+
+    if (rolloverDismiss) {
+      rolloverDismiss.addEventListener('click', function () {
+        if (!rolloverCurrent) return closeRolloverModal();
+        var m = rolloverCurrent.merchant;
+        rolloverDismiss.disabled = true;
+        respondRollover(m, 'snooze').catch(function (e) {
+          rolloverDismiss.disabled = false;
+          setRolloverError((e && e.userMessage) || 'couldn\u2019t snooze.');
+        });
+      });
+    }
+
+    if (rolloverYes) {
+      rolloverYes.addEventListener('click', function () {
+        if (!rolloverCurrent) return;
+        rolloverYes.disabled = true;
+        setRolloverError('');
+        var prev = rolloverYes.textContent;
+        rolloverYes.textContent = 'saving\u2026';
+        respondRollover(rolloverCurrent.merchant, 'yes').catch(function (e) {
+          rolloverYes.disabled = false;
+          rolloverYes.textContent = prev;
+          setRolloverError((e && e.userMessage) || 'couldn\u2019t save.');
+        });
+      });
+    }
+
+    if (rolloverEditDateBtn && rolloverEditForm) {
+      rolloverEditDateBtn.addEventListener('click', function () {
+        // Toggle the inline form open; hide the action stack until the user
+        // either submits or cancels.
+        rolloverEditForm.hidden = false;
+        if (rolloverActions) rolloverActions.style.display = 'none';
+        if (rolloverNewDate) {
+          try { rolloverNewDate.focus({ preventScroll: true }); } catch (_) { rolloverNewDate.focus(); }
+        }
+      });
+    }
+
+    if (rolloverEditCancel) {
+      rolloverEditCancel.addEventListener('click', function () {
+        if (rolloverEditForm) rolloverEditForm.hidden = true;
+        if (rolloverActions) rolloverActions.style.display = '';
+        setRolloverError('');
+      });
+    }
+
+    if (rolloverEditForm) {
+      rolloverEditForm.addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        if (!rolloverCurrent) return;
+        var dv = (rolloverNewDate && rolloverNewDate.value || '').trim();
+        if (!dv) { setRolloverError('pick a date.'); return; }
+        if (rolloverEditSubmit) {
+          rolloverEditSubmit.disabled = true;
+          rolloverEditSubmit.textContent = 'saving\u2026';
+        }
+        respondRollover(rolloverCurrent.merchant, 'edit-date', dv).catch(function (e) {
+          if (rolloverEditSubmit) {
+            rolloverEditSubmit.disabled = false;
+            rolloverEditSubmit.textContent = 'save';
+          }
+          setRolloverError((e && e.userMessage) || 'couldn\u2019t save.');
+        });
+      });
+    }
+
+    if (rolloverNotRecurring && rolloverNotRecurringConfirm) {
+      rolloverNotRecurring.addEventListener('click', function () {
+        rolloverNotRecurringConfirm.hidden = false;
+        if (rolloverActions) rolloverActions.style.display = 'none';
+        if (rolloverNotRecurringYes) {
+          try { rolloverNotRecurringYes.focus({ preventScroll: true }); }
+          catch (_) { rolloverNotRecurringYes.focus(); }
+        }
+      });
+    }
+
+    if (rolloverNotRecurringNo) {
+      rolloverNotRecurringNo.addEventListener('click', function () {
+        if (rolloverNotRecurringConfirm) rolloverNotRecurringConfirm.hidden = true;
+        if (rolloverActions) rolloverActions.style.display = '';
+        setRolloverError('');
+      });
+    }
+
+    if (rolloverNotRecurringYes) {
+      rolloverNotRecurringYes.addEventListener('click', function () {
+        if (!rolloverCurrent) return;
+        rolloverNotRecurringYes.disabled = true;
+        rolloverNotRecurringYes.textContent = 'saving\u2026';
+        respondRollover(rolloverCurrent.merchant, 'not-recurring').catch(function (e) {
+          rolloverNotRecurringYes.disabled = false;
+          rolloverNotRecurringYes.textContent = 'yes, it\u2019s gone';
+          setRolloverError((e && e.userMessage) || 'couldn\u2019t save.');
+        });
+      });
+    }
   }
 
   // ── Wallet popup ────────────────────────────────
@@ -3063,6 +4123,7 @@
     wireReimbursementsBtn();
     wireTodoBtn();
     wireRecurringBtn();
+    wireRolloverModal();
     wireWalletBtn();
     // Reimbursements + wallet are SWR — hydrate their in-memory caches from
     // localStorage so the panels paint instantly when opened. Calendar +
@@ -3077,6 +4138,13 @@
     // fetches; settle() ensures error paths don't leave the bar stuck.
     startLoading();
     settle(gateAuth().then(function () {
+      // Fire off rollover-prompt check the moment auth resolves. ASD-friendly:
+      // the modal pops over whatever else is loading so the user sees ONE
+      // thing first. Failure is swallowed inside loadRolloverPrompts.
+      try { loadRolloverPrompts(); } catch (_) {}
+      // Prefetch recurring suggestions in the background so the chip badge
+      // shows the right "review N" count before the user opens the panel.
+      try { fetchRecurringSuggestionsOnce({ force: true }).catch(function () {}); } catch (_) {}
       // Fetch the calendar window first — its handler triggers a debounced
       // Plaid sync server-side that may update account balances. Once that
       // promise resolves the sync has either completed or hit its 8s timeout,
