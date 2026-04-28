@@ -178,7 +178,8 @@
     .balances-btn,
     .reimbursements-btn,
     .todo-btn,
-    .recurring-btn {
+    .recurring-btn,
+    .wallet-btn {
       font-family: var(--font-body);
       font-size: 0.78rem;
       font-weight: 500;
@@ -195,7 +196,8 @@
     .balances-btn:hover,
     .reimbursements-btn:hover,
     .todo-btn:hover,
-    .recurring-btn:hover {
+    .recurring-btn:hover,
+    .wallet-btn:hover {
       background: rgba(1, 71, 81, 0.05);
       border-color: var(--cash-green);
     }
@@ -203,9 +205,17 @@
     .balances-btn:focus-visible,
     .reimbursements-btn:focus-visible,
     .todo-btn:focus-visible,
-    .recurring-btn:focus-visible {
+    .recurring-btn:focus-visible,
+    .wallet-btn:focus-visible {
       outline: 2px solid var(--cash-green);
       outline-offset: 3px;
+    }
+    /* Wallet chip — emoji-only label sits a touch tighter than text chips so
+       the glyph reads as a single-glyph affordance, not a tiny word. */
+    .wallet-btn {
+      padding: 0.3rem 0.55rem;
+      font-size: 0.95rem;
+      line-height: 1;
     }
 
     /* to-do + recurring chips share the same outlined cash-green pill style
@@ -1247,6 +1257,390 @@
       letter-spacing: 0.01em;
     }
 
+    /* ── Wallet popup (paper-tint, mirrors balances + reimbursements) ──── */
+    .wallet-overlay {
+      position: fixed; inset: 0;
+      background: rgba(26, 23, 23, 0.18);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease;
+      z-index: 40;
+    }
+    .wallet-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .wallet-pop {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%) scale(0.96);
+      opacity: 0;
+      pointer-events: none;
+      background: #F3EAD6;
+      border: 1px solid rgba(1, 71, 81, 0.12);
+      border-radius: 0.85rem;
+      padding: 1.5rem 1.5rem 1.25rem;
+      max-width: 24rem;
+      width: calc(100% - 2.5rem);
+      max-height: min(80vh, 36rem);
+      overflow-y: auto;
+      box-shadow: 0 16px 40px rgba(26, 23, 23, 0.18);
+      transition: transform 0.18s ease, opacity 0.18s ease;
+      z-index: 41;
+    }
+    .wallet-pop.open {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .wallet-pop h2 {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.3rem;
+      color: var(--cash-green);
+      letter-spacing: -0.01em;
+      margin-bottom: 0.4rem;
+    }
+    .wallet-subtitle {
+      font-size: 0.82rem;
+      color: var(--off-black);
+      opacity: 0.7;
+      line-height: 1.4;
+      margin-bottom: 0.85rem;
+    }
+    /* Tiny "running balance: $X" line at the top — quieter than the balances
+       hero, just so the user knows this panel feeds into that math. */
+    .wallet-running {
+      font-size: 0.78rem;
+      color: var(--cash-green);
+      opacity: 0.78;
+      margin-bottom: 1rem;
+      letter-spacing: 0.01em;
+    }
+    .wallet-running strong {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 0.95rem;
+      letter-spacing: -0.01em;
+    }
+    .wallet-running:empty { display: none; }
+    .wallet-status {
+      font-size: 0.85rem;
+      font-style: italic;
+      opacity: 0.55;
+      padding: 0.25rem 0;
+    }
+    .wallet-status:empty { display: none; }
+    .wallet-groups {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .wallet-group { display: flex; flex-direction: column; gap: 0.4rem; }
+    .wallet-group__heading {
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: 0.9rem;
+      color: var(--cash-green);
+      letter-spacing: 0;
+      text-transform: lowercase;
+      opacity: 0.85;
+    }
+    .wallet-list { display: flex; flex-direction: column; gap: 0.35rem; }
+    /* Linked rows mirror .balance-row — vanilla card, sage/periwinkle accent. */
+    .wallet-linked-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.5rem 0.65rem 0.5rem 0.75rem;
+      background: var(--vanilla);
+      border: 1px solid rgba(1, 71, 81, 0.05);
+      border-left: 3px solid transparent;
+      border-radius: 0.4rem;
+    }
+    .wallet-linked-row.is-credit { border-left-color: var(--periwinkle); }
+    .wallet-linked-row.is-depository { border-left-color: #DFEDE0; }
+    .wallet-linked-row__label {
+      font-family: var(--font-body);
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--off-black);
+      line-height: 1.3;
+      min-width: 0;
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .wallet-linked-row__amt {
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: 0.95rem;
+      color: var(--cash-green);
+      white-space: nowrap;
+    }
+    /* Tracked rows — mirror linked, but the row also holds a kind chip and
+       optionally a due-date subline. Layout: name + chip on the left, amount
+       + due on the right. Trash glyph fades in on hover (mirrors reimb). */
+    .wallet-tracked-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.5rem 0.65rem 0.5rem 0.75rem;
+      background: var(--vanilla);
+      border: 1px solid rgba(1, 71, 81, 0.05);
+      border-left: 3px solid transparent;
+      border-radius: 0.4rem;
+    }
+    .wallet-tracked-row.is-credit { border-left-color: var(--periwinkle); }
+    .wallet-tracked-row.is-debit { border-left-color: #DFEDE0; }
+    .wallet-tracked-row__main {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+      flex: 1;
+      min-width: 0;
+    }
+    .wallet-tracked-row__line {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      min-width: 0;
+    }
+    .wallet-tracked-row__name {
+      font-family: var(--font-body);
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--off-black);
+      line-height: 1.3;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    /* Kind chip — small pill, periwinkle for credit, sage for debit. Sits
+       inline beside the name to communicate "what is this card?" at a glance. */
+    .kind-chip {
+      flex-shrink: 0;
+      font-family: var(--font-body);
+      font-size: 0.66rem;
+      font-weight: 500;
+      padding: 0.1rem 0.45rem;
+      border-radius: 100px;
+      letter-spacing: 0.02em;
+      text-transform: lowercase;
+      line-height: 1.4;
+    }
+    .kind-chip.is-credit {
+      background: var(--periwinkle);
+      color: var(--cash-green);
+    }
+    .kind-chip.is-debit {
+      background: #DFEDE0;
+      color: var(--cash-green);
+    }
+    .wallet-tracked-row__due {
+      font-size: 0.7rem;
+      font-style: italic;
+      color: var(--off-black);
+      opacity: 0.55;
+      letter-spacing: 0.01em;
+    }
+    .wallet-tracked-row__right {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-shrink: 0;
+    }
+    .wallet-tracked-row__amt {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.05rem;
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: 0.95rem;
+      color: var(--cash-green);
+      white-space: nowrap;
+    }
+    .wallet-tracked-row__amt-usd {
+      font-family: var(--font-body);
+      font-size: 0.66rem;
+      font-weight: 500;
+      color: var(--off-black);
+      opacity: 0.5;
+      letter-spacing: 0.02em;
+    }
+    /* Trash glyph — fades in on row hover/focus, mirrors .reimb-item__trash. */
+    .wallet-tracked-row__trash {
+      width: 0.85rem;
+      height: 0.85rem;
+      color: var(--cash-green);
+      opacity: 0;
+      flex-shrink: 0;
+      align-self: center;
+      transition: opacity 0.15s ease;
+      cursor: pointer;
+    }
+    .wallet-tracked-row:hover .wallet-tracked-row__trash,
+    .wallet-tracked-row:focus-within .wallet-tracked-row__trash { opacity: 0.55; }
+    .wallet-tracked-row__trash:hover,
+    .wallet-tracked-row__trash:focus-visible { opacity: 0.95 !important; }
+    /* Inline confirm — mirrors .reimb-item__confirm pattern. */
+    .wallet-tracked-row__confirm {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.78rem;
+      margin-left: auto;
+      color: var(--cash-green);
+    }
+    .wallet-tracked-row__confirm-label { opacity: 0.7; font-weight: 500; }
+    .wallet-tracked-row__confirm-sep { opacity: 0.35; }
+    .wallet-tracked-row__confirm-yes,
+    .wallet-tracked-row__confirm-no {
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      color: var(--cash-green);
+      background: transparent;
+      border: none;
+      padding: 0.05rem 0.15rem;
+      cursor: pointer;
+      font-weight: 500;
+      opacity: 0.85;
+      transition: opacity 0.15s ease;
+    }
+    .wallet-tracked-row__confirm-yes { text-decoration: underline; }
+    .wallet-tracked-row__confirm-yes:hover,
+    .wallet-tracked-row__confirm-no:hover { opacity: 1; }
+    .wallet-tracked-row__confirm-yes:disabled,
+    .wallet-tracked-row__confirm-no:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* Add-tracked-card form — sits at the bottom of the panel. Mirrors the
+       schedule form's field/type-chip patterns so the visual language is
+       consistent across the app. */
+    .wallet-add {
+      display: flex;
+      flex-direction: column;
+      gap: 0.7rem;
+      margin-top: 1.1rem;
+      padding-top: 1.1rem;
+      border-top: 1px solid rgba(1, 71, 81, 0.10);
+    }
+    .wallet-add__heading {
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: 0.9rem;
+      color: var(--cash-green);
+      letter-spacing: 0;
+      text-transform: lowercase;
+      opacity: 0.85;
+    }
+    .wallet-add .field__label-hint { opacity: 0.55; font-weight: 400; }
+    .wallet-add .field { display: flex; flex-direction: column; gap: 0.3rem; }
+    .wallet-add .field__label {
+      font-size: 0.74rem;
+      font-weight: 500;
+      opacity: 0.7;
+      text-transform: lowercase;
+      letter-spacing: 0.01em;
+    }
+    .wallet-add .field__input,
+    .wallet-add .field__select {
+      width: 100%;
+      padding: 0.55rem 0.75rem;
+      border-radius: 10px;
+      border: 1.5px solid rgba(26,23,23,0.12);
+      background: rgba(252,250,242,0.8);
+      font-family: inherit;
+      font-size: 0.92rem;
+      color: var(--off-black);
+      transition: border-color 0.15s ease, background 0.15s ease;
+    }
+    .wallet-add .field__input:focus,
+    .wallet-add .field__select:focus {
+      outline: none;
+      border-color: var(--cash-green);
+      background: #fff;
+    }
+    .wallet-add .field__select {
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      cursor: pointer;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3e%3cpath fill='none' stroke='%23014751' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' d='M1 1l5 5 5-5'/%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right 0.6rem center;
+      padding-right: 1.85rem;
+    }
+    /* Balance + currency live in a single row — number on the left, dropdown
+       on the right. Currency chooser is narrower so the number gets the room. */
+    .wallet-add__money {
+      display: flex;
+      gap: 0.4rem;
+      align-items: stretch;
+    }
+    .wallet-add__money .wt-balance {
+      flex: 1;
+      min-width: 0;
+    }
+    .wallet-add__money .wt-currency {
+      flex: 0 0 5.25rem;
+    }
+    .wallet-add__submit {
+      align-self: stretch;
+      padding: 0.6rem 1rem;
+      border-radius: 12px;
+      background: var(--cash-green);
+      color: var(--vanilla);
+      font-family: inherit;
+      font-size: 0.88rem;
+      font-weight: 600;
+      letter-spacing: 0.005em;
+      cursor: pointer;
+      transition: transform 0.15s ease, background 0.15s ease, opacity 0.15s ease;
+      margin-top: 0.2rem;
+    }
+    .wallet-add__submit:hover { transform: translateY(-1px); background: #023239; }
+    .wallet-add__submit:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+      background: var(--cash-green);
+    }
+    .wallet-add__submit:focus-visible {
+      outline: 2px solid var(--cash-green);
+      outline-offset: 2px;
+    }
+    .wallet-add__error {
+      font-size: 0.78rem;
+      color: #8a2a2a;
+      min-height: 0;
+    }
+    .wallet-add__error:empty { display: none; }
+    .wallet-empty {
+      font-size: 0.85rem;
+      font-style: italic;
+      opacity: 0.55;
+      padding: 0.4rem 0.2rem;
+    }
+    .wallet-pop .wallet-close {
+      font-family: var(--font-body);
+      font-size: 0.82rem;
+      color: var(--cash-green);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 0.25rem 0;
+      opacity: 0.7;
+      transition: opacity 0.15s ease;
+      align-self: flex-start;
+      margin-top: 0.9rem;
+    }
+    .wallet-pop .wallet-close:hover { opacity: 1; }
+
     .weekday-row {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
@@ -1814,6 +2208,7 @@
         <button class="balances-btn" id="balances-btn" type="button" aria-haspopup="dialog" aria-controls="balances-pop">balances</button>
         <button class="reimbursements-btn" id="reimbursements-btn" type="button" aria-haspopup="dialog" aria-controls="reimbursements-pop">reimbursements</button>
         <button class="recurring-btn" id="recurring-btn" type="button" aria-haspopup="dialog" aria-controls="recurring-pop">recurring</button>
+        <button class="wallet-btn" id="wallet-btn" type="button" aria-haspopup="dialog" aria-controls="wallet-pop" aria-label="wallet">&#128093;</button>
       </div>
     </div>
 
@@ -1846,7 +2241,7 @@
             <button type="button" class="type-chip is-active" data-type="planned" role="radio" aria-checked="true">planned</button>
             <button type="button" class="type-chip" data-type="spent" role="radio" aria-checked="false">spent</button>
             <button type="button" class="type-chip" data-type="reimburse" role="radio" aria-checked="false">reimburse</button>
-            <button type="button" class="type-chip" data-type="income" role="radio" aria-checked="false">income</button>
+            <button type="button" class="type-chip" data-type="income" role="radio" aria-checked="false">incoming</button>
           </div>
         </div>
 
@@ -1966,6 +2361,65 @@
       </div>
       <p class="recurring-soon">coming soon.</p>
       <button class="recurring-close" id="recurring-close" type="button">close</button>
+    </aside>
+
+    <!-- Wallet popup — linked Plaid accounts + manually-tracked cards. -->
+    <div class="wallet-overlay" id="wallet-overlay"></div>
+    <aside class="wallet-pop" id="wallet-pop" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="wallet-pop-title">
+      <h2 id="wallet-pop-title">wallet</h2>
+      <p class="wallet-subtitle">everywhere your money lives &mdash; linked + tracked.</p>
+      <div class="wallet-running" id="wallet-running"></div>
+      <div class="wallet-status" id="wallet-status" aria-live="polite"></div>
+      <div class="wallet-groups" id="wallet-groups">
+        <section class="wallet-group" id="wallet-linked-group" hidden>
+          <div class="wallet-group__heading">linked</div>
+          <div class="wallet-list" id="wallet-linked-list"></div>
+        </section>
+        <section class="wallet-group" id="wallet-tracked-group" hidden>
+          <div class="wallet-group__heading">tracked</div>
+          <div class="wallet-list" id="wallet-tracked-list"></div>
+        </section>
+      </div>
+      <form class="wallet-add" id="wallet-add-form" novalidate>
+        <div class="wallet-add__heading">track a new card</div>
+        <div class="field">
+          <label class="field__label" for="wt-name">name</label>
+          <input class="field__input" type="text" id="wt-name" name="name" maxlength="80" placeholder="amex gold &middot; revolut &middot; etc" autocomplete="off" required>
+        </div>
+        <div class="field">
+          <span class="field__label">kind</span>
+          <div class="type-chips" id="wt-kind-chips" role="radiogroup" aria-label="account kind">
+            <button type="button" class="type-chip is-active" data-kind="debit" role="radio" aria-checked="true">debit</button>
+            <button type="button" class="type-chip" data-kind="credit" role="radio" aria-checked="false">credit</button>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field__label" for="wt-balance">balance</label>
+          <div class="wallet-add__money">
+            <input class="field__input wt-balance" type="number" id="wt-balance" name="balance" step="0.01" inputmode="decimal" placeholder="0.00" required>
+            <select class="field__select wt-currency" id="wt-currency" name="currency" aria-label="currency">
+              <option value="USD" selected>USD</option>
+              <option value="EUR">EUR</option>
+              <option value="GBP">GBP</option>
+              <option value="JPY">JPY</option>
+              <option value="CAD">CAD</option>
+              <option value="AUD">AUD</option>
+              <option value="CHF">CHF</option>
+              <option value="SEK">SEK</option>
+              <option value="NOK">NOK</option>
+              <option value="DKK">DKK</option>
+              <option value="NZD">NZD</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field__label" for="wt-date">due date <span class="field__label-hint">(credit only)</span></label>
+          <input class="field__input" type="date" id="wt-date" name="due_date">
+        </div>
+        <div class="wallet-add__error" id="wt-error" aria-live="polite"></div>
+        <button type="submit" class="wallet-add__submit" id="wt-submit">+ track it</button>
+      </form>
+      <button class="wallet-close" id="wallet-close" type="button">close</button>
     </aside>
 
     <div class="weekday-row" aria-hidden="true">

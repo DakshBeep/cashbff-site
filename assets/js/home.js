@@ -136,6 +136,15 @@
       todoAddForm, todoAddInput, todoAddBtn, todoError, todoList;
   // Recurring popup (placeholder — open/close only, no data yet).
   var recurringBtn, recurringOverlay, recurringPop, recurringClose;
+  // Wallet popup — linked Plaid accounts (read-only) + manually-tracked cards.
+  // Backed by /api/wallet for read, /api/tracked-accounts (POST/DELETE) for
+  // mutations on the user-added cards.
+  var walletBtn, walletOverlay, walletPop, walletClose,
+      walletRunning, walletStatus,
+      walletLinkedGroup, walletLinkedList,
+      walletTrackedGroup, walletTrackedList,
+      walletAddForm, walletAddName, walletAddBalance, walletAddCurrency,
+      walletAddDate, walletAddKindChips, walletAddSubmit, walletAddError;
   // To-do items live in localStorage under cbff_v1_todos via the existing
   // cacheRead/cacheWrite helpers. Shape: [{ id, text, done, created_at }].
   // null on boot until ensureTodosLoaded() seeds from cache + adds the example.
@@ -164,6 +173,17 @@
   // the data is small and panel-scoped.)
   var reimbursementsCache = null;
   var reimbursementsFetchInflight = null;
+
+  // Wallet payload: { plaid_accounts, tracked_accounts, summary }. Lazily
+  // fetched on first wallet-panel open AND prefetched in boot() so the
+  // running-balance hero in the balances panel can include tracked-card totals.
+  // Evicted on every successful tracked-account mutation. SWR: hydrated from
+  // localStorage on boot for instant paint when the panel opens.
+  var walletCache = null;
+  var walletFetchInflight = null;
+  // Selected kind for the add-tracked-card form. Defaults to 'debit'; flipped
+  // by the .type-chip[data-kind] cluster click handler.
+  var walletAddKind = 'debit';
 
   // Earliest month the calendar lets the user nav back to. Initialized from
   // signup_month (via /api/me). Then extended backward whenever a calendar
@@ -227,6 +247,13 @@
     var cachedTodos = cacheRead('todos');
     if (Array.isArray(cachedTodos)) {
       todosCache = cachedTodos;
+    }
+    // Wallet is SWR — last-known payload paints the panel instantly on reopen.
+    // The boot prefetch refreshes this with canonical server state so the
+    // running-balance hero in balances reflects fresh tracked totals.
+    var cachedWallet = cacheRead('wallet');
+    if (cachedWallet && typeof cachedWallet === 'object') {
+      walletCache = cachedWallet;
     }
   }
 
@@ -875,12 +902,15 @@
         // Same idea for the to-do panel: an inline delete-confirm gets
         // dismissed first before ESC bubbles up to closing the whole panel.
         if (dismissOpenTodoConfirms()) return;
+        // Wallet panel mirrors the same pattern for tracked-row deletes.
+        if (dismissOpenWalletConfirms()) return;
         closeDrawer();
         closeSchedule();
         closeBalances();
         closeReimbursements();
         closeTodo();
         closeRecurring();
+        closeWallet();
       }
     });
   }
@@ -1367,27 +1397,14 @@
     balSummary.classList.remove('is-muted-italic');
 
     // ── Running balance ──────────────────────────────
-    // The "forever true" amount: depository minus credit-card debt.
-    // Uses balanceForRow() so the per-row visible number matches what gets
-    // summed into running balance — no balance_current vs balance_available
-    // mismatch between the row display and the hero. balanceForRow prefers
-    // balance_available for depository (subtracts pending holds, the most
-    // honest "available now" figure) and balance_current for credit
-    // (Plaid convention: positive = amount owed).
-    var depTotal = 0;
-    var ccTotal  = 0;
-    accounts.forEach(function (a) {
-      var t = (a.account_type || '').toLowerCase();
-      var b = balanceForRow(a);
-      if (b === null || !isFinite(b)) return;
-      if (t === 'depository') depTotal += b;
-      else if (t === 'credit') ccTotal += b;
-    });
-    // Subtract every scheduled (planned) outflow + add every scheduled income
-    // so the running balance hero reflects "what you'll have left after every
-    // plan you've put on the calendar." Planned txns aren't in the bank yet,
-    // so they have to be applied here on the frontend — backend balances are
-    // only Plaid-derived.
+    // The "forever true" amount: depository minus credit-card debt minus any
+    // user-tracked card balances (from /api/wallet). When the wallet payload
+    // is loaded, we use summary.running_balance_usd as the canonical base
+    // (backend computes: depository − cc_owed − tracked). When it's not
+    // loaded we fall back to a frontend depository−credit computation —
+    // tracked totals are then absent until the prefetch lands.
+    // In both paths, we layer in scheduled (planned) outflow/income deltas
+    // since those live on the frontend (calendar) only.
     var schedOut = 0;
     var schedIn = 0;
     PRECOMMITS.forEach(function (e) {
@@ -1395,7 +1412,29 @@
       if (e.type === 'income') schedIn  += Number(e.amount) || 0;
       else                     schedOut += Number(e.amount) || 0;
     });
-    var running = depTotal - ccTotal - schedOut + schedIn;
+
+    var running;
+    var walletSummary = walletCache && walletCache.summary;
+    if (walletSummary && typeof walletSummary.running_balance_usd === 'number') {
+      // Backend already nets depository − cc_owed − tracked. Layer scheduled.
+      running = walletSummary.running_balance_usd - schedOut + schedIn;
+    } else {
+      // Wallet not yet loaded — fall back to plaid-only depository − credit.
+      // Uses balanceForRow() so the per-row visible number matches what gets
+      // summed in. balanceForRow prefers balance_available for depository
+      // (subtracts pending holds — the most honest "available now" figure)
+      // and balance_current for credit (Plaid convention: positive = owed).
+      var depTotal = 0;
+      var ccTotal  = 0;
+      accounts.forEach(function (a) {
+        var t = (a.account_type || '').toLowerCase();
+        var b = balanceForRow(a);
+        if (b === null || !isFinite(b)) return;
+        if (t === 'depository') depTotal += b;
+        else if (t === 'credit') ccTotal += b;
+      });
+      running = depTotal - ccTotal - schedOut + schedIn;
+    }
     // Cache for downstream consumers (currently unused after the openDrawer
     // refactor, but kept for future per-day formulas that need the baseline).
     currentRunningBalance = running;
@@ -2417,6 +2456,585 @@
     if (recurringOverlay) recurringOverlay.addEventListener('click', closeRecurring);
   }
 
+  // ── Wallet popup ────────────────────────────────
+  // Reads /api/wallet for { plaid_accounts, tracked_accounts, summary }.
+  // Linked rows are read-only (mirror balances). Tracked rows can be
+  // created (POST /api/tracked-accounts) and deleted (DELETE /api/tracked-
+  // accounts/:id). Cache lifecycle:
+  //   • Hydrated from localStorage on boot for instant paint.
+  //   • Prefetched in boot() (after gateAuth) so the balances running-balance
+  //     hero can include tracked totals before the user ever opens this panel.
+  //   • Fetched again on first open if the prefetch failed.
+  //   • Evicted on every successful tracked-account mutation.
+  var WALLET_CURRENCIES = ['USD','EUR','GBP','JPY','CAD','AUD','CHF','SEK','NOK','DKK','NZD'];
+
+  function persistWalletCache() {
+    if (walletCache && typeof walletCache === 'object') {
+      cacheWrite('wallet', walletCache);
+    }
+  }
+
+  // Reuse the same balance-picking heuristics the balances panel uses, so a
+  // linked Plaid account renders the same number in both places.
+  function walletLinkedAmount(acct) {
+    var t = (acct && acct.account_type || '').toLowerCase();
+    if (t === 'depository') {
+      if (typeof acct.balance_available === 'number') return acct.balance_available;
+      if (typeof acct.balance_current   === 'number') return acct.balance_current;
+      return null;
+    }
+    if (typeof acct.balance_current === 'number') return acct.balance_current;
+    if (typeof acct.balance_available === 'number') return acct.balance_available;
+    return null;
+  }
+
+  function walletLinkedRowClass(type) {
+    var t = (type || '').toLowerCase();
+    if (t === 'credit')     return 'is-credit';
+    if (t === 'depository') return 'is-depository';
+    return '';
+  }
+
+  function fetchWalletOnce(opts) {
+    opts = opts || {};
+    if (walletCache && walletCache._fresh && !opts.force) {
+      return Promise.resolve(walletCache);
+    }
+    if (walletFetchInflight) return walletFetchInflight;
+    walletFetchInflight = fetch(API_BASE + '/api/wallet', {
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include'
+    }).then(function (res) {
+      if (res.status === 401) {
+        // gateAuth handles redirect — return an empty shell so callers can
+        // render an empty-state without crashing.
+        return { plaid_accounts: [], tracked_accounts: [], summary: null };
+      }
+      if (!res.ok) throw new Error('wallet fetch failed ' + res.status);
+      return res.json();
+    }).then(function (data) {
+      var payload = {
+        plaid_accounts:    (data && Array.isArray(data.plaid_accounts))    ? data.plaid_accounts    : [],
+        tracked_accounts:  (data && Array.isArray(data.tracked_accounts))  ? data.tracked_accounts  : [],
+        summary:           (data && data.summary) ? data.summary : null
+      };
+      walletCache = payload;
+      try { Object.defineProperty(walletCache, '_fresh', { value: true, enumerable: false, configurable: true }); }
+      catch (_) { walletCache._fresh = true; }
+      persistWalletCache();
+      walletFetchInflight = null;
+      return walletCache;
+    }).catch(function (err) {
+      walletFetchInflight = null;
+      try { console.warn('[home] wallet fetch error:', err); } catch (_) {}
+      throw err;
+    });
+    return walletFetchInflight;
+  }
+
+  function setWalletStatus(text) {
+    if (walletStatus) walletStatus.textContent = text || '';
+  }
+  function setWalletError(text) {
+    if (walletAddError) walletAddError.textContent = text || '';
+  }
+
+  // Render the small "running balance: $X" line at the top of the wallet
+  // panel. Source-of-truth for this number is summary.running_balance_usd
+  // from /api/wallet. Backend computes: depository - cc_owed - tracked +
+  // scheduled deltas. We don't recompute on the frontend — keeps wallet's
+  // top line and the balances hero math aligned with each other.
+  function renderWalletRunning() {
+    if (!walletRunning) return;
+    var summary = walletCache && walletCache.summary;
+    if (!summary || typeof summary.running_balance_usd !== 'number') {
+      walletRunning.textContent = '';
+      return;
+    }
+    var n = summary.running_balance_usd;
+    var sign = n < 0 ? '-' : '';
+    var abs  = Math.abs(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    walletRunning.innerHTML = 'running balance: <strong>' + sign + '$' + abs + '</strong>';
+  }
+
+  function buildWalletLinkedRow(acct) {
+    var row = document.createElement('div');
+    row.className = 'wallet-linked-row ' + walletLinkedRowClass(acct.account_type);
+
+    var label = document.createElement('div');
+    label.className = 'wallet-linked-row__label';
+    var inst = acct.institution || 'account';
+    var mask = acct.mask ? ' \u00b7\u00b7\u00b7' + acct.mask : '';
+    label.textContent = inst + mask;
+    row.appendChild(label);
+
+    var amt = document.createElement('div');
+    amt.className = 'wallet-linked-row__amt';
+    var bal = walletLinkedAmount(acct);
+    if (bal === null) {
+      amt.textContent = '\u2014';
+    } else {
+      // Mirror balances-panel convention: credit balances show as positive
+      // "amount owed" (Plaid: positive number = debt).
+      var t = (acct.account_type || '').toLowerCase();
+      var n = (t === 'credit') ? Math.abs(bal) : bal;
+      amt.textContent = money(n);
+    }
+    row.appendChild(amt);
+    return row;
+  }
+
+  // Format a currency amount with the right glyph for common cases. Falls
+  // back to "<code> <amount>" for unfamiliar codes so we never show garbage.
+  function formatTrackedBalance(amount, currency) {
+    var n = Number(amount);
+    if (!isFinite(n)) return '\u2014';
+    var c = (currency || 'USD').toUpperCase();
+    var glyphs = { USD: '$', EUR: '\u20ac', GBP: '\u00a3', JPY: '\u00a5' };
+    var formatted = n.toFixed(c === 'JPY' ? 0 : 2)
+      .replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    if (glyphs[c]) return glyphs[c] + formatted;
+    return c + ' ' + formatted;
+  }
+
+  // Lightweight YYYY-MM-DD → "apr 30" formatter. Avoids new Date()'s timezone
+  // surprises on date-only strings (which can flip the day in PT).
+  function formatDueDate(s) {
+    if (!s || typeof s !== 'string') return '';
+    var parts = s.split('-');
+    if (parts.length !== 3) return '';
+    var m = Number(parts[1]) - 1;
+    var d = Number(parts[2]);
+    if (m < 0 || m > 11 || !d) return '';
+    return MONTHS[m].slice(0, 3) + ' ' + d;
+  }
+
+  function buildWalletTrackedConfirmRow(labelText) {
+    var confirmRow = document.createElement('div');
+    confirmRow.className = 'wallet-tracked-row__confirm';
+
+    var label = document.createElement('span');
+    label.className = 'wallet-tracked-row__confirm-label';
+    label.textContent = labelText;
+    confirmRow.appendChild(label);
+
+    var sep1 = document.createElement('span');
+    sep1.className = 'wallet-tracked-row__confirm-sep';
+    sep1.textContent = '\u00b7';
+    confirmRow.appendChild(sep1);
+
+    var yesBtn = document.createElement('button');
+    yesBtn.type = 'button';
+    yesBtn.className = 'wallet-tracked-row__confirm-yes';
+    yesBtn.textContent = 'yes';
+    confirmRow.appendChild(yesBtn);
+
+    var sep2 = document.createElement('span');
+    sep2.className = 'wallet-tracked-row__confirm-sep';
+    sep2.textContent = '\u00b7';
+    confirmRow.appendChild(sep2);
+
+    var noBtn = document.createElement('button');
+    noBtn.type = 'button';
+    noBtn.className = 'wallet-tracked-row__confirm-no';
+    noBtn.textContent = 'cancel';
+    confirmRow.appendChild(noBtn);
+
+    return { node: confirmRow, label: label, yes: yesBtn, no: noBtn, sep2: sep2 };
+  }
+
+  function buildWalletTrackedRow(item) {
+    var row = document.createElement('div');
+    var kind = (item && item.kind) || 'debit';
+    row.className = 'wallet-tracked-row is-' + (kind === 'credit' ? 'credit' : 'debit');
+    row.setAttribute('data-id', String(item.id));
+
+    var main = document.createElement('div');
+    main.className = 'wallet-tracked-row__main';
+
+    var line = document.createElement('div');
+    line.className = 'wallet-tracked-row__line';
+
+    var name = document.createElement('span');
+    name.className = 'wallet-tracked-row__name';
+    name.textContent = item.name || '';
+    line.appendChild(name);
+
+    var chip = document.createElement('span');
+    chip.className = 'kind-chip ' + (kind === 'credit' ? 'is-credit' : 'is-debit');
+    chip.textContent = kind;
+    line.appendChild(chip);
+    main.appendChild(line);
+
+    if (item.due_date) {
+      var due = document.createElement('span');
+      due.className = 'wallet-tracked-row__due';
+      due.textContent = 'due ' + (formatDueDate(item.due_date) || item.due_date);
+      main.appendChild(due);
+    }
+    row.appendChild(main);
+
+    var right = document.createElement('div');
+    right.className = 'wallet-tracked-row__right';
+
+    var amt = document.createElement('div');
+    amt.className = 'wallet-tracked-row__amt';
+    var native = document.createElement('span');
+    native.textContent = formatTrackedBalance(item.balance, item.currency || 'USD');
+    amt.appendChild(native);
+    var cur = (item.currency || 'USD').toUpperCase();
+    if (cur !== 'USD' && typeof item.balance_usd === 'number' && isFinite(item.balance_usd)) {
+      var usd = document.createElement('span');
+      usd.className = 'wallet-tracked-row__amt-usd';
+      usd.textContent = '\u2248 ' + money(item.balance_usd) + ' usd';
+      amt.appendChild(usd);
+    }
+    right.appendChild(amt);
+
+    var trash = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    trash.setAttribute('class', 'wallet-tracked-row__trash');
+    trash.setAttribute('viewBox', '0 0 16 16');
+    trash.setAttribute('fill', 'none');
+    trash.setAttribute('stroke', 'currentColor');
+    trash.setAttribute('stroke-width', '1.4');
+    trash.setAttribute('stroke-linecap', 'round');
+    trash.setAttribute('stroke-linejoin', 'round');
+    trash.setAttribute('role', 'button');
+    trash.setAttribute('tabindex', '0');
+    trash.setAttribute('aria-label', 'delete ' + (item.name || 'tracked card'));
+    var trashPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    trashPath.setAttribute('d', 'M3 4h10M6 4V2.8h4V4M5 4v9h6V4M7.5 6.5v4M9 6.5v4');
+    trash.appendChild(trashPath);
+    right.appendChild(trash);
+
+    row.appendChild(right);
+
+    var openDeleteConfirm = function (ev) {
+      ev.stopPropagation();
+      if (row.querySelector('.wallet-tracked-row__confirm')) return;
+      // Hide the whole right cluster so the inline confirm gets the room.
+      right.style.display = 'none';
+
+      var c = buildWalletTrackedConfirmRow('delete?');
+      row.appendChild(c.node);
+
+      var restore = function () {
+        if (c.node.parentNode) c.node.parentNode.removeChild(c.node);
+        right.style.display = '';
+      };
+      c.node._walletCancel = restore;
+      try { c.yes.focus({ preventScroll: true }); } catch (_) { c.yes.focus(); }
+
+      c.no.addEventListener('click', function (cev) {
+        cev.stopPropagation();
+        restore();
+      });
+      c.yes.addEventListener('click', function (cev) {
+        cev.stopPropagation();
+        c.yes.disabled = true;
+        c.no.disabled  = true;
+        c.label.textContent = 'deleting\u2026';
+        deleteTrackedAccount(item).catch(function () {
+          c.label.textContent = 'couldn\u2019t delete \u00b7 cancel';
+          c.yes.style.display = 'none';
+          c.sep2.style.display = 'none';
+          c.no.disabled = false;
+        });
+      });
+    };
+    trash.addEventListener('click', openDeleteConfirm);
+    trash.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Enter' || ev.key === ' ') {
+        ev.preventDefault();
+        openDeleteConfirm(ev);
+      }
+    });
+
+    return row;
+  }
+
+  function renderWallet() {
+    if (!walletLinkedList || !walletTrackedList) return;
+    walletLinkedList.innerHTML = '';
+    walletTrackedList.innerHTML = '';
+
+    var linked  = (walletCache && Array.isArray(walletCache.plaid_accounts))
+      ? walletCache.plaid_accounts : [];
+    var tracked = (walletCache && Array.isArray(walletCache.tracked_accounts))
+      ? walletCache.tracked_accounts : [];
+
+    if (linked.length) {
+      if (walletLinkedGroup) walletLinkedGroup.hidden = false;
+      linked.forEach(function (a) {
+        walletLinkedList.appendChild(buildWalletLinkedRow(a));
+      });
+    } else if (walletLinkedGroup) {
+      walletLinkedGroup.hidden = true;
+    }
+
+    if (tracked.length) {
+      if (walletTrackedGroup) walletTrackedGroup.hidden = false;
+      tracked.forEach(function (it) {
+        walletTrackedList.appendChild(buildWalletTrackedRow(it));
+      });
+    } else if (walletTrackedGroup) {
+      walletTrackedGroup.hidden = true;
+    }
+
+    renderWalletRunning();
+  }
+
+  // POST /api/tracked-accounts. Validates inline, prepends on success, evicts
+  // the cache + refetches so summary.running_balance_usd updates and the
+  // balances hero (next time it renders) reflects the new total.
+  function addTrackedAccount(form) {
+    setWalletError('');
+    var name = (walletAddName && walletAddName.value || '').trim();
+    var balanceRaw = (walletAddBalance && walletAddBalance.value || '').trim();
+    var balanceNum = parseFloat(balanceRaw);
+    var currency  = (walletAddCurrency && walletAddCurrency.value || 'USD').toUpperCase();
+    var dueDate   = (walletAddDate && walletAddDate.value || '').trim();
+    var kind      = walletAddKind === 'credit' ? 'credit' : 'debit';
+
+    if (!name) {
+      setWalletError('give it a name.');
+      return;
+    }
+    if (name.length > 80) {
+      setWalletError('name is too long (max 80).');
+      return;
+    }
+    if (!balanceRaw || isNaN(balanceNum)) {
+      setWalletError('enter a balance.');
+      return;
+    }
+    if (WALLET_CURRENCIES.indexOf(currency) === -1) {
+      setWalletError('pick a supported currency.');
+      return;
+    }
+
+    var body = {
+      name: name,
+      kind: kind,
+      balance: Math.round(balanceNum * 100) / 100,
+      currency: currency
+    };
+    if (dueDate) body.due_date = dueDate;
+
+    if (walletAddSubmit) {
+      walletAddSubmit.disabled = true;
+      walletAddSubmit.textContent = 'tracking\u2026';
+    }
+
+    fetch(API_BASE + '/api/tracked-accounts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(body)
+    }).then(function (res) {
+      return res.json().catch(function () { return null; }).then(function (data) {
+        return { ok: res.ok, status: res.status, data: data };
+      });
+    }).then(function (out) {
+      if (!out.ok || !out.data || !out.data.item) {
+        var msg = (out.data && (out.data.error || out.data.message)) ||
+                  ('couldn\u2019t track (' + out.status + ').');
+        setWalletError(msg);
+        if (walletAddSubmit) {
+          walletAddSubmit.disabled = false;
+          walletAddSubmit.textContent = '+ track it';
+        }
+        return;
+      }
+      // Optimistically prepend so the panel updates immediately. Then evict
+      // + refetch so summary.running_balance_usd is canonical.
+      var item = out.data.item;
+      if (!walletCache || typeof walletCache !== 'object') {
+        walletCache = { plaid_accounts: [], tracked_accounts: [], summary: null };
+      }
+      var existing = Array.isArray(walletCache.tracked_accounts)
+        ? walletCache.tracked_accounts : [];
+      walletCache.tracked_accounts = [item].concat(existing);
+      try { Object.defineProperty(walletCache, '_fresh', { value: true, enumerable: false, configurable: true }); }
+      catch (_) { walletCache._fresh = true; }
+      persistWalletCache();
+      renderWallet();
+
+      if (form && typeof form.reset === 'function') form.reset();
+      if (walletAddCurrency) walletAddCurrency.value = 'USD';
+      setWalletAddKind('debit');
+      if (walletAddSubmit) {
+        walletAddSubmit.disabled = false;
+        walletAddSubmit.textContent = '+ track it';
+      }
+
+      // Refetch to pull canonical summary (running_balance_usd, balance_usd
+      // for the new item, etc.). The optimistic item missing balance_usd just
+      // means we render native-only until the refetch lands.
+      walletCache._fresh = false;
+      fetchWalletOnce({ force: true }).then(function () {
+        renderWallet();
+        // Wallet's tracked totals affect the balances running-balance hero —
+        // repaint balances if it has data so the hero reflects the new card.
+        if (balancesCache) renderBalances(balancesCache);
+      }).catch(function () { /* keep optimistic state */ });
+    }).catch(function (err) {
+      setWalletError('network error \u2014 try again.');
+      if (walletAddSubmit) {
+        walletAddSubmit.disabled = false;
+        walletAddSubmit.textContent = '+ track it';
+      }
+      try { console.warn('[home] tracked-account add error:', err); } catch (_) {}
+    });
+  }
+
+  function deleteTrackedAccount(item) {
+    if (!item || item.id == null) return Promise.resolve(false);
+    setWalletError('');
+    return fetch(API_BASE + '/api/tracked-accounts/' + encodeURIComponent(item.id), {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include'
+    }).then(function (res) {
+      return res.json().catch(function () { return null; }).then(function (data) {
+        return { ok: res.ok, status: res.status, data: data };
+      });
+    }).then(function (out) {
+      if (!out.ok && out.status !== 404) {
+        var msg = (out.data && (out.data.error || out.data.message)) ||
+                  ('couldn\u2019t delete (' + out.status + ').');
+        setWalletError(msg);
+        throw new Error(msg);
+      }
+      // Drop the row locally + re-render. Then refetch for fresh summary.
+      if (walletCache && Array.isArray(walletCache.tracked_accounts)) {
+        walletCache.tracked_accounts = walletCache.tracked_accounts.filter(function (x) {
+          return x.id !== item.id;
+        });
+        try { Object.defineProperty(walletCache, '_fresh', { value: false, enumerable: false, configurable: true }); }
+        catch (_) { walletCache._fresh = false; }
+        persistWalletCache();
+        renderWallet();
+      }
+      fetchWalletOnce({ force: true }).then(function () {
+        renderWallet();
+        if (balancesCache) renderBalances(balancesCache);
+      }).catch(function () { /* leave local state */ });
+      return true;
+    }).catch(function (err) {
+      if (err && err.message && walletAddError && !walletAddError.textContent) {
+        setWalletError('network error \u2014 try again.');
+      }
+      try { console.warn('[home] tracked-account delete error:', err); } catch (_) {}
+      throw err;
+    });
+  }
+
+  function setWalletAddKind(kind) {
+    walletAddKind = kind === 'credit' ? 'credit' : 'debit';
+    if (!walletAddKindChips) return;
+    var chips = walletAddKindChips.querySelectorAll('.type-chip');
+    for (var i = 0; i < chips.length; i++) {
+      var on = chips[i].getAttribute('data-kind') === walletAddKind;
+      chips[i].classList.toggle('is-active', on);
+      chips[i].setAttribute('aria-checked', on ? 'true' : 'false');
+    }
+  }
+
+  // Dismiss any open inline-confirm rows in the wallet panel — wired into
+  // the global ESC handler so the user can always back out.
+  function dismissOpenWalletConfirms() {
+    if (!walletTrackedList) return false;
+    var confirms = walletTrackedList.querySelectorAll('.wallet-tracked-row__confirm');
+    if (!confirms.length) return false;
+    Array.prototype.forEach.call(confirms, function (n) {
+      if (typeof n._walletCancel === 'function') n._walletCancel();
+    });
+    return true;
+  }
+
+  function openWallet() {
+    if (!walletPop || !walletOverlay) return;
+    walletPop.classList.add('open');
+    walletOverlay.classList.add('open');
+    walletPop.setAttribute('aria-hidden', 'false');
+    setWalletError('');
+
+    // Always paint whatever cache we have first (could be hydrated from
+    // localStorage, could be the boot prefetch, could be null).
+    if (walletCache && typeof walletCache === 'object') {
+      setWalletStatus('');
+      renderWallet();
+    }
+
+    if (walletCache && walletCache._fresh) {
+      if (walletAddName) {
+        try { walletAddName.focus({ preventScroll: true }); } catch (_) { walletAddName.focus(); }
+      }
+      return;
+    }
+    if (!walletCache) setWalletStatus('loading\u2026');
+
+    fetchWalletOnce().then(function () {
+      setWalletStatus('');
+      renderWallet();
+    }).catch(function () {
+      setWalletStatus('couldn\u2019t load \u2014 refresh and try again.');
+    });
+
+    if (walletAddName) {
+      try { walletAddName.focus({ preventScroll: true }); } catch (_) { walletAddName.focus(); }
+    }
+  }
+
+  function closeWallet() {
+    if (!walletPop || !walletOverlay) return;
+    walletPop.classList.remove('open');
+    walletOverlay.classList.remove('open');
+    walletPop.setAttribute('aria-hidden', 'true');
+    setWalletError('');
+  }
+
+  function wireWalletBtn() {
+    walletBtn          = document.getElementById('wallet-btn');
+    walletOverlay      = document.getElementById('wallet-overlay');
+    walletPop          = document.getElementById('wallet-pop');
+    walletClose        = document.getElementById('wallet-close');
+    walletRunning      = document.getElementById('wallet-running');
+    walletStatus       = document.getElementById('wallet-status');
+    walletLinkedGroup  = document.getElementById('wallet-linked-group');
+    walletLinkedList   = document.getElementById('wallet-linked-list');
+    walletTrackedGroup = document.getElementById('wallet-tracked-group');
+    walletTrackedList  = document.getElementById('wallet-tracked-list');
+    walletAddForm      = document.getElementById('wallet-add-form');
+    walletAddName      = document.getElementById('wt-name');
+    walletAddBalance   = document.getElementById('wt-balance');
+    walletAddCurrency  = document.getElementById('wt-currency');
+    walletAddDate      = document.getElementById('wt-date');
+    walletAddKindChips = document.getElementById('wt-kind-chips');
+    walletAddSubmit    = document.getElementById('wt-submit');
+    walletAddError     = document.getElementById('wt-error');
+
+    if (walletBtn)     walletBtn.addEventListener('click', openWallet);
+    if (walletClose)   walletClose.addEventListener('click', closeWallet);
+    if (walletOverlay) walletOverlay.addEventListener('click', closeWallet);
+    if (walletAddForm) {
+      walletAddForm.addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        addTrackedAccount(walletAddForm);
+      });
+    }
+    if (walletAddKindChips) {
+      walletAddKindChips.addEventListener('click', function (ev) {
+        var btn = ev.target && ev.target.closest && ev.target.closest('.type-chip');
+        if (!btn || !walletAddKindChips.contains(btn)) return;
+        var kind = btn.getAttribute('data-kind');
+        if (!kind) return;
+        setWalletAddKind(kind);
+      });
+    }
+  }
+
   // ── Add-account button wiring ───────────────────
   function wireAddAccountBtn() {
     var btn = document.getElementById('add-account-btn');
@@ -2439,8 +3057,9 @@
     wireReimbursementsBtn();
     wireTodoBtn();
     wireRecurringBtn();
-    // Reimbursements is still SWR — hydrate its in-memory cache from
-    // localStorage so the panel paints instantly when opened. Calendar +
+    wireWalletBtn();
+    // Reimbursements + wallet are SWR — hydrate their in-memory caches from
+    // localStorage so the panels paint instantly when opened. Calendar +
     // balances are NOT hydrated; they wait for the live fetches below.
     hydrateFromCache();
     // Render an empty grid up front so the layout is stable while the
@@ -2461,10 +3080,26 @@
       var calendarP = fetchInitialWindow();
       settle(calendarP, endLoading);
       return calendarP.then(function () {
+        // Prefetch balances + wallet in parallel. Wallet powers the running-
+        // balance hero in the balances panel (it adds tracked-card totals via
+        // summary.total_tracked_usd), so we want it ready before renderBalances
+        // runs. Both are independent fetches; either failing leaves the other
+        // path intact.
         if (typeof fetchBalancesOnce === 'function') {
           startLoading();
+          var walletP = fetchWalletOnce({ force: true }).then(function () {
+            // If the wallet panel is already open (unlikely on boot) repaint it.
+            if (walletPop && walletPop.classList.contains('open')) renderWallet();
+          }).catch(function () { /* silent — balances hero just falls back to plaid-only */ });
           var balancesP = fetchBalancesOnce().then(function (payload) {
-            if (payload) renderBalances(payload);
+            // Wait on the wallet prefetch so renderBalances picks up tracked
+            // totals on the very first paint. Race resolved by Promise.all
+            // resolving once both settle (or one rejects — wallet rejection
+            // already swallowed above so this Promise.all only rejects on
+            // balances).
+            return Promise.all([walletP]).then(function () {
+              if (payload) renderBalances(payload);
+            });
           }).catch(function () { /* silent — projection just stays hidden */ });
           settle(balancesP, endLoading);
         }
