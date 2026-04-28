@@ -273,10 +273,16 @@
   // the common case where today is mid-month-ish; the month-key cache then
   // suppresses a redundant refetch when the user stays on this month.
   function fetchInitialWindow() {
-    var end = new Date(today);
-    var start = new Date(today);
-    start.setDate(start.getDate() - 13);
-    fetchedMonths.add(monthKey(today.getFullYear(), today.getMonth()));
+    // Fetch the FULL current month + 30 days into the next month so the
+    // initial calendar view never has half-empty days (the old "last 14
+    // days only" behavior left Apr 1-13 blank when today was Apr 27).
+    // Also covers near-future scheduled txns + reimburse-type entries.
+    var year = today.getFullYear();
+    var month = today.getMonth();
+    var start = new Date(year, month, 1);
+    var end = new Date(year, month + 2, 0); // last day of NEXT month
+    fetchedMonths.add(monthKey(year, month));
+    fetchedMonths.add(monthKey(year, month + 1));
     return fetchCalendarRange(iso(start), iso(end));
   }
 
