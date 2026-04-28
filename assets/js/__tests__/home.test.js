@@ -1,265 +1,224 @@
-// Tests for the v2 scatter-seedbed home.js module.
+// Unit tests for the day-popover running-balance math in home.js.
 //
-// STATUS: waiting on home.js build.
+// Bug 1: clicking a day in the calendar showed "running balance: $25.00" /
+// "after your plans this day: $0.00" when the user actually had $1000+ cash.
+// The prior code used the day's own outflow as the "running balance" line —
+// not the carry-forward projection the label promises.
 //
-// The other agent is porting cashbff.com/home to the v2 scatter-seedbed
-// design and will expose:
+// home.js is an IIFE that auto-runs on import. It mounts pure-math helpers
+// onto window.__homeDayMath when imported in a browser-like environment so
+// these tests can drive the projection without standing up the live UI:
+//   - computeTodayBaseBalance()
+//   - computeDayProjection(d)
+//   - formatSignedMoney(n)
+// And test-only setters that inject fixtures:
+//   - __setWalletCacheForTest, __setBalancesCacheForTest,
+//     __setPrecommitsForTest, __setTodayForTest
 //
-//   window.CashBFFHome = {
-//     allocatePositions(cards, canvasWidthPx, canvasHeightPx),
-//     renderCards(container, cards),
-//     fetchHome(),
-//   }
-//
-// Card shape: { institution: string, mask: string, balance: number, limit: number }
-//
-// Until that module lands, every test below is marked `.todo` so the suite
-// runs green without silently passing against a missing implementation.
-// Once home.js ships with the contract above:
-//   1. Replace `.todo(...)` with `(...)` (drop the `.todo`).
-//   2. Uncomment the `loadModule()` call in beforeAll.
-//   3. Re-run `npx vitest run`.
-//
-// Keep these as pure unit tests — no integration / no real DOM layout.
+// We import home.js once (its DOM-touching wireXxx() calls all bail no-op
+// when getElementById returns null) and reuse the helpers across cases.
 
-import { describe, it, expect, beforeAll, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
 
-// ── Test fixtures ───────────────────────────────────────────────────
-const CANVAS_W = 390;   // iPhone-ish viewport width used by v2 scatter
-const CANVAS_H = 720;
-const CARD_W = 240;
-const CARD_H = 150;
-
-function makeCard(overrides = {}) {
-  return {
-    institution: 'Capital One',
-    mask: '4471',
-    balance: 847.22,
-    limit: 2500,
-    ...overrides,
-  };
-}
-
-function makeCards(n) {
-  const banks = ['Capital One', 'Chase', 'Amex', 'Citi', 'Discover', 'Apple', 'Wells Fargo', 'BoA', 'Synchrony', 'Barclays', 'USAA', 'PNC'];
-  return Array.from({ length: n }, (_, i) => makeCard({
-    institution: banks[i % banks.length],
-    mask: String(1000 + i),
-    balance: 100 * (i + 1) + 47,
-    limit: 1000 * (i + 1),
-  }));
-}
-
-// Pairwise minimum separation. Cards are ~240x150; require centers to be
-// at least half the smaller dim apart so visible art doesn't fully stack.
-// (Full non-overlap would need ~sqrt(CARD_W^2 + CARD_H^2); we relax because
-// the scatter design intentionally allows edge kiss.)
-const MIN_CENTER_DISTANCE = 60;
-
-function distance(a, b) {
-  const dx = a.x - b.x;
-  const dy = a.y - b.y;
-  return Math.sqrt(dx * dx + dy * dy);
-}
-
-// ── Module loader ───────────────────────────────────────────────────
-// Uncomment once home.js exports `window.CashBFFHome` (or ES exports).
-// If the agent ships ES exports instead of a window global, swap to:
-//   import * as Home from '../home.js';  and drop window usage.
-let Home;
-async function loadModule() {
-  // await import('../home.js');
-  // Home = window.CashBFFHome;
-}
+let math;
 
 beforeAll(async () => {
-  await loadModule();
-});
-
-// ── allocatePositions ───────────────────────────────────────────────
-describe('allocatePositions', () => {
-  it.todo('returns an array with the same length as its input', () => {
-    const cards = makeCards(4);
-    const out = Home.allocatePositions(cards, CANVAS_W, CANVAS_H);
-    expect(out).toHaveLength(4);
-  });
-
-  it.todo('preserves all original card fields on each entry', () => {
-    const cards = makeCards(3);
-    const out = Home.allocatePositions(cards, CANVAS_W, CANVAS_H);
-    out.forEach((entry, i) => {
-      expect(entry.card.institution).toBe(cards[i].institution);
-      expect(entry.card.mask).toBe(cards[i].mask);
-      expect(entry.card.balance).toBe(cards[i].balance);
-      expect(entry.card.limit).toBe(cards[i].limit);
-    });
-  });
-
-  it.todo('adds numeric x, y, rotation, scale to each entry', () => {
-    const out = Home.allocatePositions(makeCards(3), CANVAS_W, CANVAS_H);
-    out.forEach((entry) => {
-      expect(typeof entry.x).toBe('number');
-      expect(typeof entry.y).toBe('number');
-      expect(typeof entry.rotation).toBe('number');
-      expect(typeof entry.scale).toBe('number');
-      expect(Number.isFinite(entry.x)).toBe(true);
-      expect(Number.isFinite(entry.y)).toBe(true);
-      expect(Number.isFinite(entry.rotation)).toBe(true);
-      expect(Number.isFinite(entry.scale)).toBe(true);
-    });
-  });
-
-  it.todo('places cards so no two centers overlap below the min distance', () => {
-    const out = Home.allocatePositions(makeCards(5), CANVAS_W, CANVAS_H);
-    for (let i = 0; i < out.length; i++) {
-      for (let j = i + 1; j < out.length; j++) {
-        expect(distance(out[i], out[j])).toBeGreaterThan(MIN_CENTER_DISTANCE);
-      }
-    }
-  });
-
-  // If allocation is deterministic (seeded), this should pass. If the agent
-  // chose Math.random() with no seed, flip this to `.todo` with a note.
-  it.todo('is stable across re-renders for the same input', () => {
-    const cards = makeCards(5);
-    const a = Home.allocatePositions(cards, CANVAS_W, CANVAS_H);
-    const b = Home.allocatePositions(cards, CANVAS_W, CANVAS_H);
-    a.forEach((entry, i) => {
-      expect(entry.x).toBeCloseTo(b[i].x, 5);
-      expect(entry.y).toBeCloseTo(b[i].y, 5);
-      expect(entry.rotation).toBeCloseTo(b[i].rotation, 5);
-      expect(entry.scale).toBeCloseTo(b[i].scale, 5);
-    });
-  });
-
-  it.todo('handles 1, 3, 5, 6, 8, 12 cards without throwing or exceeding canvas bounds', () => {
-    for (const n of [1, 3, 5, 6, 8, 12]) {
-      const out = Home.allocatePositions(makeCards(n), CANVAS_W, CANVAS_H);
-      expect(out).toHaveLength(n);
-      out.forEach((entry) => {
-        // Allow the card art to extend slightly past edges via the scale factor,
-        // but the center should be inside the canvas.
-        expect(entry.x).toBeGreaterThanOrEqual(0);
-        expect(entry.x).toBeLessThanOrEqual(CANVAS_W);
-        expect(entry.y).toBeGreaterThanOrEqual(0);
-        expect(entry.y).toBeLessThanOrEqual(CANVAS_H);
-      });
-    }
-  });
-
-  it.todo('scales smallest balance largest and largest balance smallest (relative)', () => {
-    const cards = [
-      makeCard({ mask: 'LOW', balance: 50 }),
-      makeCard({ mask: 'MID', balance: 500 }),
-      makeCard({ mask: 'HI', balance: 5000 }),
-    ];
-    const out = Home.allocatePositions(cards, CANVAS_W, CANVAS_H);
-    const byMask = Object.fromEntries(out.map((e) => [e.card.mask, e]));
-    expect(byMask.LOW.scale).toBeGreaterThan(byMask.MID.scale);
-    expect(byMask.MID.scale).toBeGreaterThan(byMask.HI.scale);
-  });
-
-  it.todo('returns an empty array for an empty input', () => {
-    expect(Home.allocatePositions([], CANVAS_W, CANVAS_H)).toEqual([]);
-  });
-});
-
-// ── renderCards ─────────────────────────────────────────────────────
-describe('renderCards', () => {
-  let container;
-  beforeEach(() => {
-    container = document.createElement('div');
-  });
-
-  it.todo('creates one .card element per input card', () => {
-    const cards = makeCards(3);
-    Home.renderCards(container, cards);
-    expect(container.querySelectorAll('.card')).toHaveLength(3);
-  });
-
-  it.todo('tags each .card with a data attribute matching the input mask', () => {
-    const cards = makeCards(3);
-    Home.renderCards(container, cards);
-    const nodes = container.querySelectorAll('.card');
-    nodes.forEach((node, i) => {
-      // Accept either data-mask or data-slot-keyed lookup — update to match module.
-      const mask = node.getAttribute('data-mask') || node.dataset.mask;
-      expect(mask).toBe(cards[i].mask);
-    });
-  });
-
-  it.todo('applies absolute positioning + rotate + scale as inline styles', () => {
-    const cards = makeCards(2);
-    Home.renderCards(container, cards);
-    const first = container.querySelector('.card');
-    const style = first.getAttribute('style') || '';
-    expect(style).toMatch(/position:\s*absolute/i);
-    expect(style).toMatch(/rotate|transform/i);
-    expect(style).toMatch(/scale|transform/i);
-  });
-
-  it.todo('renders the empty-state element when given an empty array', () => {
-    Home.renderCards(container, []);
-    expect(container.querySelectorAll('.card')).toHaveLength(0);
-    expect(container.textContent.toLowerCase()).toContain('no cards connected yet');
-  });
-});
-
-// ── fetchHome ───────────────────────────────────────────────────────
-describe('fetchHome', () => {
-  beforeEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  it.todo('resolves with { cards: [...] } on a 200 response', async () => {
-    const payload = { cards: makeCards(2) };
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: async () => payload,
-    });
-    const out = await Home.fetchHome();
-    expect(out).toEqual(payload);
-  });
-
-  it.todo('sends credentials: include in the fetch options', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: async () => ({ cards: [] }),
-    });
-    await Home.fetchHome();
-    const [, opts] = global.fetch.mock.calls[0];
-    expect(opts).toMatchObject({ credentials: 'include' });
-  });
-
-  it.todo('redirects to / on 401 via location.replace', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
+  // Stub fetch so home.js's gateAuth/fetchCalendar boot calls don't blow up
+  // jsdom's lack of network. Returns a 401-ish response that the gateAuth
+  // path treats as "not signed in" and silently bails.
+  globalThis.fetch = () =>
+    Promise.resolve({
       ok: false,
       status: 401,
       json: async () => ({}),
+      text: async () => '',
     });
-    // jsdom's location is non-configurable; stub only the method we need.
-    const replace = vi.fn();
-    Object.defineProperty(window, 'location', {
-      writable: true,
-      value: { ...window.location, replace },
-    });
-    await Home.fetchHome().catch(() => {});
-    expect(replace).toHaveBeenCalledWith('/');
+  // Stub location.replace so the 401 redirect doesn't actually navigate.
+  if (window.location && typeof window.location.replace !== 'function') {
+    window.location.replace = () => {};
+  }
+  await import('../home.js');
+  math = window.__homeDayMath;
+  if (!math) throw new Error('home.js did not expose __homeDayMath');
+});
+
+beforeEach(() => {
+  // Reset fixtures between tests so order doesn't matter.
+  math.__setWalletCacheForTest(null);
+  math.__setBalancesCacheForTest(null);
+  math.__setPrecommitsForTest([]);
+  math.__setTodayForTest(new Date(2026, 3, 27)); // Apr 27, 2026 (months are 0-indexed)
+});
+
+// ── computeTodayBaseBalance ────────────────────────────────────────
+describe('computeTodayBaseBalance', () => {
+  it('returns null when neither wallet nor balances is loaded', () => {
+    expect(math.computeTodayBaseBalance()).toBe(null);
   });
 
-  // The module's chosen 500 contract is unknown until it ships. Update this
-  // to either `.rejects` or an `{ error: ... }` shape once confirmed.
-  it.todo('handles 500 according to module contract (reject or error flag)', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: false,
-      status: 500,
-      json: async () => ({}),
+  it('returns walletCache.summary.running_balance_usd when present', () => {
+    math.__setWalletCacheForTest({
+      summary: { running_balance_usd: 1234.56 },
     });
-    // Example (reject branch):
-    //   await expect(Home.fetchHome()).rejects.toThrow();
-    // Example (error-flag branch):
-    //   await expect(Home.fetchHome()).resolves.toMatchObject({ error: true });
+    expect(math.computeTodayBaseBalance()).toBeCloseTo(1234.56, 2);
+  });
+
+  it('falls back to depository − credit from balancesCache', () => {
+    math.__setBalancesCacheForTest({
+      accounts: [
+        { account_type: 'depository', balance_available: 1500 },
+        { account_type: 'credit', balance_current: 200 },
+      ],
+    });
+    expect(math.computeTodayBaseBalance()).toBeCloseTo(1300, 2);
+  });
+
+  it('prefers wallet over balances fallback', () => {
+    math.__setWalletCacheForTest({
+      summary: { running_balance_usd: 999 },
+    });
+    math.__setBalancesCacheForTest({
+      accounts: [{ account_type: 'depository', balance_available: 50 }],
+    });
+    expect(math.computeTodayBaseBalance()).toBe(999);
+  });
+});
+
+// ── computeDayProjection ───────────────────────────────────────────
+describe('computeDayProjection', () => {
+  it('hasBase=false when no balance source is loaded', () => {
+    const out = math.computeDayProjection(new Date(2026, 3, 29));
+    expect(out.hasBase).toBe(false);
+  });
+
+  it('reproduces Bug 1: $1000 base + $25 plan on Apr 29 → running=$1000, after=$975', () => {
+    // The exact case the user reported on the live site. Today is Apr 27,
+    // wallet shows $1000 cash, the only scheduled txn is a $25 Self Financial
+    // sub on Apr 29. Clicking Apr 29 should display "running balance:
+    // $1000.00" (the carry-forward) and "after your plans this day: $975.00".
+    math.__setWalletCacheForTest({
+      summary: { running_balance_usd: 1000 },
+    });
+    math.__setPrecommitsForTest([
+      {
+        date: '2026-04-29',
+        amount: 25,
+        type: 'sub',
+        source: 'scheduled',
+        name: 'Self Financial',
+      },
+    ]);
+    const out = math.computeDayProjection(new Date(2026, 3, 29));
+    expect(out.hasBase).toBe(true);
+    expect(out.runningBalance).toBeCloseTo(1000, 2);
+    // Caller computes "after" = running − dayOut + dayIn = 1000 − 25 = 975.
+    expect(out.runningBalance - 25).toBeCloseTo(975, 2);
+  });
+
+  it('layers in scheduled outflows that fall BETWEEN today and the clicked day', () => {
+    // Today=Apr 27, click Apr 30. Scheduled: $50 on Apr 28, $30 on Apr 29.
+    // Both fall strictly between today (exclusive) and Apr 30 (exclusive),
+    // so the running balance should reflect both: 1000 − 50 − 30 = 920.
+    math.__setWalletCacheForTest({
+      summary: { running_balance_usd: 1000 },
+    });
+    math.__setPrecommitsForTest([
+      { date: '2026-04-28', amount: 50, type: 'sub', source: 'scheduled' },
+      { date: '2026-04-29', amount: 30, type: 'sub', source: 'scheduled' },
+    ]);
+    const out = math.computeDayProjection(new Date(2026, 3, 30));
+    expect(out.runningBalance).toBeCloseTo(920, 2);
+  });
+
+  it('does NOT include the clicked day\'s own scheduled txns (they go in "after your plans")', () => {
+    math.__setWalletCacheForTest({
+      summary: { running_balance_usd: 1000 },
+    });
+    math.__setPrecommitsForTest([
+      // This one is ON the clicked day — must be excluded from running.
+      { date: '2026-04-29', amount: 200, type: 'sub', source: 'scheduled' },
+    ]);
+    const out = math.computeDayProjection(new Date(2026, 3, 29));
+    expect(out.runningBalance).toBeCloseTo(1000, 2);
+  });
+
+  it('does NOT include today\'s own scheduled txns (already reflected in base)', () => {
+    // Today=Apr 27, click Apr 29. Scheduled $40 on Apr 27 (today) — wallet
+    // already reflects today's settled spend; we don't double-count.
+    math.__setWalletCacheForTest({
+      summary: { running_balance_usd: 1000 },
+    });
+    math.__setPrecommitsForTest([
+      { date: '2026-04-27', amount: 40, type: 'sub', source: 'scheduled' },
+    ]);
+    const out = math.computeDayProjection(new Date(2026, 3, 29));
+    expect(out.runningBalance).toBeCloseTo(1000, 2);
+  });
+
+  it('adds scheduled income between today and clicked day', () => {
+    math.__setWalletCacheForTest({
+      summary: { running_balance_usd: 200 },
+    });
+    math.__setPrecommitsForTest([
+      { date: '2026-04-28', amount: 500, type: 'income', source: 'scheduled' },
+    ]);
+    const out = math.computeDayProjection(new Date(2026, 3, 29));
+    expect(out.runningBalance).toBeCloseTo(700, 2);
+  });
+
+  it('ignores Plaid-source rows entirely (only scheduled count toward projection)', () => {
+    // Plaid actuals after today are impossible; on/before today they're
+    // already in the base balance. Either way, projection must skip them.
+    math.__setWalletCacheForTest({
+      summary: { running_balance_usd: 1000 },
+    });
+    math.__setPrecommitsForTest([
+      { date: '2026-04-28', amount: 999, type: 'sub', source: 'plaid' },
+    ]);
+    const out = math.computeDayProjection(new Date(2026, 3, 29));
+    expect(out.runningBalance).toBeCloseTo(1000, 2);
+  });
+
+  it('handles a clicked day equal to today: running balance equals today\'s cash', () => {
+    math.__setWalletCacheForTest({
+      summary: { running_balance_usd: 750 },
+    });
+    math.__setPrecommitsForTest([
+      // Future scheduled — irrelevant when clicking today.
+      { date: '2026-04-29', amount: 25, type: 'sub', source: 'scheduled' },
+    ]);
+    const out = math.computeDayProjection(new Date(2026, 3, 27));
+    expect(out.runningBalance).toBeCloseTo(750, 2);
+  });
+
+  it('reflects underwater (negative) balances honestly', () => {
+    math.__setWalletCacheForTest({
+      summary: { running_balance_usd: -100 },
+    });
+    math.__setPrecommitsForTest([
+      { date: '2026-04-28', amount: 50, type: 'sub', source: 'scheduled' },
+    ]);
+    const out = math.computeDayProjection(new Date(2026, 3, 29));
+    expect(out.runningBalance).toBeCloseTo(-150, 2);
+  });
+});
+
+// ── formatSignedMoney ─────────────────────────────────────────────
+describe('formatSignedMoney', () => {
+  it('formats positive whole dollars with $ and 2dp', () => {
+    expect(math.formatSignedMoney(25)).toBe('$25.00');
+  });
+
+  it('groups thousands with commas', () => {
+    expect(math.formatSignedMoney(1234.5)).toBe('$1,234.50');
+    expect(math.formatSignedMoney(1234567.89)).toBe('$1,234,567.89');
+  });
+
+  it('prefixes negatives with a leading minus', () => {
+    expect(math.formatSignedMoney(-42.5)).toBe('-$42.50');
+  });
+
+  it('handles zero cleanly', () => {
+    expect(math.formatSignedMoney(0)).toBe('$0.00');
   });
 });

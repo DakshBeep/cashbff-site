@@ -1,37 +1,38 @@
-// ── Config ──────────────────────────────────────
-// TODO: wire real Plaid Link once OTP auth lands.
-// When MOCK_MODE = false, the page will hit the real backend:
-//   POST /api/create-link-token   { user_id, link_token }
-//   POST /api/exchange-token      { user_id, public_token }
-// For now we simulate the flow so Maya can continue to home.html.
-const MOCK_MODE = true;
-const API_BASE  = 'https://api.cashbff.com';
+// connect.js — Plaid Link integration for the web onboarding flow.
+//
+// Lifecycle:
+//   1. Page loads → confirm session via GET /api/me. 401 → redirect to verify.html.
+//   2. User clicks "connect with plaid" → POST /api/plaid/link-token (cookie-authed).
+//   3. Plaid.create({...}).open() opens the Plaid modal.
+//   4. onSuccess(public_token, metadata) → POST /api/plaid/exchange → home.html.
+//   5. onExit (user closed modal) → re-enable the button, hide loading state.
+//
+// All script lives in this file (no inline scripts — CSP).
 
-// ── Phone parsing ───────────────────────────────
-const params   = new URLSearchParams(location.search);
-const rawPhone = params.get('phone') || '';
-const digits   = rawPhone.replace(/\D/g, '');
-const phoneDigits = digits.slice(-10);
-const userId  = phoneDigits ? ('user_' + phoneDigits) : 'user_anon';
-const pill    = document.getElementById('phone-pill');
-if (phoneDigits.length === 10) {
-  pill.textContent = `+1 (${phoneDigits.slice(0,3)}) ${phoneDigits.slice(3,6)}-${phoneDigits.slice(6)}`;
-}
+const API_BASE = 'https://api.cashbff.com';
 
-// Skip link passes phone through
-const skipLink = document.getElementById('skip-link');
-skipLink.href = 'home.html' + (phoneDigits ? ('?phone=' + phoneDigits) : '');
-
-// ── Status renderers ────────────────────────────
-const statusEl = document.getElementById('status');
+// ── DOM hooks ─────────────────────────────────────
+const statusEl     = document.getElementById('status');
 const statusContent = document.getElementById('status-content');
-const connectBtn = document.getElementById('connect-btn');
+const connectBtn   = document.getElementById('connect-btn');
+const phonePill    = document.getElementById('phone-pill');
+
+// Guard against re-entrant clicks while a Link handler is already in flight
+// (the Plaid SDK is happy to open multiple modals on top of each other if
+// asked — that flickers and confuses users on slow networks).
+let linkHandler = null;
+let inFlight    = false;
+
+// ── UI renderers ──────────────────────────────────
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
+}
 
 function showLoading(msg) {
   statusEl.classList.add('show', 'status-loading');
   statusEl.classList.remove('status-error', 'status-success');
   statusContent.innerHTML = `
-    <div class="status-msg">${msg || 'connecting'}</div>
+    <div class="status-msg">${escapeHtml(msg || 'connecting')}</div>
     <div class="status-sub">this usually takes a few seconds</div>
     <div class="status-pulse" aria-hidden="true"></div>
   `;
@@ -52,101 +53,163 @@ function showError(msg) {
   statusEl.classList.add('show', 'status-error');
   statusContent.innerHTML = `
     <div class="status-msg" style="font-size:1.15rem">hm, that didn't work</div>
-    <div class="status-sub">${escapeHtml(msg || "try again in a sec")}</div>
+    <div class="status-sub">${escapeHtml(msg || 'try again in a sec')}</div>
     <button class="retry-btn" id="retry-btn">try again</button>
   `;
-  document.getElementById('retry-btn').addEventListener('click', () => {
-    statusEl.classList.remove('show');
-    connectBtn.disabled = false;
-  });
+  const retry = document.getElementById('retry-btn');
+  if (retry) {
+    retry.addEventListener('click', () => {
+      statusEl.classList.remove('show');
+      connectBtn.disabled = false;
+      inFlight = false;
+    });
+  }
   connectBtn.disabled = false;
+  inFlight = false;
 }
 
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
+function clearStatus() {
+  statusEl.classList.remove('show', 'status-loading', 'status-success', 'status-error');
+  statusContent.innerHTML = '';
 }
 
-function goHome() {
-  const href = 'home.html' + (phoneDigits ? ('?phone=' + phoneDigits) : '');
-  setTimeout(() => { location.href = href; }, 1500);
+function renderPhonePill(phone) {
+  if (!phonePill) return;
+  const last4 = String(phone || '').replace(/\D/g, '').slice(-4);
+  phonePill.textContent = last4 ? `···${last4} signed in` : 'signed in';
 }
 
-// ── Real Plaid flow (used when MOCK_MODE = false) ──
-async function realPlaidFlow() {
-  showLoading('connecting');
+// ── Auth gate ─────────────────────────────────────
+// /api/me returns 401 if the cbff_session cookie is missing/invalid/revoked.
+// On 401 we send the user back to verify.html so they can sign in again —
+// this also matches home.js's gate behavior, with verify.html as the entry
+// point for the web auth flow.
+async function gateAuth() {
+  let res;
+  try {
+    res = await fetch(API_BASE + '/api/me', { credentials: 'include' });
+  } catch (_) {
+    showError("we couldn't reach the server — check your connection.");
+    connectBtn.disabled = true;
+    return null;
+  }
+  if (res.status === 401) {
+    location.replace('verify.html');
+    // Return a never-resolving promise so callers don't continue while
+    // the page is mid-navigation.
+    return new Promise(() => {});
+  }
+  if (!res.ok) {
+    showError("something's off on our end — try again in a moment.");
+    connectBtn.disabled = true;
+    return null;
+  }
+  const data = await res.json().catch(() => ({}));
+  renderPhonePill(data.phone);
+  return data;
+}
+
+// ── Plaid Link flow ───────────────────────────────
+async function startPlaidFlow() {
+  if (inFlight) return;
+  inFlight = true;
   connectBtn.disabled = true;
+  showLoading('connecting');
 
+  // 1. Get a fresh link token from the backend.
   let linkToken;
   try {
-    const res = await fetch(API_BASE + '/api/create-link-token', {
+    const res = await fetch(API_BASE + '/api/plaid/link-token', {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: userId, link_token: null }),
+      body: JSON.stringify({}),
     });
-    if (!res.ok) throw new Error('link-token request failed');
+    if (res.status === 401) {
+      location.replace('verify.html');
+      return;
+    }
+    if (!res.ok) throw new Error('link-token request failed (' + res.status + ')');
     const data = await res.json();
-    linkToken = data.link_token || data.linkToken;
+    linkToken = data.link_token;
     if (!linkToken) throw new Error('no link_token returned');
-  } catch (err) {
+  } catch (_) {
     showError("couldn't reach the bank service — give it a moment.");
     return;
   }
 
-  if (!window.Plaid || !window.Plaid.create) {
+  // 2. SDK loaded?
+  if (!window.Plaid || typeof window.Plaid.create !== 'function') {
     showError("plaid didn't load — check your connection.");
     return;
   }
 
-  const handler = window.Plaid.create({
-    token: linkToken,
-    onSuccess: async (public_token, metadata) => {
-      showLoading('saving');
-      try {
-        const r = await fetch(API_BASE + '/api/exchange-token', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            user_id: userId,
-            public_token: public_token,
-            link_token: linkToken,
-          }),
-        });
-        if (!r.ok) throw new Error('exchange failed');
-        const inst = metadata && metadata.institution && metadata.institution.name;
-        showSuccess(inst);
-        goHome();
-      } catch (e) {
-        showError("we connected but couldn't save it — one more try?");
-      }
-    },
-    onExit: (err) => {
-      if (err) {
-        showError("plaid closed before we finished — try again whenever.");
-      } else {
-        // User cancelled quietly — hide status, re-enable button
-        statusEl.classList.remove('show');
-        connectBtn.disabled = false;
-      }
-    },
-  });
-  handler.open();
-}
-
-// ── Mock flow (proto-grade) ─────────────────────
-function mockPlaidFlow() {
-  connectBtn.disabled = true;
-  showLoading('connecting');
-  setTimeout(() => {
-    showSuccess('your bank');
-    goHome();
-  }, 2000);
-}
-
-// ── Wire the button ─────────────────────────────
-connectBtn.addEventListener('click', () => {
-  if (MOCK_MODE) {
-    mockPlaidFlow();
-  } else {
-    realPlaidFlow();
+  // 3. Build the handler. We re-create on each click so each attempt gets
+  //    a fresh link token (Plaid tokens are short-lived and one-shot).
+  try {
+    linkHandler = window.Plaid.create({
+      token: linkToken,
+      onSuccess: handlePlaidSuccess,
+      onExit:    handlePlaidExit,
+      onEvent:   handlePlaidEvent,
+    });
+    linkHandler.open();
+    // Hide the loading status once Plaid's modal is up — Plaid owns the UI.
+    clearStatus();
+  } catch (_) {
+    showError("we couldn't open the bank picker — try again.");
   }
-});
+}
+
+async function handlePlaidSuccess(public_token, metadata) {
+  showLoading('saving');
+  try {
+    const res = await fetch(API_BASE + '/api/plaid/exchange', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ public_token: public_token, metadata: metadata }),
+    });
+    if (res.status === 401) {
+      location.replace('verify.html');
+      return;
+    }
+    if (!res.ok) throw new Error('exchange failed (' + res.status + ')');
+    const inst = metadata && metadata.institution && metadata.institution.name;
+    showSuccess(inst);
+    // Give the success state a beat to land before navigating.
+    setTimeout(() => { location.href = 'home.html'; }, 1500);
+  } catch (_) {
+    showError("we connected but couldn't save it — one more try?");
+  }
+}
+
+function handlePlaidExit(err, metadata) {
+  // Two paths:
+  //   a) err is non-null → Plaid surfaced an error (institution timeout,
+  //      MFA bailed, network blip). Show retryable copy.
+  //   b) err is null    → user closed the modal voluntarily (no bank picked
+  //      yet). Quietly reset the page so they can try again whenever.
+  if (err) {
+    showError("plaid closed before we finished — try again whenever.");
+    return;
+  }
+  clearStatus();
+  connectBtn.disabled = false;
+  inFlight = false;
+}
+
+function handlePlaidEvent(eventName /*, metadata */) {
+  // OPEN means the modal mounted successfully — at that point our local
+  // loading copy is redundant. (We already hide it after .open() resolves
+  // synchronously; this is a belt-and-braces in case of race conditions
+  // on slow devices.)
+  if (eventName === 'OPEN') clearStatus();
+}
+
+// ── Wire it up ────────────────────────────────────
+connectBtn.addEventListener('click', () => { startPlaidFlow(); });
+
+// Gate auth as soon as the page loads. If the user isn't signed in, they
+// get bounced to verify.html before they can click anything.
+gateAuth();

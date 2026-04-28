@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
 
-  <!-- Plaid Link (real flow; mock falls back gracefully if unreachable) -->
+  <!-- Plaid Link — stable v2 -->
   <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
 
   <style>
@@ -196,31 +196,6 @@
       font-style: italic;
     }
 
-    /* ── Skip ────────────────────────────────────────── */
-    .skip-wrap {
-      text-align: center;
-      padding: 0.5rem 0 1rem;
-    }
-    .skip-link {
-      color: var(--off-black);
-      opacity: 0.55;
-      font-size: 0.9rem;
-      font-weight: 500;
-      transition: opacity 0.2s ease;
-      display: inline-block;
-      padding: 0.5rem;
-    }
-    .skip-link:hover { opacity: 1; color: var(--cash-green); }
-    .skip-hint {
-      margin-top: 0.3rem;
-      font-size: 0.78rem;
-      opacity: 0;
-      font-style: italic;
-      transition: opacity 0.2s ease;
-      min-height: 1.1em;
-    }
-    .skip-wrap:hover .skip-hint { opacity: 0.55; }
-
     /* ── Status area ─────────────────────────────────── */
     .status {
       display: none;
@@ -382,11 +357,6 @@
       <div class="cta-wrap">
         <button class="cta-btn" id="connect-btn">connect with plaid</button>
         <div class="cta-fine">plaid works with 12,000+ banks.</div>
-      </div>
-
-      <div class="skip-wrap">
-        <a href="#" class="skip-link" id="skip-link">i'll do this later →</a>
-        <div class="skip-hint">manual balances work fine — you'll just have to update them yourself.</div>
       </div>
 
       <!-- Status: loading / success / error ─────────── -->

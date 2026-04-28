@@ -1,20 +1,21 @@
 // Per-day projection line in the day popover.
 //
-// On any future-or-today cell that has both a running balance and at least
-// one scheduled txn, the popover renders a second line:
-//   "after your plans today: $X"          (today)
-//   "after your plans this day: $X"       (future days)
+// On any future-or-today cell with at least one scheduled txn AND a known
+// base balance (from /api/wallet), the popover renders two lines:
+//   "running balance: $X"                  (carry-forward to start of day)
+//   "after your plans today: $Y"           (today)
+//   "after your plans this day: $Y"        (future days)
 //
-// Math (assets/js/home.js L420–448):
-//   running_balance = sum(outflows on this day)        // both plaid + scheduled
-//   afterPlans      = running_balance - dayScheduledOut + dayScheduledIn
-// i.e. the projection strips out the scheduled outflows (because they
-// haven't happened) and adds back any scheduled income (because it does
-// land that day in the user's plan).
+// Math (assets/js/home.js — computeDayProjection + openDrawer):
+//   running_balance(d) = walletCache.summary.running_balance_usd
+//                       + Σ(scheduled income for dates strictly between today and d)
+//                       − Σ(scheduled outflow for dates strictly between today and d)
+//   afterPlans(d)      = running_balance(d) − dayScheduledOut + dayScheduledIn
+// i.e. running_balance is the cash position projected to the START of the
+// clicked day; afterPlans subtracts the day's own scheduled outflow.
 //
-// Real prod data on Daksh's account often has multiple scheduled rows for
-// today, so we cross-check the math against /api/calendar instead of
-// assuming the only scheduled item is the one this test created.
+// When d == today, running_balance is just today's wallet balance. We
+// cross-check both lines against /api/wallet + /api/calendar.
 
 import { test, expect, type Page, type APIRequestContext } from '@playwright/test';
 import {
@@ -132,15 +133,38 @@ test.describe('per-day projection line', () => {
       { timeout: 20_000 },
     ).toBe(true);
 
-    // ── Compute expected math from /api/calendar ──────────
-    // home.js uses a snapshotted `PRECOMMITS` array, but the calendar API is
-    // the same source of truth so we can reproduce its arithmetic exactly.
+    // ── Compute expected math from /api/calendar + /api/wallet ──────────
+    // home.js uses a snapshotted PRECOMMITS array + walletCache, but both are
+    // sourced from the same APIs so we can reproduce the arithmetic exactly.
     const api = await authenticatedApi();
     if (!api) throw new Error('JWT_SECRET missing — should have been caught earlier');
-    const { outflow, dayScheduledOut, dayScheduledIn } = await fetchDayMath(api, todayIso());
-    await api.dispose();
+    const { dayScheduledOut, dayScheduledIn } = await fetchDayMath(api, todayIso());
 
-    const expected = outflow - dayScheduledOut + dayScheduledIn;
+    // Pull running_balance_usd from /api/wallet — that's the canonical base
+    // balance home.js uses for the per-day projection.
+    const walletRes = await api.get('/api/wallet');
+    if (!walletRes.ok()) {
+      throw new Error(`/api/wallet -> ${walletRes.status()}`);
+    }
+    const walletBody = (await walletRes.json()) as {
+      summary?: { running_balance_usd?: number };
+    };
+    await api.dispose();
+    const baseBalance = walletBody.summary?.running_balance_usd;
+    if (typeof baseBalance !== 'number') {
+      // No wallet data — projection is hidden in this state, so we can't
+      // cross-check the numbers. Skip the math assertion but keep the
+      // existence check above so a regression that nukes the line
+      // entirely still fails this spec.
+      console.warn('[per-day-projection] no wallet running_balance_usd; skipping math.');
+      await context.close();
+      return;
+    }
+
+    // For d == today the carry-forward IS today's base balance — no
+    // intermediate days to walk through.
+    const expectedRunning = baseBalance;
+    const expectedAfter = expectedRunning - dayScheduledOut + dayScheduledIn;
 
     const totalText = (await page.locator('#drawer-total').textContent()) || '';
     const projText = (await page.locator('#drawer-projected').textContent()) || '';
@@ -151,14 +175,13 @@ test.describe('per-day projection line', () => {
     expect(projected).not.toBeNull();
     if (total === null || projected === null) return; // typeguard
 
-    // Top line: matches outflow.
-    expect(Math.abs(total - outflow)).toBeLessThan(0.01);
-    // Projection: matches the formula.
-    expect(Math.abs(projected - expected)).toBeLessThan(0.01);
+    // Top line: now shows the carry-forward running balance, NOT the day's
+    // outflow. (Bug 1 fix.)
+    expect(Math.abs(total - expectedRunning)).toBeLessThan(0.01);
+    // Bottom line: running − dayScheduledOut + dayScheduledIn.
+    expect(Math.abs(projected - expectedAfter)).toBeLessThan(0.01);
 
-    // Sanity: our test row contributed to dayScheduledOut, so the projection
-    // is strictly less than the running balance (or at most equal if there's
-    // also enough scheduled income to wash it out).
+    // Sanity: our test row contributed at least TEST_AMOUNT to dayScheduledOut.
     expect(dayScheduledOut).toBeGreaterThanOrEqual(TEST_AMOUNT);
 
     // Bonus: ensure it's the today-specific copy, not "this day".

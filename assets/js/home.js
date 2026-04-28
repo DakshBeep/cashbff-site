@@ -253,6 +253,72 @@
     return PRECOMMITS.filter(function (e) { return e.date === key; });
   }
 
+  // Format a signed dollar amount as "$1,234.56" or "-$1,234.56".
+  function formatSignedMoney(n) {
+    var sign = n < 0 ? '-' : '';
+    var abs  = Math.abs(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return sign + '$' + abs;
+  }
+
+  // Today's actual cash position — what the user has RIGHT NOW, before any
+  // future plans are layered in. Pulled from /api/wallet's
+  // running_balance_usd (depository − cc_owed + tracked) when available;
+  // falls back to a frontend recomputation from balancesCache (depository −
+  // credit, ignoring tracked accounts). Returns null if neither source is
+  // ready, so callers can hide the running-balance line instead of showing
+  // a misleading $0.
+  function computeTodayBaseBalance() {
+    var summary = walletCache && walletCache.summary;
+    if (summary && typeof summary.running_balance_usd === 'number') {
+      return summary.running_balance_usd;
+    }
+    if (balancesCache && Array.isArray(balancesCache.accounts)) {
+      var depTotal = 0;
+      var ccTotal  = 0;
+      balancesCache.accounts.forEach(function (a) {
+        var t = (a.account_type || '').toLowerCase();
+        var b = balanceForRow(a);
+        if (b === null || !isFinite(b)) return;
+        if (t === 'depository') depTotal += b;
+        else if (t === 'credit') ccTotal += b;
+      });
+      return depTotal - ccTotal;
+    }
+    return null;
+  }
+
+  // Project the running cash balance to the START of day `d` — i.e. today's
+  // base balance plus the net of every scheduled item dated AFTER today and
+  // STRICTLY BEFORE `d`. The clicked day's own scheduled txns are NOT
+  // included here; they're shown separately in the "after your plans this
+  // day" line so the user can see the before/after.
+  //
+  // Returns { hasBase: boolean, runningBalance: number }. hasBase=false
+  // when neither /api/wallet nor /api/balances has resolved yet — caller
+  // hides the running-balance line.
+  function computeDayProjection(d) {
+    var base = computeTodayBaseBalance();
+    if (base === null) return { hasBase: false, runningBalance: 0 };
+
+    var dKey = iso(d);
+    var todayKey = iso(today);
+    var net = 0;
+    PRECOMMITS.forEach(function (e) {
+      if (!e || e.source !== 'scheduled') return;
+      // Strictly between today (exclusive) and d (exclusive). We exclude
+      // today because today's actual balance already reflects whatever has
+      // settled today; the "running balance up to day d" is the position
+      // you'd be in walking forward day-by-day from today, applying every
+      // scheduled item along the way until you arrive at the start of d.
+      if (e.date <= todayKey) return;
+      if (e.date >= dKey) return;
+      var amt = Number(e.amount) || 0;
+      if (e.type === 'income') net += amt;
+      else                     net -= amt;
+    });
+    return { hasBase: true, runningBalance: base + net };
+  }
+
   // ── SWR hydration (reimbursements only) ──────────
   // Calendar + balances are NO LONGER hydrated from localStorage. The user
   // wants a fresh load every time — the page-loader bar at the top of
@@ -561,27 +627,35 @@
       else                     dayScheduledOut += Number(e.amount) || 0;
     });
 
-    // Top line: "running balance: $X" — the day total (renamed from "on this
-    // day"). Math becomes intuitive: top minus your scheduled = bottom.
-    if (!isPastDay && outflow > 0) {
-      drawerTotal.innerHTML = 'running balance: <strong>' + money(outflow) + '</strong>';
+    // Bug 1 fix: "running balance" is the carry-forward cash position
+    // projected to the start of the clicked day — i.e. today's actual
+    // balance MINUS scheduled outflows for every day BETWEEN today and
+    // d (exclusive of d itself, since d's plans are folded into the
+    // "after your plans" line). Previously this line showed only the
+    // day's own outflow, which made a $25 plan on a day where the user
+    // had $1000+ cash render as "running balance: $25.00" — confusing
+    // and just wrong.
+    var dayProjection = computeDayProjection(d);
+    if (!isPastDay && dayProjection.hasBase) {
+      drawerTotal.innerHTML = 'running balance: <strong>' +
+        formatSignedMoney(dayProjection.runningBalance) + '</strong>';
     } else {
       drawerTotal.innerHTML = '';
     }
 
-    // Bottom line: "after your plans this day: $Y" — top minus scheduled
-    // outflow + scheduled income, computed PER DAY (not across a window).
-    // Hidden for past days, free days, and when there's no scheduled txn.
+    // Bottom line: "after your plans this day: $Y" — running balance
+    // MINUS today's scheduled outflow + today's scheduled income.
+    // Hidden for past days, when we don't have a balance baseline, and
+    // when this day has no scheduled activity to project through.
     if (drawerProjected) {
       drawerProjected.innerHTML = '';
-      if (!isPastDay && outflow > 0 && (dayScheduledOut > 0 || dayScheduledIn > 0)) {
-        var afterPlans = outflow - dayScheduledOut + dayScheduledIn;
-        var sign = afterPlans < 0 ? '-' : '';
-        var abs  = Math.abs(afterPlans).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+      if (!isPastDay && dayProjection.hasBase &&
+          (dayScheduledOut > 0 || dayScheduledIn > 0)) {
+        var afterPlans = dayProjection.runningBalance - dayScheduledOut + dayScheduledIn;
         var label = sameYMD(d, today) ? 'after your plans today'
                                       : 'after your plans this day';
         drawerProjected.innerHTML =
-          label + ': <strong>' + sign + '$' + abs + '</strong>';
+          label + ': <strong>' + formatSignedMoney(afterPlans) + '</strong>';
       }
     }
     drawerList.innerHTML = '';
@@ -1102,6 +1176,20 @@
     schedPop.classList.remove('open');
     schedOverlay.classList.remove('open');
     schedPop.setAttribute('aria-hidden', 'true');
+    // If this schedule popover was launched from a recurring-stream row,
+    // pop the recurring panel back open so the user lands where they
+    // started — the stream list with the (now-edited) row visible. The
+    // flag is one-shot: cleared the moment we honour it. Without this the
+    // user would close the schedule and find themselves on the bare
+    // calendar, having lost their place. (Bug C.)
+    if (reopenRecurringAfterSchedule) {
+      reopenRecurringAfterSchedule = false;
+      // Defensive: only reopen if the recurring panel isn't already open
+      // (e.g. ESC fast-paths, double-fires) and the wiring exists.
+      if (recurringPop && !recurringPop.classList.contains('open')) {
+        try { openRecurring(); } catch (_) {}
+      }
+    }
   }
 
   // After a successful create / edit / delete, evict the visible month from
@@ -2937,6 +3025,13 @@
         merchant: item.merchant,
         scheduledId: item.linked_scheduled_txn_id
       };
+      // Bug C: close the recurring popover BEFORE opening the schedule
+      // popover. They share an overlay layer (z-index 40/41) so opening
+      // the schedule on top leaves both visible — the user reported being
+      // "glitched in 2 menus." closeSchedule() reads the flag below and
+      // reopens the recurring panel so the user lands back in context.
+      reopenRecurringAfterSchedule = true;
+      try { closeRecurring(); } catch (_) {}
       openSchedule(synthesized);
     };
     row.addEventListener('click', function (ev) {
@@ -3016,6 +3111,11 @@
   // popover from a stream row. After a successful PATCH on the scheduled txn,
   // patchScheduleSubmit() consults this and PATCHes the stream too.
   var pendingRecurringEdit = null;
+  // One-shot flag set by buildRecurringStreamRow → openEditFlow when it opens
+  // the schedule popover from a stream row. closeSchedule() consumes the flag
+  // to reopen the recurring panel so the user lands back where they started.
+  // Without this both popovers would visibly stack ("glitched in 2 menus").
+  var reopenRecurringAfterSchedule = false;
 
   function renderRecurring() {
     if (recurringSuggestionsList) {
@@ -4198,6 +4298,32 @@
       // reloading. We deliberately don't hard-redirect so a transient error
       // doesn't kick a signed-in user out.
     }), endLoading);
+  }
+
+  // Test hook: expose pure-math helpers for the day-popover running-balance
+  // logic so vitest + Playwright can verify the projection without driving
+  // the full UI. Read-only; mutating these has no effect on home.js state.
+  // Safe to reference even when the page is mid-boot (helpers don't touch
+  // the DOM). Only mounted in browser-with-window contexts.
+  if (typeof window !== 'undefined') {
+    window.__homeDayMath = {
+      computeTodayBaseBalance: computeTodayBaseBalance,
+      computeDayProjection: computeDayProjection,
+      formatSignedMoney: formatSignedMoney,
+      // Test-only setters so unit tests can inject fixtures without
+      // standing up the live caches.
+      __setWalletCacheForTest: function (next) { walletCache = next; },
+      __setBalancesCacheForTest: function (next) { balancesCache = next; },
+      __setPrecommitsForTest: function (next) {
+        PRECOMMITS = Array.isArray(next) ? next.slice() : [];
+      },
+      __setTodayForTest: function (next) {
+        if (next instanceof Date) {
+          today = new Date(next.getTime());
+          today.setHours(0, 0, 0, 0);
+        }
+      }
+    };
   }
 
   if (document.readyState === 'loading') {
