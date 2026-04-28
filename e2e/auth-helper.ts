@@ -121,6 +121,59 @@ export async function authenticatedApi(): Promise<APIRequestContext | null> {
 }
 
 /**
+ * Sweep any leftover `__playwright_test*__` tracked accounts for the test
+ * user. Lists them via /api/wallet and deletes anything whose name matches
+ * the marker. Safe to call multiple times.
+ */
+export async function cleanupTrackedAccounts(): Promise<void> {
+  const api = await authenticatedApi();
+  if (!api) return;
+
+  let leftovers: Array<{ id: string | number; name: string }> = [];
+  try {
+    const res = await api.get('/api/wallet');
+    if (!res.ok()) {
+      console.warn(`[cleanup] /api/wallet returned ${res.status()} — skipping`);
+      await api.dispose();
+      return;
+    }
+    const data = (await res.json()) as {
+      tracked_accounts?: Array<Record<string, unknown>>;
+    };
+    const tracked = data.tracked_accounts || [];
+    leftovers = tracked
+      .filter((t) => String(t.name || '').startsWith(TEST_MARKER))
+      .map((t) => ({ id: t.id as string | number, name: String(t.name) }));
+  } catch (err) {
+    console.warn('[cleanup] could not list wallet:', err);
+    await api.dispose();
+    return;
+  }
+
+  if (leftovers.length === 0) {
+    await api.dispose();
+    return;
+  }
+
+  console.log(`[cleanup] deleting ${leftovers.length} leftover __playwright_test*__ tracked account(s)`);
+  for (const row of leftovers) {
+    try {
+      const res = await api.delete(
+        `/api/tracked-accounts/${encodeURIComponent(String(row.id))}`,
+      );
+      if (!res.ok() && res.status() !== 404) {
+        console.warn(
+          `[cleanup] DELETE tracked id=${row.id} name=${row.name} -> HTTP ${res.status()}`,
+        );
+      }
+    } catch (err) {
+      console.warn(`[cleanup] DELETE tracked id=${row.id} threw:`, err);
+    }
+  }
+  await api.dispose();
+}
+
+/**
  * Sweep any leftover `__playwright_test*__` scheduled transactions for the
  * test user. Pulls a wide calendar window (90d back, 90d forward) and
  * deletes anything that matches the marker. Safe to call multiple times.

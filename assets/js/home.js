@@ -181,9 +181,11 @@
   // localStorage on boot for instant paint when the panel opens.
   var walletCache = null;
   var walletFetchInflight = null;
-  // Selected kind for the add-tracked-card form. Defaults to 'debit'; flipped
-  // by the .type-chip[data-kind] cluster click handler.
-  var walletAddKind = 'debit';
+  // Selected kind for the add-tracked-card form. Defaults to 'credit' since
+  // tracked cards are most often credit cards (debt the user wants visible
+  // alongside Plaid checking balances). Flipped by the .type-chip[data-kind]
+  // cluster click handler.
+  var walletAddKind = 'credit';
 
   // Earliest month the calendar lets the user nav back to. Initialized from
   // signup_month (via /api/me). Then extended backward whenever a calendar
@@ -2862,7 +2864,7 @@
 
       if (form && typeof form.reset === 'function') form.reset();
       if (walletAddCurrency) walletAddCurrency.value = 'USD';
-      setWalletAddKind('debit');
+      setWalletAddKind('credit');
       if (walletAddSubmit) {
         walletAddSubmit.disabled = false;
         walletAddSubmit.textContent = '+ track it';
@@ -2959,6 +2961,10 @@
     walletOverlay.classList.add('open');
     walletPop.setAttribute('aria-hidden', 'false');
     setWalletError('');
+    // Re-sync the kind-chip cluster to the current state on every open so the
+    // visual matches walletAddKind (default 'credit') even after a prior open
+    // mutated state without submitting.
+    setWalletAddKind(walletAddKind);
 
     // Always paint whatever cache we have first (could be hydrated from
     // localStorage, could be the boot prefetch, could be null).

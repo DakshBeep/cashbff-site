@@ -436,6 +436,21 @@
       border: 1px dashed var(--cash-green);
       opacity: 1;
     }
+    /* Wallet "kind" chips (debit/credit) reuse the .type-chip pill but key off
+       data-kind. Periwinkle for credit, sage for debit — mirrors the inline
+       .kind-chip in tracked rows so the form preview matches what'll land. */
+    .type-chip[data-kind="credit"].is-active {
+      background: var(--periwinkle);
+      color: var(--cash-green);
+      border-color: var(--periwinkle);
+      opacity: 1;
+    }
+    .type-chip[data-kind="debit"].is-active {
+      background: #DFEDE0;
+      color: var(--cash-green);
+      border-color: #DFEDE0;
+      opacity: 1;
+    }
     .type-chip:focus-visible {
       outline: 2px solid var(--cash-green);
       outline-offset: 2px;
@@ -2389,8 +2404,8 @@
         <div class="field">
           <span class="field__label">kind</span>
           <div class="type-chips" id="wt-kind-chips" role="radiogroup" aria-label="account kind">
-            <button type="button" class="type-chip is-active" data-kind="debit" role="radio" aria-checked="true">debit</button>
-            <button type="button" class="type-chip" data-kind="credit" role="radio" aria-checked="false">credit</button>
+            <button type="button" class="type-chip" data-kind="debit" role="radio" aria-checked="false">debit</button>
+            <button type="button" class="type-chip is-active" data-kind="credit" role="radio" aria-checked="true">credit</button>
           </div>
         </div>
         <div class="field">
