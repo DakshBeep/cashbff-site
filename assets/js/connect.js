@@ -80,10 +80,11 @@ function renderPhonePill(phone) {
 }
 
 // ── Auth gate ─────────────────────────────────────
-// /api/me returns 401 if the cbff_session cookie is missing/invalid/revoked.
-// On 401 we send the user back to verify.html so they can sign in again —
-// this also matches home.js's gate behavior, with verify.html as the entry
-// point for the web auth flow.
+// Phase 7D legacy-page hygiene: any authed user hitting connect.html should
+// be bounced to /home.html — once /api/me is 200 they don't need to see the
+// connect step again. 401 still falls through to verify.html so unauthed
+// visitors land on the OTP entry point. Any other status keeps the page
+// inert and shows an error.
 async function gateAuth() {
   let res;
   try {
@@ -92,6 +93,13 @@ async function gateAuth() {
     showError("we couldn't reach the server — check your connection.");
     connectBtn.disabled = true;
     return null;
+  }
+  if (res.status === 200) {
+    // Authed user — they're already past onboarding. Bounce to home before
+    // any visible rendering or API call fires. .replace so this page
+    // doesn't end up in history.
+    location.replace('/home.html');
+    return new Promise(() => {});
   }
   if (res.status === 401) {
     location.replace('verify.html');

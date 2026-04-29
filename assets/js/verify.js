@@ -1,3 +1,28 @@
+// ── Phase 7D auth gate ────────────────────────────
+// If the user already has a valid cbff_session cookie they shouldn't be
+// looking at the OTP page — bounce them to /home.html before any SMS
+// fires or visible state changes. We expose the gate as a promise so the
+// SMS send (further down) can `await` it; the synchronous DOM wiring runs
+// in parallel because that's harmless even if we end up navigating away.
+//
+// Status semantics:
+//   200 → already authed → location.replace('/home.html'), promise pends.
+//   401 / network blip → resolve(false) and let the OTP flow proceed.
+const gateAuthPromise = (async function gateAuth() {
+  try {
+    const res = await fetch('https://api.cashbff.com/api/me', { credentials: 'include' });
+    if (res.status === 200) {
+      location.replace('/home.html');
+      // Never resolve — pending promise short-circuits any awaiter while
+      // the navigation lands.
+      await new Promise(() => {});
+    }
+  } catch (_) {
+    // Network hiccup → fall through; the user can still try OTP.
+  }
+  return false;
+})();
+
 // ── Display phone from query ──────────────────────
 const params = new URLSearchParams(location.search);
 const rawPhone = params.get('phone') || '';
@@ -143,6 +168,10 @@ function setHint(text, isError) {
 }
 
 async function sendOtp() {
+  // Wait for the auth gate first — if /api/me returns 200 we'll be in the
+  // middle of navigating to home and don't want to fire an SMS at the
+  // user's phone on the way out.
+  await gateAuthPromise;
   const phone = e164(rawPhone);
   if (!phone) {
     setHint("that number doesn't look right — try again?", true);

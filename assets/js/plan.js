@@ -1,3 +1,18 @@
+// ── Phase 7D auth gate ────────────────────────────
+// plan.html is the cold-start "tell me about your cards" calculator. If
+// the user already has a session (/api/me 200) they're past this step —
+// bounce them to /home.html before they fill in fake numbers. 401 / net
+// errors silently fall through so the public calculator still works.
+(async function gateAuth() {
+  try {
+    const res = await fetch('https://api.cashbff.com/api/me', { credentials: 'include' });
+    if (res.status === 200) location.replace('/home.html');
+  } catch (_) {
+    // Cold-start network blip — let the page render and behave like a
+    // public marketing calculator.
+  }
+})();
+
 // ── Phone pill ───────────────────────────────────
 const params = new URLSearchParams(location.search);
 const rawPhone = params.get('phone') || '';

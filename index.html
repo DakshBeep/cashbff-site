@@ -10,11 +10,14 @@
   ></script>
   <script src="/assets/js/sentry-init.js"></script>
   <title>cash bff</title>
-  <meta name="description" content="Close your eyes. We'll pay it down. A text-based money bff for credit cards.">
+  <meta name="description" content="Close your eyes. We'll pay it down. A money bff for credit cards.">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
+
+  <!-- Plaid Link — stable v2 -->
+  <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
 
   <style>
     @font-face {
@@ -36,6 +39,7 @@
       --periwinkle: #C5B6F1;
       --off-black: #1A1717;
       --vanilla: #FCFAF2;
+      --error: #7a1f2a;
 
       --font-display: 'Greed Condensed', 'Archivo Narrow', 'Arial Narrow', Impact, sans-serif;
       --font-body: 'Instrument Sans', system-ui, -apple-system, sans-serif;
@@ -50,6 +54,7 @@
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
       line-height: 1.5;
+      min-height: 100dvh;
     }
     a { color: inherit; text-decoration: none; }
     button { font-family: inherit; cursor: pointer; border: none; background: none; }
@@ -60,7 +65,10 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      padding: 1.75rem 2rem 2rem;
+      padding: 1.5rem 2rem 2rem;
+      max-width: 720px;
+      margin: 0 auto;
+      width: 100%;
       position: relative;
     }
 
@@ -78,336 +86,191 @@
       color: var(--cash-green);
     }
     .bar__right {
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       opacity: 0.45;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
-      font-weight: 500;
+      font-weight: 600;
     }
 
-    .center {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 2.75rem;
-      padding: 1rem 0;
-    }
-
-    /* ── Card ──────────────────────────────────────── */
-    .card-wrap {
-      perspective: 1400px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .card {
-      width: min(22rem, 86vw);
-      aspect-ratio: 1.586 / 1;
-      background: var(--cash-green);
-      border-radius: 1.25rem;
-      padding: 1.5rem 1.4rem 1.25rem;
-      position: relative;
-      color: var(--vanilla);
-      transform: rotate(-8deg) translateZ(0);
-      box-shadow:
-        0 30px 60px -20px rgba(26, 23, 23, 0.35),
-        0 12px 24px -10px rgba(1, 71, 81, 0.35),
-        inset 0 0 0 1px rgba(213, 255, 180, 0.08);
-      animation: float 6.5s ease-in-out infinite;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      overflow: hidden;
-    }
-    @keyframes float {
-      0%, 100% { transform: rotate(-8deg) translateY(0); }
-      50%      { transform: rotate(-8deg) translateY(-6px); }
-    }
-
-    .card::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      border-radius: inherit;
-      background: radial-gradient(120% 80% at 10% 0%, rgba(213, 255, 180, 0.08), transparent 60%);
-      pointer-events: none;
-    }
-
-    .card__top {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      position: relative;
-      z-index: 1;
-    }
-    .chip {
-      width: 2.4rem;
-      height: 1.8rem;
-      background: var(--periwinkle);
-      border-radius: 0.35rem;
-      position: relative;
-      overflow: hidden;
-    }
-    .chip::before, .chip::after {
-      content: "";
-      position: absolute;
-      left: 10%; right: 10%;
-      height: 1px;
-      background: var(--cash-green);
-      opacity: 0.55;
-    }
-    .chip::before { top: 32%; box-shadow: 0 6px 0 rgba(1,71,81,0.55), 0 12px 0 rgba(1,71,81,0.55); }
-    .chip::after  { display: none; }
-
-    .card__brand {
-      font-family: var(--font-display);
-      font-weight: 500;
-      font-size: 0.85rem;
-      letter-spacing: -0.01em;
-      opacity: 0.85;
-    }
-
-    .numbers {
-      display: flex;
-      gap: 0.9rem;
-      flex-wrap: wrap;
-      position: relative;
-      z-index: 1;
-      mask-image: linear-gradient(90deg, transparent 0%, #000 4%, #000 96%, transparent 100%);
-      -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 4%, #000 96%, transparent 100%);
-    }
-    .group {
-      display: flex;
-      gap: 0.08em;
-    }
-    .digit {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: clamp(1.25rem, 4.2vw, 1.75rem);
-      letter-spacing: 0.04em;
-      color: var(--electric-green);
-      display: inline-block;
-      animation: redact 4.2s cubic-bezier(0.65, 0.05, 0.36, 1) infinite;
-      animation-delay: calc(var(--i) * 180ms);
-      will-change: opacity, filter;
-    }
-
-    @keyframes redact {
-      0%, 100% { opacity: 1;    filter: blur(0);   }
-      38%      { opacity: 0.18; filter: blur(6px); }
-      62%      { opacity: 0.18; filter: blur(6px); }
-    }
-
-    /* gradient sweep that periodically wipes across the numbers */
-    .numbers::before {
-      content: "";
-      position: absolute;
-      inset: -20% -5%;
-      background: linear-gradient(
-        100deg,
-        transparent 0%,
-        transparent 42%,
-        rgba(252, 250, 242, 0.14) 48%,
-        rgba(252, 250, 242, 0.28) 50%,
-        rgba(252, 250, 242, 0.14) 52%,
-        transparent 58%,
-        transparent 100%
-      );
-      background-size: 260% 100%;
-      background-position: -30% 0;
-      mix-blend-mode: screen;
-      pointer-events: none;
-      animation: sweep 7s cubic-bezier(0.85, 0, 0.15, 1) infinite;
-    }
-    @keyframes sweep {
-      0%   { background-position: -30% 0; }
-      55%  { background-position: 130% 0; }
-      100% { background-position: 130% 0; }
-    }
-
-    .card__bottom {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-      position: relative;
-      z-index: 1;
-      font-size: 0.62rem;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      opacity: 0.55;
-    }
-    .card__bottom .name {
-      font-family: var(--font-display);
-      font-weight: 500;
-      font-size: 0.78rem;
-      letter-spacing: 0;
-      text-transform: lowercase;
-      opacity: 1;
-    }
-    .card__meta {
-      display: flex;
-      gap: 0.9rem;
-      font-family: var(--font-body);
-      font-weight: 500;
-    }
-    .card__meta .dot {
-      display: inline-block;
-      width: 0.45rem; height: 0.45rem;
-      border-radius: 50%;
-      background: var(--electric-green);
-      margin-right: 0.35rem;
-      vertical-align: middle;
-      animation: pulse 2.4s ease-in-out infinite;
-    }
-    @keyframes pulse {
-      0%, 100% { opacity: 1;    transform: scale(1);   }
-      50%      { opacity: 0.35; transform: scale(0.8); }
-    }
-
-    /* ── Copy block ────────────────────────────────── */
-    .copy {
+    /* ── Slim hero ─────────────────────────────────── */
+    .hero {
+      padding: 2.5rem 0 1.5rem;
       text-align: center;
-      max-width: 32rem;
-      padding: 0 0.5rem;
     }
-    .headline {
+    .hero__title {
       font-family: var(--font-display);
       font-weight: 700;
-      font-size: clamp(2.25rem, 6.5vw, 4rem);
-      line-height: 0.92;
+      font-size: clamp(2rem, 5.5vw, 3.25rem);
+      line-height: 0.95;
       letter-spacing: -0.015em;
       text-transform: uppercase;
       color: var(--off-black);
-      margin-bottom: 0.85rem;
+      margin-bottom: 0.6rem;
     }
-    .headline .period { color: var(--cash-green); }
-
-    .sub {
-      font-size: clamp(0.95rem, 1.8vw, 1.05rem);
-      max-width: 30rem;
-      margin: 0 auto 1.5rem;
+    .hero__title .period { color: var(--cash-green); }
+    .hero__sub {
+      font-size: clamp(0.95rem, 1.6vw, 1.05rem);
+      max-width: 28rem;
+      margin: 0 auto;
       opacity: 0.7;
       line-height: 1.55;
     }
 
-    .cta {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.55rem;
-      font-family: var(--font-body);
-      font-weight: 700;
-      font-size: 1rem;
-      padding: 1rem 1.9rem;
-      background: var(--cash-green);
-      color: var(--vanilla);
-      border-radius: 100px;
-      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
-                  box-shadow 0.25s ease;
-    }
-    .cta:hover {
-      transform: translateY(-2px);
-      box-shadow:
-        0 16px 40px rgba(1, 71, 81, 0.25),
-        0 0 40px rgba(211, 255, 180, 0.18);
-    }
-    .cta__arrow { transition: transform 0.25s ease; }
-    .cta:hover .cta__arrow { transform: translateX(3px); }
-
-    .micro {
-      margin-top: 0.9rem;
-      font-size: 0.78rem;
-      color: var(--off-black);
-      opacity: 0.45;
-      letter-spacing: 0.02em;
-    }
-    .micro .sep {
-      display: inline-block;
-      margin: 0 0.5rem;
-      opacity: 0.5;
-    }
-
-    /* ── Footer strip ─────────────────────────────── */
-    .foot {
-      flex-shrink: 0;
+    /* ── Funnel container ──────────────────────────── */
+    .funnel {
+      flex: 1;
       display: flex;
-      justify-content: center;
-      gap: 1.25rem;
-      font-size: 0.7rem;
-      opacity: 0.35;
-      padding-top: 0.75rem;
+      flex-direction: column;
+      justify-content: flex-start;
+      padding: 1.25rem 0 2rem;
     }
-    .foot a:hover { opacity: 1; color: var(--cash-green); }
 
-    /* ── Signup section ───────────────────────────── */
-    .signup {
-      background: var(--cash-green);
-      color: var(--vanilla);
-      padding: 5rem 2rem 5.5rem;
-      position: relative;
+    /* Each state — only one .is-active at a time. */
+    .state { display: none; animation: fadeUp 0.35s ease-out; }
+    .state.is-active { display: block; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
-    .signup__inner {
-      max-width: 32rem;
+
+    .panel {
+      background: rgba(1, 71, 81, 0.04);
+      border-radius: 22px;
+      padding: 1.75rem 1.5rem;
+      max-width: 28rem;
       margin: 0 auto;
-      text-align: center;
+      width: 100%;
     }
-    .signup__step {
-      display: inline-block;
+
+    .panel__step {
       font-size: 0.7rem;
       letter-spacing: 0.16em;
       text-transform: uppercase;
       opacity: 0.5;
       font-weight: 600;
       margin-bottom: 0.85rem;
+      text-align: center;
     }
-    .signup__h {
+    .panel__title {
       font-family: var(--font-display);
       font-weight: 700;
-      font-size: clamp(2rem, 5.5vw, 3rem);
+      font-size: clamp(1.7rem, 4.2vw, 2.25rem);
       text-transform: uppercase;
-      letter-spacing: -0.01em;
-      line-height: 1;
-      color: var(--electric-green);
-      margin-bottom: 0.75rem;
+      letter-spacing: -0.015em;
+      line-height: 1.05;
+      color: var(--off-black);
+      text-align: center;
+      margin-bottom: 0.6rem;
     }
-    .signup__sub {
-      font-size: 1rem;
-      opacity: 0.75;
-      max-width: 28rem;
-      margin: 0 auto 2rem;
+    .panel__title .check {
+      color: var(--cash-green);
+      font-weight: 500;
+    }
+    .panel__sub {
+      font-size: 0.95rem;
+      opacity: 0.7;
       line-height: 1.55;
+      text-align: center;
+      margin-bottom: 1.5rem;
     }
-    .signup__form {
+    .panel__sub strong {
+      color: var(--cash-green);
+      font-weight: 600;
+    }
+
+    /* ── Primary CTA ─────────────────────────────── */
+    .cta-btn {
+      display: block;
+      width: 100%;
+      background: var(--cash-green);
+      color: var(--vanilla);
+      padding: 1.05rem 1.5rem;
+      font-weight: 700;
+      font-size: 1rem;
+      border-radius: 100px;
+      text-align: center;
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+                  box-shadow 0.25s ease,
+                  opacity 0.2s ease;
+    }
+    .cta-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 40px rgba(1, 71, 81, 0.22);
+    }
+    .cta-btn:disabled {
+      opacity: 0.55;
+      cursor: progress;
+      transform: none;
+      box-shadow: none;
+    }
+
+    /* ── Disclaimer ──────────────────────────────── */
+    .disclaimer {
+      margin-top: 0.85rem;
+      font-size: 0.78rem;
+      opacity: 0.55;
+      line-height: 1.5;
+      font-style: italic;
+      text-align: center;
+    }
+    .disclaimer a {
+      text-decoration: underline;
+      opacity: 0.85;
+    }
+    .disclaimer a:hover { opacity: 1; color: var(--cash-green); }
+
+    /* ── Inline link (sign in / change number) ───── */
+    .inline-link-wrap {
+      text-align: center;
+      margin-top: 1.5rem;
+    }
+    .inline-link {
+      font-size: 0.88rem;
+      opacity: 0.65;
+      text-decoration: underline;
+      transition: opacity 0.15s ease, color 0.15s ease;
+      background: none;
+      border: none;
+      padding: 0;
+      color: inherit;
+      font-family: inherit;
+      cursor: pointer;
+    }
+    .inline-link:hover {
+      opacity: 1;
+      color: var(--cash-green);
+    }
+
+    /* ── Phone input ─────────────────────────────── */
+    .phone-form {
       display: flex;
       gap: 0.5rem;
-      max-width: 26rem;
-      margin: 0 auto;
-      background: rgba(252, 250, 242, 0.06);
-      border: 1px solid rgba(252, 250, 242, 0.15);
+      background: rgba(252, 250, 242, 0.6);
+      border: 1px solid rgba(26, 23, 23, 0.15);
       border-radius: 100px;
       padding: 0.35rem;
       transition: border-color 0.2s ease, background 0.2s ease;
+      margin-bottom: 0.85rem;
     }
-    .signup__form:focus-within {
-      border-color: var(--electric-green);
-      background: rgba(252, 250, 242, 0.09);
+    .phone-form:focus-within {
+      border-color: var(--cash-green);
+      background: #fff;
     }
-    .signup__prefix {
+    .phone-prefix {
       display: flex;
       align-items: center;
       padding-left: 1.1rem;
       font-weight: 600;
-      opacity: 0.65;
+      opacity: 0.55;
       font-size: 0.95rem;
     }
-    .signup__input {
+    .phone-input {
       flex: 1;
       background: transparent;
       border: none;
       outline: none;
-      color: var(--vanilla);
+      color: var(--off-black);
       font-family: inherit;
       font-size: 1rem;
       font-weight: 500;
@@ -415,186 +278,375 @@
       min-width: 0;
       letter-spacing: 0.01em;
     }
-    .signup__input::placeholder { color: rgba(252, 250, 242, 0.35); }
-    .signup__btn {
-      background: var(--electric-green);
-      color: var(--off-black);
-      font-weight: 700;
-      font-size: 0.92rem;
-      padding: 0.85rem 1.4rem;
-      border-radius: 100px;
-      white-space: nowrap;
-      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
-                  box-shadow 0.25s ease;
-    }
-    .signup__btn:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 10px 30px rgba(211, 255, 180, 0.25);
-    }
-    .signup__fine {
-      margin-top: 1.25rem;
-      font-size: 0.75rem;
-      opacity: 0.45;
-      line-height: 1.55;
-      max-width: 24rem;
-      margin-left: auto;
-      margin-right: auto;
-      font-style: italic;
-    }
-    .signup__fine a { text-decoration: underline; opacity: 0.7; }
-    .signup__fine a:hover { opacity: 1; color: var(--electric-green); }
+    .phone-input::placeholder { color: rgba(26, 23, 23, 0.35); }
 
-    /* ── Page footer (below signup) ───────────────── */
+    /* ── OTP input (single 6-digit field) ────────── */
+    .otp-form { margin-bottom: 0.85rem; }
+    .otp-input {
+      display: block;
+      width: 100%;
+      padding: 1rem 1.25rem;
+      border: 1px solid rgba(26, 23, 23, 0.18);
+      border-radius: 100px;
+      background: #fff;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.5rem;
+      color: var(--off-black);
+      text-align: center;
+      letter-spacing: 0.6rem;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.2s ease;
+    }
+    .otp-input:focus {
+      border-color: var(--cash-green);
+      box-shadow: 0 6px 18px rgba(1, 71, 81, 0.12);
+    }
+    .otp-input::placeholder {
+      color: rgba(26, 23, 23, 0.2);
+      letter-spacing: 0.6rem;
+    }
+
+    /* ── OTP meta row (resend / change) ──────────── */
+    .otp-meta {
+      margin-top: 1.5rem;
+      display: flex;
+      gap: 1.5rem;
+      justify-content: center;
+      font-size: 0.85rem;
+    }
+    .otp-meta button,
+    .otp-meta a {
+      opacity: 0.6;
+      text-decoration: underline;
+      padding: 0;
+      color: var(--off-black);
+      font-size: 0.85rem;
+      font-family: inherit;
+      transition: opacity 0.15s ease, color 0.15s ease;
+      background: none;
+      border: none;
+      cursor: pointer;
+    }
+    .otp-meta button:hover:not(:disabled),
+    .otp-meta a:hover {
+      opacity: 1;
+      color: var(--cash-green);
+    }
+    .otp-meta button:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    /* ── Plaid in-flight panel (state 2) ─────────── */
+    .plaid-flight {
+      text-align: center;
+      padding: 2.5rem 1rem;
+    }
+    .plaid-flight__wordmark {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 2.25rem;
+      letter-spacing: -0.02em;
+      color: var(--cash-green);
+      margin-bottom: 1.25rem;
+      opacity: 0.85;
+    }
+    .plaid-flight__msg {
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: 1.25rem;
+      color: var(--cash-green);
+      text-transform: uppercase;
+      letter-spacing: -0.005em;
+    }
+    .plaid-flight__msg::after {
+      content: '';
+      display: inline-block;
+      width: 1.2em;
+      text-align: left;
+      animation: dots 1.3s steps(4, end) infinite;
+    }
+    @keyframes dots {
+      0%   { content: ''; }
+      25%  { content: '.'; }
+      50%  { content: '..'; }
+      75%  { content: '...'; }
+      100% { content: ''; }
+    }
+    .plaid-flight__pulse {
+      width: 64px;
+      height: 6px;
+      margin: 1.25rem auto 0;
+      border-radius: 100px;
+      background: linear-gradient(90deg,
+        rgba(1, 71, 81, 0.15) 0%,
+        var(--cash-green) 50%,
+        rgba(1, 71, 81, 0.15) 100%);
+      background-size: 200% 100%;
+      animation: slide 1.6s linear infinite;
+    }
+    @keyframes slide {
+      from { background-position: 200% 0; }
+      to   { background-position: -200% 0; }
+    }
+
+    /* ── Banner (errors / friendly notes) ────────── */
+    .banner {
+      max-width: 28rem;
+      margin: 0 auto 1rem;
+      padding: 0.85rem 1.15rem;
+      border-radius: 14px;
+      font-size: 0.88rem;
+      line-height: 1.45;
+      text-align: center;
+      animation: fadeUp 0.3s ease-out;
+    }
+    .banner[hidden] { display: none; }
+    .banner--info {
+      background: rgba(197, 182, 241, 0.35);
+      color: var(--off-black);
+    }
+    .banner--error {
+      background: rgba(122, 31, 42, 0.08);
+      color: var(--error);
+      border: 1px solid rgba(122, 31, 42, 0.18);
+    }
+
+    /* ── Footer ───────────────────────────────────── */
     .page-foot {
-      background: var(--cash-green);
-      color: var(--vanilla);
-      padding: 1.5rem 2rem 2rem;
+      flex-shrink: 0;
       display: flex;
       justify-content: center;
       gap: 1.25rem;
       font-size: 0.72rem;
-      opacity: 0.35;
-      border-top: 1px solid rgba(252, 250, 242, 0.08);
+      opacity: 0.4;
+      padding-top: 1rem;
     }
-    .page-foot a:hover { opacity: 1; color: var(--electric-green); }
+    .page-foot a:hover { opacity: 1; color: var(--cash-green); }
 
-    /* ── Mobile ───────────────────────────────────── */
-    @media (max-width: 640px) {
+    /* ── Mobile (≤ 480px) ─────────────────────────── */
+    @media (max-width: 480px) {
       .stage { padding: 1.25rem 1.25rem 1.5rem; }
-      .center { gap: 2rem; }
-      .card { transform: rotate(-5deg); }
-      @keyframes float {
-        0%, 100% { transform: rotate(-5deg) translateY(0); }
-        50%      { transform: rotate(-5deg) translateY(-4px); }
-      }
-      .digit { font-size: clamp(1.1rem, 5.2vw, 1.5rem); }
-      .headline { font-size: clamp(2rem, 9vw, 2.75rem); }
-      .sub { font-size: 0.95rem; }
-      .cta { font-size: 0.95rem; padding: 0.95rem 1.75rem; }
-    }
-    @media (max-width: 380px) {
-      .card { width: min(18rem, 88vw); padding: 1.1rem 1rem 0.95rem; }
-      .numbers { gap: 0.55rem; }
+      .hero { padding: 1.5rem 0 1rem; }
+      .panel { padding: 1.5rem 1.15rem; }
+      .panel__title { font-size: clamp(1.5rem, 7vw, 1.85rem); }
+      .otp-input { font-size: 1.3rem; letter-spacing: 0.45rem; padding: 0.9rem 1rem; }
+      .otp-input::placeholder { letter-spacing: 0.45rem; }
     }
 
-    /* ── Reduced motion ───────────────────────────── */
     @media (prefers-reduced-motion: reduce) {
-      .card,
-      .digit,
-      .numbers::before,
-      .card__meta .dot {
-        animation: none !important;
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
       }
-      .digit { opacity: 0.3; filter: blur(2px); }
-    }
-
-    /* ── Tall landscape (laptops) — keep everything in viewport */
-    @media (min-height: 780px) and (min-width: 900px) {
-      .center { gap: 3.5rem; }
+      .plaid-flight__pulse { background: var(--cash-green); }
     }
   </style>
 </head>
 <body>
 
   <div class="stage">
-    <!-- ── Top bar ─────────────────────────────────── -->
+    <!-- ── Top bar ────────────────────────────────── -->
     <header class="bar">
       <a href="/" class="wordmark" aria-label="cash bff home">cash bff</a>
       <div class="bar__right">est. 2026</div>
     </header>
 
-    <!-- ── Center ──────────────────────────────────── -->
-    <main class="center">
-      <!-- Card -->
-      <div class="card-wrap">
-        <div class="card" role="img" aria-label="a credit card whose numbers are fading out">
-          <div class="card__top">
-            <div class="chip" aria-hidden="true"></div>
-            <div class="card__brand">cash bff</div>
-          </div>
+    <!-- ── Slim hero ──────────────────────────────── -->
+    <section class="hero" aria-label="intro">
+      <h1 class="hero__title">
+        close your eyes<span class="period">.</span><br>
+        we'll pay it down<span class="period">.</span>
+      </h1>
+      <p class="hero__sub">
+        a money bff for credit cards. quiet, on your side, never a dashboard.
+      </p>
+    </section>
 
-          <div class="numbers" aria-hidden="true">
-            <div class="group">
-              <span class="digit" style="--i: 0;">4</span>
-              <span class="digit" style="--i: 1;">9</span>
-              <span class="digit" style="--i: 2;">2</span>
-              <span class="digit" style="--i: 3;">0</span>
-            </div>
-            <div class="group">
-              <span class="digit" style="--i: 4;">1</span>
-              <span class="digit" style="--i: 5;">3</span>
-              <span class="digit" style="--i: 6;">5</span>
-              <span class="digit" style="--i: 7;">7</span>
-            </div>
-            <div class="group">
-              <span class="digit" style="--i: 8;">8</span>
-              <span class="digit" style="--i: 9;">8</span>
-              <span class="digit" style="--i: 10;">0</span>
-              <span class="digit" style="--i: 11;">2</span>
-            </div>
-            <div class="group">
-              <span class="digit" style="--i: 12;">6</span>
-              <span class="digit" style="--i: 13;">6</span>
-              <span class="digit" style="--i: 14;">4</span>
-              <span class="digit" style="--i: 15;">1</span>
-            </div>
-          </div>
+    <!-- ── Funnel ─────────────────────────────────── -->
+    <main class="funnel" id="funnel">
+      <!-- Inline banner for errors / info, shared across states. -->
+      <div class="banner" id="banner" role="status" aria-live="polite" hidden></div>
 
-          <div class="card__bottom">
-            <span class="name">your name here</span>
-            <span class="card__meta">
-              <span><span class="dot" aria-hidden="true"></span>handled</span>
-            </span>
+      <!-- ── State 1 — landing / connect-bank ──────── -->
+      <section class="state is-active" id="state-connect" data-state="connect" aria-label="connect your bank">
+        <div class="panel">
+          <div class="panel__step">step 1 of 2</div>
+          <h2 class="panel__title">connect your bank to get started</h2>
+          <p class="panel__sub">
+            read-only. plaid hands us your balances — your password never touches us.
+          </p>
+          <button class="cta-btn" id="connect-btn" type="button">
+            connect with plaid
+          </button>
+          <p class="disclaimer">
+            by clicking, you confirm you're 18+ and agree to our <a href="privacy.html">terms</a>.
+          </p>
+          <div class="inline-link-wrap">
+            <button class="inline-link" id="returning-link" type="button">
+              already have an account? sign in →
+            </button>
           </div>
         </div>
-      </div>
+      </section>
 
-      <!-- Copy -->
-      <div class="copy">
-        <h1 class="headline">
-          close your eyes<span class="period">.</span><br>
-          we'll pay it down<span class="period">.</span>
-        </h1>
-        <p class="sub">
-          a text-based money bff who picks your next move, once a week. quiet, on your side, never a dashboard.
-        </p>
-        <a href="#start" class="cta">
-          start my plan
-          <span class="cta__arrow" aria-hidden="true">→</span>
-        </a>
-        <div class="micro">
-          7 days free<span class="sep">·</span>no bank connection<span class="sep">·</span>cancel anytime
+      <!-- ── State 2 — Plaid in flight ─────────────── -->
+      <section class="state" id="state-plaid" data-state="plaid" aria-label="connecting your bank">
+        <div class="panel">
+          <div class="plaid-flight">
+            <div class="plaid-flight__wordmark">cash bff</div>
+            <div class="plaid-flight__msg">connecting</div>
+            <div class="plaid-flight__pulse" aria-hidden="true"></div>
+          </div>
         </div>
-      </div>
+      </section>
+
+      <!-- ── State 3 — phone entry (signup) ────────── -->
+      <section class="state" id="state-phone" data-state="phone" aria-label="enter your phone">
+        <div class="panel">
+          <div class="panel__step">step 2 of 2</div>
+          <h2 class="panel__title">
+            we connected your <strong id="institution-name">bank</strong> account
+            <span class="check" aria-hidden="true">·&nbsp;✓</span>
+          </h2>
+          <p class="panel__sub">
+            now your phone — we'll text one code to confirm it's you.
+          </p>
+          <form class="phone-form" id="phone-form" autocomplete="off" novalidate>
+            <span class="phone-prefix">+1</span>
+            <input
+              type="tel"
+              class="phone-input"
+              id="phone-input"
+              name="phone"
+              placeholder="(555) 555-5555"
+              autocomplete="tel-national"
+              inputmode="tel"
+              aria-label="phone number"
+              required
+            >
+          </form>
+          <button class="cta-btn" id="send-otp-btn" type="button">
+            send code
+          </button>
+          <p class="disclaimer">
+            by entering your phone, you confirm you're 18+ and agree to our <a href="privacy.html">terms</a>.
+          </p>
+        </div>
+      </section>
+
+      <!-- ── State 4 — OTP entry (signup) ──────────── -->
+      <section class="state" id="state-otp" data-state="otp" aria-label="enter the code we texted you">
+        <div class="panel">
+          <div class="panel__step">last step</div>
+          <h2 class="panel__title">
+            code sent to <strong id="phone-display">your number</strong>
+            <span class="check" aria-hidden="true">·&nbsp;✓</span>
+          </h2>
+          <p class="panel__sub">
+            6 digits, just texted to you.
+          </p>
+          <form class="otp-form" id="otp-form" autocomplete="off">
+            <input
+              type="text"
+              class="otp-input"
+              id="otp-input"
+              inputmode="numeric"
+              autocomplete="one-time-code"
+              pattern="\d{6}"
+              maxlength="6"
+              placeholder="• • • • • •"
+              aria-label="6-digit code"
+            >
+          </form>
+          <button class="cta-btn" id="verify-otp-btn" type="button">
+            verify
+          </button>
+          <div class="otp-meta">
+            <button id="resend-otp" type="button">didn't get it? resend</button>
+            <button id="change-phone" type="button">wrong number? change it</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Returning user — phone entry ──────────── -->
+      <section class="state" id="state-returning-phone" data-state="returning-phone" aria-label="sign in with your phone">
+        <div class="panel">
+          <div class="panel__step">welcome back</div>
+          <h2 class="panel__title">your number, please</h2>
+          <p class="panel__sub">
+            we'll text a code to sign you back in.
+          </p>
+          <form class="phone-form" id="returning-phone-form" autocomplete="off" novalidate>
+            <span class="phone-prefix">+1</span>
+            <input
+              type="tel"
+              class="phone-input"
+              id="returning-phone-input"
+              name="phone"
+              placeholder="(555) 555-5555"
+              autocomplete="tel-national"
+              inputmode="tel"
+              aria-label="phone number"
+              required
+            >
+          </form>
+          <button class="cta-btn" id="returning-send-btn" type="button">
+            send code
+          </button>
+          <div class="inline-link-wrap">
+            <button class="inline-link" id="returning-back" type="button">
+              ← new here? connect a bank instead
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Returning user — OTP entry ────────────── -->
+      <section class="state" id="state-returning-otp" data-state="returning-otp" aria-label="enter the code we texted you">
+        <div class="panel">
+          <div class="panel__step">welcome back</div>
+          <h2 class="panel__title">
+            code sent to <strong id="returning-phone-display">your number</strong>
+            <span class="check" aria-hidden="true">·&nbsp;✓</span>
+          </h2>
+          <p class="panel__sub">
+            6 digits, just texted to you.
+          </p>
+          <form class="otp-form" id="returning-otp-form" autocomplete="off">
+            <input
+              type="text"
+              class="otp-input"
+              id="returning-otp-input"
+              inputmode="numeric"
+              autocomplete="one-time-code"
+              pattern="\d{6}"
+              maxlength="6"
+              placeholder="• • • • • •"
+              aria-label="6-digit code"
+            >
+          </form>
+          <button class="cta-btn" id="returning-verify-btn" type="button">
+            verify
+          </button>
+          <div class="otp-meta">
+            <button id="returning-resend" type="button">didn't get it? resend</button>
+            <button id="returning-change" type="button">wrong number? change it</button>
+          </div>
+        </div>
+      </section>
     </main>
 
-  </div><!-- /.stage -->
+    <!-- ── Page footer ───────────────────────────── -->
+    <footer class="page-foot">
+      <a href="privacy.html">privacy</a>
+      <span>·</span>
+      <a href="mailto:hi@cashbff.com">hi@cashbff.com</a>
+    </footer>
+  </div>
 
-  <!-- ── Signup ──────────────────────────────────── -->
-  <section class="signup" id="start">
-    <div class="signup__inner">
-      <div class="signup__step">step 1 of 1</div>
-      <h2 class="signup__h">just your number.</h2>
-      <p class="signup__sub">we'll text you one code to verify it's you. that's the only text we ever send without asking first.</p>
-
-      <form class="signup__form" action="verify.html" method="get">
-        <span class="signup__prefix">+1</span>
-        <input type="tel" class="signup__input" name="phone" placeholder="(555) 555-5555" autocomplete="tel-national" inputmode="tel" aria-label="phone number" required>
-        <button type="submit" class="signup__btn">text me a code</button>
-      </form>
-
-      <p class="signup__fine">
-        by continuing you agree to our <a href="privacy.html">privacy</a> + terms. 7 days free, then $4.99/week. cancel anytime with one text.
-      </p>
-    </div>
-  </section>
-
-  <!-- ── Page footer ─────────────────────────────── -->
-  <footer class="page-foot">
-    <a href="privacy.html">privacy</a>
-    <span>·</span>
-    <a href="mailto:hi@cashbff.com">hi@cashbff.com</a>
-  </footer>
-
+  <script src="/assets/js/index.js" defer></script>
 </body>
 </html>

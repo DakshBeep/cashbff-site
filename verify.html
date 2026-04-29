@@ -170,6 +170,18 @@
       opacity: 0.45;
       font-style: italic;
     }
+    /* 18+ disclaimer — visually a quieter sibling of .hint so the OTP step
+       doesn't shout legal copy at the user. Link is underlined only. */
+    .age-disclaimer {
+      margin-top: 0.55rem;
+      font-size: 0.74rem;
+      opacity: 0.45;
+      font-style: italic;
+      max-width: 24rem;
+      line-height: 1.45;
+    }
+    .age-disclaimer a { text-decoration: underline; }
+    .age-disclaimer a:hover { opacity: 1; color: var(--cash-green); }
 
     .meta-row {
       margin-top: 1.75rem;
@@ -233,6 +245,7 @@
 
       <button class="verify-btn" id="verify-btn" disabled>verify &amp; continue →</button>
       <p class="hint" id="hint">enter the 6-digit code above.</p>
+      <p class="age-disclaimer">by entering your phone, you confirm you're 18+ and agree to our <a href="privacy.html">terms</a>.</p>
 
       <div class="meta-row">
         <a href="index.html">← edit number</a>
