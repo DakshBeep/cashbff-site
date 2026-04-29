@@ -14,10 +14,9 @@
 
 const API_BASE = 'https://api.cashbff.com';
 
-// TODO: founder to drop publishable key from dashboard.stripe.com/test/apikeys
-// (use a pk_test_… key in dev, pk_live_… in prod). Until then the page renders
-// fine but the card step shows an inline notice instead of mounting Elements.
-const STRIPE_PUBLISHABLE_KEY = 'pk_test_REPLACE_ME';
+// Stripe publishable key — public by design, safe to commit (test mode).
+// Swap for pk_live_… when going to production.
+const STRIPE_PUBLISHABLE_KEY = 'pk_test_51TBOZ3IftBEJjqbcJZW3YtyDbLMNmkFqk80tYv0HbqAUw0apDvt8JtraxVEAWbbmisz0iceKbSItKpSRN5CqPyWH00w6lJITsa';
 
 // ── DOM hooks ─────────────────────────────────────
 const $ = (id) => document.getElementById(id);
