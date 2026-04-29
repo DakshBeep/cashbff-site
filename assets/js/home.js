@@ -174,13 +174,12 @@
       recurringEditDelete, recurringEditDeleteConfirm,
       recurringEditDeleteYes, recurringEditDeleteCancel;
   var recurringEditCurrent = null; // the stream currently being edited
-  // Rollover modal — single-merchant prompt, walks through prompts one-by-one.
-  var rolloverOverlay, rolloverPop, rolloverDismiss, rolloverTitle,
-      rolloverSub, rolloverError,
-      rolloverActions, rolloverYes, rolloverEditDateBtn, rolloverNotRecurring,
-      rolloverEditForm, rolloverNewDate, rolloverEditSubmit, rolloverEditCancel,
-      rolloverNotRecurringConfirm, rolloverNotRecurringYes, rolloverNotRecurringNo;
-  var rolloverCurrent = null; // the prompt currently being shown
+  // Phase 8.5B: rollover modal removed entirely. Streams now auto-project
+  // forward until the user sets an end_date on the stream itself; there's no
+  // longer a per-charge "did this fire?" prompt. The backend's
+  // /api/recurring/rollover-prompts endpoint still exists but is contracted
+  // to return {items: []}. Markup, CSS, and wiring are all gone — searching
+  // for "rollover" in this file should yield nothing.
   // Wallet popup — linked Plaid accounts (read-only) + manually-tracked cards.
   // Backed by /api/wallet for read, /api/tracked-accounts (POST/DELETE) for
   // mutations on the user-added cards.
@@ -734,7 +733,9 @@
 
         // Note: only on scheduled items for this pass. Plaid-item note
         // editing comes in a future task; backend always returns "" for them.
-        if (e.note && String(e.note).trim()) {
+        // Stream-projected rows have an internal `recurring-projection:<merchant>` tag
+        // that's for backend bookkeeping — never expose it to the user.
+        if (e.note && String(e.note).trim() && !String(e.note).startsWith('recurring-projection:')) {
           var noteDiv = document.createElement('div');
           noteDiv.className = 'note';
           noteDiv.textContent = e.note;
@@ -868,11 +869,65 @@
                 method: 'DELETE',
                 credentials: 'include'
               }).then(function (res) {
-                if (res.status === 401) { location.replace('/'); return; }
+                if (res.status === 401) { location.replace('/'); return null; }
+                // Phase 8.5B: 409 STREAM_LINKED — row is projected forward
+                // from a recurring stream. Read the body for {merchant} so we
+                // can name it, and route the user to the recurring tab where
+                // they can set an end_date on the stream.
+                if (res.status === 409) {
+                  return res.json().catch(function () { return {}; }).then(function (data) {
+                    return { __streamLinked: true, merchant: (data && data.merchant) || null };
+                  });
+                }
                 // 404 = already gone server-side (e.g. zombie from a stale
                 // localStorage cache). Treat it as success — purge locally so
                 // the row stops haunting the UI on every reload.
                 if (!res.ok && res.status !== 404) throw new Error('delete failed ' + res.status);
+                return { __ok: true };
+              }).then(function (out) {
+                if (!out) return; // 401 path already navigated.
+                if (out.__streamLinked) {
+                  // Friendly inline message replacing the confirm row. Mirrors
+                  // the day-popover row-confirm chrome (small text + inline
+                  // link styled as a button) so it sits naturally in the row
+                  // instead of looking like an error toast. The link opens
+                  // the recurring tab so the user can end the stream.
+                  var merchant = out.merchant || 'this';
+                  var newRow = document.createElement('div');
+                  newRow.className = 'row-confirm row-confirm--stream-linked';
+                  var msg = document.createElement('span');
+                  msg.className = 'row-confirm__label';
+                  msg.textContent = 'this is part of your ' + merchant
+                    + ' recurring stream. ';
+                  newRow.appendChild(msg);
+                  var openLink = document.createElement('button');
+                  openLink.type = 'button';
+                  openLink.className = 'row-confirm__yes';
+                  openLink.textContent = 'open recurring tab';
+                  openLink.addEventListener('click', function (lev) {
+                    lev.stopPropagation();
+                    try { openRecurring(); } catch (_) {}
+                  });
+                  newRow.appendChild(openLink);
+                  var sep2 = document.createElement('span');
+                  sep2.className = 'row-confirm__sep';
+                  sep2.textContent = '·';
+                  newRow.appendChild(sep2);
+                  var dismissBtn = document.createElement('button');
+                  dismissBtn.type = 'button';
+                  dismissBtn.className = 'row-confirm__no';
+                  dismissBtn.textContent = 'cancel';
+                  dismissBtn.addEventListener('click', function (dev) {
+                    dev.stopPropagation();
+                    if (newRow.parentNode) newRow.parentNode.removeChild(newRow);
+                    existingRight.forEach(function (n) { n.style.display = ''; });
+                  });
+                  newRow.appendChild(dismissBtn);
+                  if (confirmRow.parentNode) {
+                    confirmRow.parentNode.replaceChild(newRow, confirmRow);
+                  }
+                  return;
+                }
                 // Remove from local state so the day popover and grid reflect
                 // the change without needing a full month refetch.
                 var idx = PRECOMMITS.indexOf(txnSnapshot);
@@ -1045,14 +1100,6 @@
     if (drawerClose)   drawerClose.addEventListener('click', closeDrawer);
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') {
-        // Rollover modal traps ESC: when it's open the user MUST pick an
-        // action (or click the X-dismiss which fires snooze). Don't let ESC
-        // silently close it — dismiss via snooze instead so the server
-        // knows to wait 24h before re-prompting.
-        if (rolloverPop && rolloverPop.classList.contains('open')) {
-          if (rolloverDismiss) rolloverDismiss.click();
-          return;
-        }
         // If the reimbursements panel has an open inline confirm, ESC dismisses
         // just that — the panel itself stays open so the user can keep working.
         if (dismissOpenReimbConfirms()) return;
@@ -1379,6 +1426,33 @@
       // 404 = already gone server-side (zombie from stale cache). Treat as
       // success so the local state purges instead of error-displaying.
       if (!out.ok && out.status !== 404) {
+        // Phase 8.5B: 409 STREAM_LINKED — row is projected forward from a
+        // recurring stream. Show a friendly inline message in the error
+        // slot with a tappable link to the recurring tab. We render a real
+        // <button> appended to the error node so the link is keyboard-
+        // accessible (no inline onclick — CSP-safe).
+        if (out.status === 409 && out.data && out.data.code === 'STREAM_LINKED') {
+          var merchant = (out.data && out.data.merchant) || 'this';
+          if (schedError) {
+            schedError.textContent = 'this is part of your ' + merchant
+              + ' recurring stream. ';
+            var link = document.createElement('button');
+            link.type = 'button';
+            link.className = 'sched-error-link';
+            link.textContent = 'open recurring tab';
+            link.addEventListener('click', function () {
+              try { closeSchedule(); } catch (_) {}
+              try { openRecurring(); } catch (_) {}
+            });
+            schedError.appendChild(link);
+            schedError.appendChild(document.createTextNode(' to set an end date.'));
+          }
+          if (schedDeleteYes) {
+            schedDeleteYes.disabled = false;
+            schedDeleteYes.textContent = 'yes';
+          }
+          return;
+        }
         var msg = (out.data && (out.data.error || out.data.message)) ||
                   ('couldn\'t delete (' + out.status + ').');
         if (schedError) schedError.textContent = msg;
@@ -3371,10 +3445,8 @@
         setRecurringStatus('couldn\u2019t load \u2014 refresh and try again.');
       });
     }
-    // Re-check rollover prompts on every recurring open. Spec: rollover
-    // modal must show if there's anything pending, even if user opens the
-    // tab from the chip directly.
-    loadRolloverPrompts();
+    // Phase 8.5B: rollover modal is gone. Streams auto-project forward; no
+    // per-charge prompt needs to fire when the recurring tab opens.
   }
 
   function closeRecurring() {
@@ -3759,284 +3831,6 @@
     wireFreqChips(recurringEditFreqChips);
   }
 
-  // ── Rollover modal ──────────────────────────────
-  // Single-merchant per modal. Walks through the queue one at a time. Fires
-  // after gateAuth resolves AND on every openRecurring(). Each respond-action
-  // re-fetches the queue; if more items remain, the next is shown.
-  function setRolloverError(text) {
-    if (rolloverError) rolloverError.textContent = text || '';
-  }
-
-  function resetRolloverFormState() {
-    if (rolloverEditForm) rolloverEditForm.hidden = true;
-    if (rolloverNotRecurringConfirm) rolloverNotRecurringConfirm.hidden = true;
-    if (rolloverActions) rolloverActions.style.display = '';
-    // Restore button labels + enabled state. Click handlers swap textContent
-    // to "saving…" while the POST is in flight; if the same button needs to
-    // be reused for the next prompt in the queue (modal reopens after the
-    // network call resolves), we must reset them back to their original copy.
-    // Strings here mirror the markup in home.html.
-    if (rolloverYes) {
-      rolloverYes.disabled = false;
-      rolloverYes.textContent = 'yes, plan for it';
-    }
-    if (rolloverEditSubmit) {
-      rolloverEditSubmit.disabled = false;
-      rolloverEditSubmit.textContent = 'save';
-    }
-    if (rolloverNotRecurringYes) {
-      rolloverNotRecurringYes.disabled = false;
-      rolloverNotRecurringYes.textContent = 'yes, it\u2019s gone';
-    }
-    if (rolloverDismiss) {
-      rolloverDismiss.disabled = false;
-    }
-    setRolloverError('');
-  }
-
-  function openRolloverModal(prompt) {
-    if (!rolloverPop || !rolloverOverlay) return;
-    if (!prompt || !prompt.merchant) return;
-    rolloverCurrent = prompt;
-    resetRolloverFormState();
-    var displayName = (typeof prompt.display_name === 'string' && prompt.display_name.length > 0)
-      ? prompt.display_name : (prompt.merchant || '');
-    // Phase 8C: forward-looking framing. Backend now sends forward_due_date
-    // (the NEXT projected date going forward) — that's what we're planning
-    // for. Fall back to next_due_date if the field is missing for any
-    // reason (older API or a manual prompt).
-    var forwardDate = (typeof prompt.forward_due_date === 'string'
-      && prompt.forward_due_date.length >= 10)
-      ? prompt.forward_due_date
-      : prompt.next_due_date;
-    if (rolloverTitle) {
-      rolloverTitle.textContent = 'will ' + displayName + ' charge again on '
-        + formatRecurringDate(forwardDate) + '?';
-    }
-    if (rolloverSub) {
-      // Sub-line is no longer "we expected this" — that was past-tense.
-      // Keep it minimal so the title carries the question.
-      rolloverSub.textContent = '';
-    }
-    if (rolloverNewDate) {
-      // Default the inline edit-date picker to the forward date so a
-      // "change date" tap starts from the projected next charge.
-      rolloverNewDate.value = (typeof forwardDate === 'string')
-        ? forwardDate.slice(0, 10) : '';
-    }
-    rolloverPop.classList.add('open');
-    rolloverOverlay.classList.add('open');
-    rolloverPop.setAttribute('aria-hidden', 'false');
-    if (rolloverYes) {
-      try { rolloverYes.focus({ preventScroll: true }); } catch (_) { rolloverYes.focus(); }
-    }
-  }
-
-  function closeRolloverModal() {
-    if (!rolloverPop || !rolloverOverlay) return;
-    rolloverPop.classList.remove('open');
-    rolloverOverlay.classList.remove('open');
-    rolloverPop.setAttribute('aria-hidden', 'true');
-    rolloverCurrent = null;
-    resetRolloverFormState();
-  }
-
-  function loadRolloverPrompts() {
-    return fetch(API_BASE + '/api/recurring/rollover-prompts', {
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include'
-    }).then(function (res) {
-      if (res.status === 401) return { items: [] };
-      if (!res.ok) throw new Error('rollover prompts fetch failed ' + res.status);
-      return res.json();
-    }).then(function (data) {
-      var items = (data && Array.isArray(data.items)) ? data.items : [];
-      if (!items.length) {
-        // No more prompts — close the modal if it was open.
-        if (rolloverPop && rolloverPop.classList.contains('open')) {
-          closeRolloverModal();
-        }
-        return;
-      }
-      // Show the FIRST prompt. If the modal is already open and showing the
-      // same merchant, leave it alone (idempotent re-opens).
-      if (rolloverCurrent && rolloverCurrent.merchant === items[0].merchant
-          && rolloverPop && rolloverPop.classList.contains('open')) {
-        return;
-      }
-      openRolloverModal(items[0]);
-    }).catch(function (err) {
-      try { console.warn('[home] rollover prompts fetch error:', err); } catch (_) {}
-    });
-  }
-
-  function respondRollover(merchant, action, nextDueDate) {
-    var url = API_BASE + '/api/recurring/rollover-prompts/'
-      + encodeURIComponent(merchant) + '/respond';
-    var body = { action: action };
-    if (action === 'edit-date' && nextDueDate) body.next_due_date = nextDueDate;
-    return fetch(url, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    }).then(function (res) {
-      if (res.status === 401) { location.replace('/'); throw new Error('unauthed'); }
-      if (!res.ok) {
-        return res.json().catch(function () { return {}; }).then(function (data) {
-          var err = new Error('rollover respond failed ' + res.status);
-          err.userMessage = (data && data.error) || 'couldn\u2019t save.';
-          throw err;
-        });
-      }
-      return res.json();
-    }).then(function () {
-      // Refresh streams + recurring panel + calendar (a new linked txn may
-      // have been created at observed_date + cadence_days).
-      try {
-        if (recurringStreamsCache) recurringStreamsCache._fresh = false;
-      } catch (_) {}
-      try {
-        if (recurringSuggestionsCache) recurringSuggestionsCache._fresh = false;
-      } catch (_) {}
-      var refreshes = [
-        fetchRecurringStreamsOnce({ force: true }).catch(function () {}),
-        fetchRecurringSuggestionsOnce({ force: true }).catch(function () {})
-      ];
-      return Promise.all(refreshes).then(function () {
-        renderRecurring();
-        try {
-          var key = monthKey(view.getFullYear(), view.getMonth());
-          fetchedMonths.delete(key);
-          fetchMonthIfNeeded(view.getFullYear(), view.getMonth());
-        } catch (_) {}
-        // Move on to the next prompt (or close the modal if none).
-        return loadRolloverPrompts();
-      });
-    });
-  }
-
-  function wireRolloverModal() {
-    rolloverOverlay              = document.getElementById('rollover-overlay');
-    rolloverPop                  = document.getElementById('rollover-pop');
-    rolloverDismiss              = document.getElementById('rollover-dismiss');
-    rolloverTitle                = document.getElementById('rollover-pop-title');
-    rolloverSub                  = document.getElementById('rollover-sub');
-    rolloverError                = document.getElementById('rollover-error');
-    rolloverActions              = document.getElementById('rollover-actions');
-    rolloverYes                  = document.getElementById('rollover-yes');
-    rolloverEditDateBtn          = document.getElementById('rollover-edit-date');
-    rolloverNotRecurring         = document.getElementById('rollover-not-recurring');
-    rolloverEditForm             = document.getElementById('rollover-edit-form');
-    rolloverNewDate              = document.getElementById('rollover-new-date');
-    rolloverEditSubmit           = document.getElementById('rollover-edit-submit');
-    rolloverEditCancel           = document.getElementById('rollover-edit-cancel');
-    rolloverNotRecurringConfirm  = document.getElementById('rollover-not-recurring-confirm');
-    rolloverNotRecurringYes      = document.getElementById('rollover-not-recurring-yes');
-    rolloverNotRecurringNo       = document.getElementById('rollover-not-recurring-no');
-
-    // Don't bind overlay-click-close here. Spec requires explicit choice of
-    // the four actions; clicking the backdrop should NOT silently dismiss.
-
-    if (rolloverDismiss) {
-      rolloverDismiss.addEventListener('click', function () {
-        if (!rolloverCurrent) return closeRolloverModal();
-        var m = rolloverCurrent.merchant;
-        rolloverDismiss.disabled = true;
-        respondRollover(m, 'snooze').catch(function (e) {
-          rolloverDismiss.disabled = false;
-          setRolloverError((e && e.userMessage) || 'couldn\u2019t snooze.');
-        });
-      });
-    }
-
-    if (rolloverYes) {
-      rolloverYes.addEventListener('click', function () {
-        if (!rolloverCurrent) return;
-        rolloverYes.disabled = true;
-        setRolloverError('');
-        var prev = rolloverYes.textContent;
-        rolloverYes.textContent = 'saving\u2026';
-        respondRollover(rolloverCurrent.merchant, 'yes').catch(function (e) {
-          rolloverYes.disabled = false;
-          rolloverYes.textContent = prev;
-          setRolloverError((e && e.userMessage) || 'couldn\u2019t save.');
-        });
-      });
-    }
-
-    if (rolloverEditDateBtn && rolloverEditForm) {
-      rolloverEditDateBtn.addEventListener('click', function () {
-        // Toggle the inline form open; hide the action stack until the user
-        // either submits or cancels.
-        rolloverEditForm.hidden = false;
-        if (rolloverActions) rolloverActions.style.display = 'none';
-        if (rolloverNewDate) {
-          try { rolloverNewDate.focus({ preventScroll: true }); } catch (_) { rolloverNewDate.focus(); }
-        }
-      });
-    }
-
-    if (rolloverEditCancel) {
-      rolloverEditCancel.addEventListener('click', function () {
-        if (rolloverEditForm) rolloverEditForm.hidden = true;
-        if (rolloverActions) rolloverActions.style.display = '';
-        setRolloverError('');
-      });
-    }
-
-    if (rolloverEditForm) {
-      rolloverEditForm.addEventListener('submit', function (ev) {
-        ev.preventDefault();
-        if (!rolloverCurrent) return;
-        var dv = (rolloverNewDate && rolloverNewDate.value || '').trim();
-        if (!dv) { setRolloverError('pick a date.'); return; }
-        if (rolloverEditSubmit) {
-          rolloverEditSubmit.disabled = true;
-          rolloverEditSubmit.textContent = 'saving\u2026';
-        }
-        respondRollover(rolloverCurrent.merchant, 'edit-date', dv).catch(function (e) {
-          if (rolloverEditSubmit) {
-            rolloverEditSubmit.disabled = false;
-            rolloverEditSubmit.textContent = 'save';
-          }
-          setRolloverError((e && e.userMessage) || 'couldn\u2019t save.');
-        });
-      });
-    }
-
-    if (rolloverNotRecurring && rolloverNotRecurringConfirm) {
-      rolloverNotRecurring.addEventListener('click', function () {
-        rolloverNotRecurringConfirm.hidden = false;
-        if (rolloverActions) rolloverActions.style.display = 'none';
-        if (rolloverNotRecurringYes) {
-          try { rolloverNotRecurringYes.focus({ preventScroll: true }); }
-          catch (_) { rolloverNotRecurringYes.focus(); }
-        }
-      });
-    }
-
-    if (rolloverNotRecurringNo) {
-      rolloverNotRecurringNo.addEventListener('click', function () {
-        if (rolloverNotRecurringConfirm) rolloverNotRecurringConfirm.hidden = true;
-        if (rolloverActions) rolloverActions.style.display = '';
-        setRolloverError('');
-      });
-    }
-
-    if (rolloverNotRecurringYes) {
-      rolloverNotRecurringYes.addEventListener('click', function () {
-        if (!rolloverCurrent) return;
-        rolloverNotRecurringYes.disabled = true;
-        rolloverNotRecurringYes.textContent = 'saving\u2026';
-        respondRollover(rolloverCurrent.merchant, 'not-recurring').catch(function (e) {
-          rolloverNotRecurringYes.disabled = false;
-          rolloverNotRecurringYes.textContent = 'yes, it\u2019s gone';
-          setRolloverError((e && e.userMessage) || 'couldn\u2019t save.');
-        });
-      });
-    }
-  }
 
   // ── Wallet popup ────────────────────────────────
   // Reads /api/wallet for { plaid_accounts, tracked_accounts, summary }.
@@ -4645,7 +4439,6 @@
     wireRecurringBtn();
     wireRecurringAddModal();
     wireRecurringEditModal();
-    wireRolloverModal();
     wireWalletBtn();
     // Reimbursements + wallet are SWR — hydrate their in-memory caches from
     // localStorage so the panels paint instantly when opened. Calendar +
@@ -4660,10 +4453,9 @@
     // fetches; settle() ensures error paths don't leave the bar stuck.
     startLoading();
     settle(gateAuth().then(function () {
-      // Fire off rollover-prompt check the moment auth resolves. ASD-friendly:
-      // the modal pops over whatever else is loading so the user sees ONE
-      // thing first. Failure is swallowed inside loadRolloverPrompts.
-      try { loadRolloverPrompts(); } catch (_) {}
+      // Phase 8.5B: rollover modal removed; no per-charge prompt fires after
+      // auth. Streams auto-project forward and the user controls end_date
+      // from the recurring tab.
       // Prefetch recurring suggestions in the background so the chip badge
       // shows the right "review N" count before the user opens the panel.
       try { fetchRecurringSuggestionsOnce({ force: true }).catch(function () {}); } catch (_) {}

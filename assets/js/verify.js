@@ -1,14 +1,23 @@
-// ── Phase 7D auth gate ────────────────────────────
+// ── Phase 7D auth gate (hardened in Phase 8.5B) ──────────
 // If the user already has a valid cbff_session cookie they shouldn't be
 // looking at the OTP page — bounce them to /home.html before any SMS
-// fires or visible state changes. We expose the gate as a promise so the
-// SMS send (further down) can `await` it; the synchronous DOM wiring runs
-// in parallel because that's harmless even if we end up navigating away.
+// fires or visible state changes. The gate is a promise the rest of the
+// file awaits before doing anything user-visible. Phase 8.5B tightens the
+// race window so an authed user who hits "back" can't trip an OTP send or
+// a verify request before the redirect lands:
+//   1. The verify button is force-disabled until the gate resolves with
+//      false (i.e. the user is NOT authed). On 200 the button stays
+//      disabled while the location.replace completes.
+//   2. sendOtp() and the verify submit handler BOTH await the gate before
+//      hitting the network.
+//   3. The pageshow handler re-runs the gate on bfcache restore so a back-
+//      navigation doesn't show a stale rendered form alongside an authed
+//      session.
 //
 // Status semantics:
 //   200 → already authed → location.replace('/home.html'), promise pends.
 //   401 / network blip → resolve(false) and let the OTP flow proceed.
-const gateAuthPromise = (async function gateAuth() {
+async function runAuthGate() {
   try {
     const res = await fetch('https://api.cashbff.com/api/me', { credentials: 'include' });
     if (res.status === 200) {
@@ -21,7 +30,17 @@ const gateAuthPromise = (async function gateAuth() {
     // Network hiccup → fall through; the user can still try OTP.
   }
   return false;
-})();
+}
+const gateAuthPromise = runAuthGate();
+// bfcache safety: if the page is restored from back/forward cache the
+// module body doesn't re-execute, so a previously-decided gate is reused.
+// On 'pageshow' with persisted=true, re-validate against /api/me — if the
+// user is now authed (or was already), bounce them again.
+window.addEventListener('pageshow', (e) => {
+  if (e.persisted) {
+    runAuthGate().catch(() => {});
+  }
+});
 
 // ── Display phone from query ──────────────────────
 const params = new URLSearchParams(location.search);
@@ -39,9 +58,24 @@ if (digits.length >= 10) {
 const otpInputs = Array.from(document.querySelectorAll('.otp input'));
 const verifyBtn = document.getElementById('verify-btn');
 
+// Phase 8.5B: gate-resolved flag flips to true the moment the auth gate
+// returns false (i.e. the user is NOT authed). Until then, checkComplete
+// keeps the verify button disabled even if all 6 digits are filled — this
+// removes the race where a fast user could submit the OTP form before the
+// /api/me redirect lands. resend button is also force-disabled while the
+// gate is in flight (see the resend handler below).
+let gateResolved = false;
+gateAuthPromise.then(() => {
+  // Promise only resolves when the user is unauthed (the 200 path pends
+  // forever via `await new Promise(() => {})`). Once we're here it's safe
+  // to enable the verify button.
+  gateResolved = true;
+  checkComplete();
+});
+
 function checkComplete() {
   const filled = otpInputs.every(i => /^\d$/.test(i.value));
-  verifyBtn.disabled = !filled;
+  verifyBtn.disabled = !filled || !gateResolved;
 }
 
 function setInput(el, val) {
@@ -208,6 +242,11 @@ sendOtp();
 verifyBtn.addEventListener('click', async (e) => {
   e.preventDefault();
   if (verifyBtn.disabled) return;
+  // Phase 8.5B defense in depth: even though checkComplete() keeps this
+  // button disabled until the gate resolves to "unauthed", await the
+  // gate again before firing /api/otp/verify so a stray click can't
+  // beat the navigation when the user is in fact authed.
+  await gateAuthPromise;
   const code = Array.from(otpInputs).map(i => i.value).join('');
   const phone = e164(rawPhone);
   if (!phone || !/^\d{6}$/.test(code)) return;
@@ -261,6 +300,10 @@ verifyBtn.addEventListener('click', async (e) => {
 
 // ── Resend ───────────────────────────────────────
 document.getElementById('resend').addEventListener('click', async () => {
+  // Phase 8.5B: sendOtp() already awaits the gate, but we double-await here
+  // so the visible "sending…" affordance doesn't flash for an authed user
+  // about to be redirected.
+  await gateAuthPromise;
   const el = document.getElementById('resend');
   const orig = el.textContent;
   el.textContent = 'sending…';

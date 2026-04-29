@@ -216,8 +216,38 @@ function handlePlaidEvent(eventName /*, metadata */) {
 }
 
 // ── Wire it up ────────────────────────────────────
-connectBtn.addEventListener('click', () => { startPlaidFlow(); });
+// Phase 8.5B hardening: disable the connect button until the gate resolves
+// so a fast user can't fire /api/plaid/link-token while we're still
+// deciding whether to redirect them. The gate either:
+//   • returns user data (resolved, unauthed-or-fresh) → re-enable button
+//   • redirects (200 → home, 401 → verify) → returns a never-resolving
+//     promise so the button stays disabled while the navigation lands.
+connectBtn.disabled = true;
+connectBtn.addEventListener('click', async () => {
+  // Defense in depth: if the user manages to click anyway (e.g. via dev
+  // tools or assistive tech), await the gate before kicking off Plaid.
+  await gatePromise;
+  startPlaidFlow();
+});
+
+// bfcache safety: re-validate /api/me on back/forward cache restore so a
+// back-navigation can't show a stale rendered form alongside an authed
+// session. The original gateAuth() inside the IIFE handles the first paint;
+// this listener catches the back-button case where the module body would
+// otherwise not re-execute.
+window.addEventListener('pageshow', (e) => {
+  if (e.persisted) {
+    gateAuth().catch(() => {});
+  }
+});
 
 // Gate auth as soon as the page loads. If the user isn't signed in, they
 // get bounced to verify.html before they can click anything.
-gateAuth();
+const gatePromise = gateAuth().then((data) => {
+  // Promise only resolves when neither redirect path fired (i.e. the user
+  // is unauthed by way of error fallthrough OR is the legitimate authed-
+  // but-needs-to-connect case the gate currently returns data for).
+  // Re-enable the button so the user can interact.
+  connectBtn.disabled = false;
+  return data;
+});
