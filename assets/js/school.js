@@ -221,7 +221,7 @@ if (verifyCardBtn) {
   verifyCardBtn.addEventListener('click', async () => {
     if (verifyingCard) return; // double-click guard
     if (!stripe || !stripeElements) {
-      showBanner('card verification isn\'t configured yet — email hi@cashbff.com.', 'error');
+      showBanner('card verification isn\'t configured yet — email daksh@cashbff.com.', 'error');
       return;
     }
     verifyingCard = true;
