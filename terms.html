@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>terms — cash bff</title>
+  <meta name="description" content="the short, no-nonsense terms of service for cash bff. we're a tool, not financial advice.">
+
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
+
+  <style>
+    @font-face {
+      font-family: 'Greed Condensed';
+      src: url('fonts/GreedCondensed-Bold.woff2') format('woff2');
+      font-weight: 700;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Greed Condensed';
+      src: url('fonts/GreedCondensed-Medium.woff2') format('woff2');
+      font-weight: 500;
+      font-display: swap;
+    }
+
+    :root {
+      --cash-green: #014751;
+      --electric-green: #D3FFB4;
+      --periwinkle: #C5B6F1;
+      --off-black: #1A1717;
+      --vanilla: #FCFAF2;
+      --font-display: 'Greed Condensed', 'Archivo Narrow', 'Arial Narrow', Impact, sans-serif;
+      --font-body: 'Instrument Sans', system-ui, -apple-system, sans-serif;
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+    body {
+      font-family: var(--font-body);
+      background: var(--vanilla);
+      color: var(--off-black);
+      line-height: 1.65;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+    a { color: var(--cash-green); }
+    a:hover { opacity: 0.7; }
+
+    .stage {
+      max-width: 720px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 1.5rem 2rem 0;
+      flex-shrink: 0;
+    }
+    .bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.5rem;
+      letter-spacing: -0.02em;
+      color: var(--cash-green);
+      text-decoration: none;
+    }
+    .bar__back {
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-weight: 600;
+      opacity: 0.45;
+      color: var(--off-black);
+      text-decoration: none;
+      transition: opacity 0.2s ease;
+    }
+    .bar__back:hover { opacity: 1; color: var(--cash-green); }
+
+    .content {
+      max-width: 36rem;
+      width: 100%;
+      margin: 0 auto;
+      padding: 3rem 2rem 4rem;
+      flex: 1;
+    }
+    .content__title {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: clamp(2.5rem, 7vw, 3.75rem);
+      line-height: 0.95;
+      letter-spacing: -0.02em;
+      text-transform: lowercase;
+      color: var(--off-black);
+      margin-bottom: 0.4rem;
+    }
+    .content__title .period { color: var(--cash-green); }
+    .content__sub {
+      font-size: 1rem;
+      opacity: 0.55;
+      margin-bottom: 2.5rem;
+      line-height: 1.5;
+    }
+    .content h2 {
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: 1.25rem;
+      text-transform: lowercase;
+      letter-spacing: 0.005em;
+      color: var(--cash-green);
+      margin: 2.25rem 0 0.6rem;
+    }
+    .content p {
+      font-size: 0.95rem;
+      color: #3a3838;
+      margin-bottom: 0.85rem;
+      line-height: 1.7;
+    }
+    .content p strong {
+      color: var(--off-black);
+      font-weight: 600;
+    }
+    .content ul {
+      padding-left: 1.25rem;
+      margin: 0.5rem 0 1rem;
+    }
+    .content li {
+      font-size: 0.95rem;
+      color: #3a3838;
+      margin-bottom: 0.4rem;
+      line-height: 1.65;
+    }
+
+    .updated {
+      display: block;
+      margin-top: 3rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid rgba(1, 71, 81, 0.08);
+      font-size: 0.78rem;
+      opacity: 0.45;
+      letter-spacing: 0.02em;
+    }
+
+    .page-foot {
+      flex-shrink: 0;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1.25rem;
+      font-size: 0.72rem;
+      opacity: 0.4;
+      padding: 1rem 2rem 1.75rem;
+    }
+    .page-foot a { color: inherit; text-decoration: none; }
+    .page-foot a:hover { opacity: 1; color: var(--cash-green); }
+
+    @media (max-width: 480px) {
+      .stage { padding: 1.25rem 1.25rem 0; }
+      .content { padding: 2rem 1.25rem 3rem; }
+      .content h2 { margin-top: 1.85rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="stage">
+    <header class="bar">
+      <a href="/" class="wordmark" aria-label="cash bff home">cash bff</a>
+      <a href="/" class="bar__back">&larr; home</a>
+    </header>
+  </div>
+
+  <main class="content">
+    <h1 class="content__title">terms<span class="period">.</span></h1>
+    <p class="content__sub">the short, no-nonsense version. we're a tool that helps you see your money clearly — not financial advice, not a bank.</p>
+
+    <h2>who can use cash bff</h2>
+    <p>
+      the regular product is for adults <strong>18 and over</strong>. anyone under 18 can only use cash bff through our <a href="/school">/school</a> flow, which requires a parent or legal guardian to consent on their behalf. by signing up, you're confirming you meet one of these.
+    </p>
+
+    <h2>what we do for you</h2>
+    <p>
+      we sync your bank accounts via plaid (read-only — we never see your bank password), give you a calendar view of your money, help you schedule upcoming expenses, and detect your recurring bills and subscriptions so you can forecast cash flow. we're a tool that surfaces your own data back to you in a useful shape — your money, easier to see.
+    </p>
+    <p>
+      we do our best to keep things accurate, but every number you see comes from your bank's data, your own scheduled entries, or our forecasts on top of those. all three can be wrong sometimes.
+    </p>
+
+    <h2>what we don't do</h2>
+    <p>
+      we <strong>don't move money</strong>. we never initiate transfers, payments, or trades. we don't give regulated financial, investment, or tax advice. we don't guarantee any outcome — we surface your numbers, you make your own decisions.
+    </p>
+
+    <h2>your responsibilities</h2>
+    <p>
+      keep your login secure. tell us if your phone number changes, since that's how we sign you back in. don't share your account with anyone else. don't try to break, scrape, or reverse-engineer the product. if you spot something suspicious, email <a href="mailto:daksh@cashbff.com">daksh@cashbff.com</a> and we'll help. you're responsible for everything that happens under your account.
+    </p>
+
+    <h2>our use of your data for research</h2>
+    <p>
+      we may use <strong>anonymized and aggregated</strong> data from how the product is used to make our forecasts smarter, our recurring detection more accurate, and our categorization better. we will <strong>never sell or share your raw data</strong> with anyone for any reason. for the long version, see our <a href="privacy.html">privacy policy</a>.
+    </p>
+
+    <h2>subscription billing</h2>
+    <p>
+      cash bff is currently free while we're in private alpha. when paid plans turn on, the price is <strong>$5 / week</strong>, billed via stripe. you can cancel anytime — your access continues until the end of the period you've already paid for, and we don't issue refunds for the current period. for the /school flow, parents pay $5/week per kid through stripe under the same terms.
+    </p>
+
+    <h2>termination</h2>
+    <p>
+      you can delete your account anytime by emailing <a href="mailto:daksh@cashbff.com">daksh@cashbff.com</a>. we may suspend or end accounts that abuse the product, attempt to break or scrape it, or violate these terms. if we have to do that, we'll explain why in plain words.
+    </p>
+
+    <h2>disclaimers</h2>
+    <p>
+      cash bff is provided <strong>"as is"</strong> and <strong>"as available"</strong>. we work hard to keep numbers accurate, but bank data is messy and mistakes happen. always verify important numbers — especially before making real financial decisions — directly with your bank. to the maximum extent allowed by law, we disclaim all warranties, express or implied, and we're not liable for losses arising out of your use of the product, including any financial decision you make based on what you see here. some jurisdictions don't allow some of these limits — if so, the disclaimers apply to the maximum extent that they're allowed to.
+    </p>
+
+    <h2>governing law</h2>
+    <p>
+      these terms are governed by the laws of the state of <strong>california</strong>, usa. any dispute that can't be sorted out informally goes to small claims court or binding arbitration in <strong>los angeles county, california</strong>.
+    </p>
+
+    <h2>changes to terms</h2>
+    <p>
+      if anything material changes here, we'll email you at least <strong>30 days</strong> before the change takes effect, so you have time to read it and decide. small clarifications and typo fixes get a new "last updated" date below.
+    </p>
+
+    <h2>contact</h2>
+    <p>
+      questions, complaints, or anything else: <a href="mailto:daksh@cashbff.com">daksh@cashbff.com</a>.
+    </p>
+
+    <span class="updated">Last updated: April 29, 2026.</span>
+  </main>
+
+  <footer class="page-foot">
+    <span>&copy; 2026 cash bff</span>
+    <span>&middot;</span>
+    <a href="privacy.html">privacy</a>
+    <span>&middot;</span>
+    <a href="terms.html">terms</a>
+    <span>&middot;</span>
+    <a href="mailto:daksh@cashbff.com">daksh@cashbff.com</a>
+  </footer>
+
+</body>
+</html>

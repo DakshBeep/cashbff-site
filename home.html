@@ -129,7 +129,7 @@
     main {
       max-width: 72rem;
       margin: 0 auto;
-      padding: 0.5rem 1.5rem 6rem;
+      padding: 0.5rem 1.5rem 1rem;
     }
 
     .header-row {
@@ -2778,16 +2778,36 @@
       .modal, .modal-backdrop { transition: none !important; }
     }
 
+    /* ── Page footer (legal links — sits below calendar
+         legend, above the floating add-btn which is
+         position:fixed). Kept muted so it never competes
+         with the calendar grid for attention. */
+    .page-foot {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1.25rem;
+      font-size: 0.72rem;
+      opacity: 0.4;
+      padding: 1rem 1.5rem 6.5rem;
+      color: var(--off-black);
+    }
+    .page-foot a { color: inherit; text-decoration: none; }
+    .page-foot a:hover { opacity: 1; color: var(--cash-green); }
+
     /* ── Mobile polish ───────────────────────────── */
     @media (max-width: 640px) {
       .bar { padding: 0.8rem 1rem 0.4rem; }
-      main { padding: 0.25rem 0.75rem 6rem; }
+      main { padding: 0.25rem 0.75rem 1rem; }
       .month-title { font-size: 1.75rem; }
       .cell { min-height: 5rem; padding: 0.3rem 0.3rem 0.4rem; }
       .pill { font-size: 0.58rem; padding: 0.12rem 0.3rem; }
       .cell .date { font-size: 0.75rem; }
       .pill-phone { font-size: 0.72rem; }
       .add-btn { padding: 0.75rem 1.25rem; font-size: 0.88rem; }
+      .page-foot { padding: 0.75rem 1rem 5.5rem; gap: 0.75rem; }
     }
   </style>
 </head>
@@ -3147,6 +3167,17 @@
       <span class="legend-item"><span class="swatch planned"></span>planned &middot; uncertain</span>
     </div>
   </main>
+
+  <!-- ── Page footer (legal links) ─────────────────── -->
+  <footer class="page-foot">
+    <span>&copy; 2026 cash bff</span>
+    <span>&middot;</span>
+    <a href="privacy.html">privacy</a>
+    <span>&middot;</span>
+    <a href="terms.html">terms</a>
+    <span>&middot;</span>
+    <a href="mailto:daksh@cashbff.com">daksh@cashbff.com</a>
+  </footer>
 
   <!-- Floating add-account button (bottom-center) -->
   <button

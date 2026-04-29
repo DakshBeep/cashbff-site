@@ -57,8 +57,13 @@ if (codeEl) {
   });
 }
 
-// ── Auth gate ─────────────────────────────────────
-async function gateAuth() {
+// ── Auth probe (Phase 9A) ─────────────────────────
+// school-login is a "functional flow" page — it lets a kid trade an
+// email + code for a session. If they're already authed we no longer
+// hard-redirect; we let the page render but disable the login form
+// (so they can't accidentally re-trigger /api/school/login) and surface
+// the floating "my home →" pill so they can jump back with one tap.
+async function probeAuth() {
   let res;
   try {
     res = await fetch(API_BASE + '/api/me', { credentials: 'include' });
@@ -69,12 +74,26 @@ async function gateAuth() {
   if (res.status === 200) {
     let data = {};
     try { data = await res.json(); } catch (_) {}
+    window.__authedUser = data || {};
+    if (typeof window.showAuthHomeButton === 'function') {
+      window.showAuthHomeButton();
+    }
     const userId = (data && data.user_id) || '';
     const accountType = (data && data.account_type) || '';
     const isSchool = accountType === 'school' || (typeof userId === 'string' && userId.startsWith('school_'));
     if (isSchool) {
-      location.replace('/home.html');
-      await new Promise(() => {});
+      // Disable the form and show a friendly inline "you're signed in" note.
+      if (typeof window.hidePageInteractionForAuthed === 'function') {
+        window.hidePageInteractionForAuthed(['#login-form'], {
+          heading: "you're already signed in.",
+          body: 'jump back to your home whenever you\'re ready.',
+          mountSelector: '.sub',
+        });
+      } else {
+        if (loginBtn) loginBtn.disabled = true;
+        if (emailEl)  emailEl.disabled  = true;
+        if (codeEl)   codeEl.disabled   = true;
+      }
       return;
     }
     // 200 but not a school account — phone-account user landed on the wrong
@@ -144,4 +163,4 @@ form.addEventListener('submit', async (e) => {
   }
 });
 
-gateAuth();
+probeAuth();

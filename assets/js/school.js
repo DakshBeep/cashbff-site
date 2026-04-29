@@ -351,10 +351,11 @@ if (ageoutBack) {
   });
 }
 
-// ── Auth gate ─────────────────────────────────────
-// If the user is already signed in (parent or student) we bounce them off
-// this page so they don't accidentally re-onboard.
-async function gateAuth() {
+// ── Auth probe (Phase 9A) ─────────────────────────
+// school.html is a marketing page — we want logged-in visitors to be able to
+// browse it. If /api/me 200s we paint the floating "my home →" pill via
+// auth-banner.js and stash the user; we no longer hard-redirect.
+async function probeAuth() {
   let res;
   try {
     res = await fetch(API_BASE + '/api/me', { credentials: 'include' });
@@ -363,12 +364,15 @@ async function gateAuth() {
     return;
   }
   if (res.status === 200) {
-    location.replace('/home.html');
-    // Pending promise — don't continue rendering while we navigate.
-    await new Promise(() => {});
+    let data = null;
+    try { data = await res.json(); } catch (_) { data = {}; }
+    window.__authedUser = data || {};
+    if (typeof window.showAuthHomeButton === 'function') {
+      window.showAuthHomeButton();
+    }
   }
   // 401 (or anything else) → fall through, the form is already visible.
 }
 
-// Kick off the auth check immediately on load.
-gateAuth();
+// Kick off the auth probe immediately on load.
+probeAuth();

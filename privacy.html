@@ -2,17 +2,16 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Privacy Policy — CashBFF</title>
-  <meta name="description" content="How CashBFF handles your data. The short version: we don't share it with anyone.">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>privacy — cash bff</title>
+  <meta name="description" content="how cash bff handles your data. the short version: we use it to power your calendar. we don't sell it. we don't share it.">
 
-  <!-- Favicon -->
+  <!-- Favicon (best-effort — falls back gracefully if missing) -->
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
 
-  <!-- Google Fonts: Instrument Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
 
   <style>
     @font-face {
@@ -21,7 +20,6 @@
       font-weight: 700;
       font-display: swap;
     }
-
     @font-face {
       font-family: 'Greed Condensed';
       src: url('fonts/GreedCondensed-Medium.woff2') format('woff2');
@@ -35,227 +33,239 @@
       --periwinkle: #C5B6F1;
       --off-black: #1A1717;
       --vanilla: #FCFAF2;
-      --font-display: 'Greed Condensed', 'Arial Narrow', Impact, sans-serif;
+      --font-display: 'Greed Condensed', 'Archivo Narrow', 'Arial Narrow', Impact, sans-serif;
       --font-body: 'Instrument Sans', system-ui, -apple-system, sans-serif;
     }
 
-    *, *::before, *::after {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    html {
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-    }
-
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
     body {
       font-family: var(--font-body);
       background: var(--vanilla);
       color: var(--off-black);
-      line-height: 1.7;
+      line-height: 1.65;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
     }
-
     a { color: var(--cash-green); }
     a:hover { opacity: 0.7; }
 
-    /* --- Nav --- */
-    .nav {
-      padding: 1.5rem 2rem;
+    /* ── Top bar ───────────────────────────────────── */
+    .stage {
+      max-width: 720px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 1.5rem 2rem 0;
+      flex-shrink: 0;
+    }
+    .bar {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      border-bottom: 1px solid rgba(1, 71, 81, 0.06);
     }
-
-    .nav__logo img {
-      height: 24px;
-      width: auto;
-    }
-
-    .nav__back {
-      font-size: 0.875rem;
-      font-weight: 500;
-      color: var(--cash-green);
-      text-decoration: none;
-      opacity: 0.6;
-      transition: opacity 0.3s ease;
-    }
-
-    .nav__back:hover {
-      opacity: 1;
-    }
-
-    /* --- Content --- */
-    .content {
-      max-width: 620px;
-      margin: 0 auto;
-      padding: 4rem 2rem 6rem;
-    }
-
-    .content h1 {
+    .wordmark {
       font-family: var(--font-display);
       font-weight: 700;
-      font-size: clamp(2rem, 5vw, 3rem);
-      text-transform: uppercase;
-      color: var(--cash-green);
+      font-size: 1.5rem;
       letter-spacing: -0.02em;
-      margin-bottom: 0.5rem;
-      line-height: 1;
+      color: var(--cash-green);
+      text-decoration: none;
     }
-
-    .content .updated {
-      font-size: 0.8125rem;
+    .bar__back {
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-weight: 600;
+      opacity: 0.45;
       color: var(--off-black);
-      opacity: 0.35;
-      margin-bottom: 3rem;
-      display: block;
+      text-decoration: none;
+      transition: opacity 0.2s ease;
     }
+    .bar__back:hover { opacity: 1; color: var(--cash-green); }
 
+    /* ── Content ───────────────────────────────────── */
+    .content {
+      max-width: 36rem;
+      width: 100%;
+      margin: 0 auto;
+      padding: 3rem 2rem 4rem;
+      flex: 1;
+    }
+    .content__title {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: clamp(2.5rem, 7vw, 3.75rem);
+      line-height: 0.95;
+      letter-spacing: -0.02em;
+      text-transform: lowercase;
+      color: var(--off-black);
+      margin-bottom: 0.4rem;
+    }
+    .content__title .period { color: var(--cash-green); }
+    .content__sub {
+      font-size: 1rem;
+      opacity: 0.55;
+      margin-bottom: 2.5rem;
+      line-height: 1.5;
+    }
     .content h2 {
       font-family: var(--font-display);
       font-weight: 500;
-      font-size: 1.375rem;
-      text-transform: uppercase;
+      font-size: 1.25rem;
+      text-transform: lowercase;
+      letter-spacing: 0.005em;
       color: var(--cash-green);
-      margin-top: 2.5rem;
-      margin-bottom: 0.75rem;
-      letter-spacing: 0.01em;
+      margin: 2.25rem 0 0.6rem;
     }
-
     .content p {
-      font-size: 0.9375rem;
-      color: #555;
-      margin-bottom: 1rem;
-      line-height: 1.75;
+      font-size: 0.95rem;
+      color: #3a3838;
+      margin-bottom: 0.85rem;
+      line-height: 1.7;
     }
-
-    .content ul {
-      padding-left: 1.25rem;
-      margin-bottom: 1rem;
-    }
-
-    .content li {
-      font-size: 0.9375rem;
-      color: #555;
-      margin-bottom: 0.5rem;
-      line-height: 1.65;
-    }
-
-    .content strong {
+    .content p strong {
       color: var(--off-black);
       font-weight: 600;
     }
-
-    /* --- Footer --- */
-    .footer {
-      text-align: center;
-      padding: 2rem;
-      border-top: 1px solid rgba(1, 71, 81, 0.06);
+    .content ul {
+      padding-left: 1.25rem;
+      margin: 0.5rem 0 1rem;
+    }
+    .content li {
+      font-size: 0.95rem;
+      color: #3a3838;
+      margin-bottom: 0.4rem;
+      line-height: 1.65;
     }
 
-    .footer p {
-      font-size: 0.6875rem;
-      color: var(--off-black);
-      opacity: 0.25;
+    .updated {
+      display: block;
+      margin-top: 3rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid rgba(1, 71, 81, 0.08);
+      font-size: 0.78rem;
+      opacity: 0.45;
+      letter-spacing: 0.02em;
     }
+
+    /* ── Page footer (matches the rest of the site) ── */
+    .page-foot {
+      flex-shrink: 0;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1.25rem;
+      font-size: 0.72rem;
+      opacity: 0.4;
+      padding: 1rem 2rem 1.75rem;
+    }
+    .page-foot a { color: inherit; text-decoration: none; }
+    .page-foot a:hover { opacity: 1; color: var(--cash-green); }
 
     @media (max-width: 480px) {
-      .nav { padding: 1.25rem; }
-      .content { padding: 3rem 1.25rem 4rem; }
+      .stage { padding: 1.25rem 1.25rem 0; }
+      .content { padding: 2rem 1.25rem 3rem; }
+      .content h2 { margin-top: 1.85rem; }
     }
   </style>
 </head>
 <body>
 
-  <nav class="nav">
-    <a href="/" class="nav__logo" aria-label="CashBFF Home">
-      <img src="assets/logo-electric-green.svg" alt="CashBFF" width="100" height="28">
-    </a>
-    <a href="/" class="nav__back">&larr; Back</a>
-  </nav>
+  <div class="stage">
+    <header class="bar">
+      <a href="/" class="wordmark" aria-label="cash bff home">cash bff</a>
+      <a href="/" class="bar__back">&larr; home</a>
+    </header>
+  </div>
 
   <main class="content">
-    <h1>Privacy Policy</h1>
-    <span class="updated">Last updated: April 13, 2026</span>
+    <h1 class="content__title">privacy<span class="period">.</span></h1>
+    <p class="content__sub">the short, no-nonsense version. we use your data to power your calendar. we don't sell it. we don't share it.</p>
 
+    <h2>what we collect</h2>
     <p>
-      CashBFF ("we," "us") is operated by Khanna's LLC. This policy explains what we collect when you text us and what we do with it. We tried to keep it short and honest.
+      depending on which side of the product you're on, we collect some mix of:
     </p>
-
-    <h2>What we collect</h2>
     <ul>
-      <li>Your <strong>phone number</strong></li>
-      <li>What you <strong>text us</strong> (message content)</li>
-      <li>Credit card info <strong>you choose to share</strong>, like balances, number of cards, and how you usually pay (minimum, more than minimum, etc.)</li>
+      <li>your <strong>phone number</strong> — how you sign in.</li>
+      <li>your <strong>name</strong> — for personalizing the calendar and any messages we send.</li>
+      <li><strong>transaction data</strong> via plaid — balances, accounts, transaction history. read-only. we never see your bank password.</li>
+      <li>the <strong>scheduled expenses</strong> you add to your calendar yourself.</li>
+      <li>the <strong>recurring streams</strong> we detect from your activity (e.g. that netflix charge that hits the 14th of every month).</li>
+      <li>your <strong>email</strong> — only collected on the /school flow, for parental consent and receipts.</li>
+      <li>your <strong>stripe customer info</strong> — only for /school parents who pay; stripe holds the card, we just see a customer id.</li>
     </ul>
     <p>
-      Everything you share is self-reported. You text it to us in your own words. We only know what you tell us.
+      that's it. no ssn. no government id. no contacts. no location. no microphone, no camera.
     </p>
 
-    <h2>What we don't collect</h2>
-    <ul>
-      <li>Your actual credit card numbers</li>
-      <li>Bank account credentials or logins</li>
-      <li>Your SSN, date of birth, or any identity documents</li>
-    </ul>
+    <h2>how we use it</h2>
     <p>
-      We never connect to your bank. There's no Plaid, no account linking, nothing like that.
+      to power the calendar. to keep your scheduled transactions and forecasts current. to detect your recurring expenses. to keep your bank in sync via plaid. to text you a one-time code when you sign in. to send you the occasional product email if you've opted in. that's the whole loop — every byte you give us has a purpose tied to a feature you actually use.
     </p>
-
-    <h2>What we do with your info</h2>
     <p>
-      We use it to give you personalized guidance on paying off your credit card debt over text. That's it.
+      we don't run ads. we don't have an ad business. there's nothing about your data that gets sold or licensed.
     </p>
 
-    <h2>What we never do</h2>
-    <ul>
-      <li>Sell or share your data with third parties</li>
-      <li>Share your info with advertisers</li>
-      <li>Report anything to credit bureaus</li>
-      <li>Give your phone number to anyone</li>
-    </ul>
+    <h2>research data (anonymized)</h2>
+    <p>
+      we may use <strong>aggregated, anonymized</strong> patterns from how the product is used to make our forecasting and categorization smarter for everyone — things like "what fraction of subscriptions tend to bill on the 1st" or "which merchant names map to which category." nothing that could identify you.
+    </p>
+    <p>
+      <strong>we never sell your data. we never share it with third parties for their own use.</strong> not for ads, not for analytics, not for anything.
+    </p>
 
-    <h2>How to delete your data</h2>
+    <h2>third parties we work with</h2>
+    <p>
+      a few partners power parts of the product. each gets only the data they need to do their job, and each has their own privacy policy that governs what happens on their side:
+    </p>
     <ul>
-      <li>Text <strong>STOP</strong> at any time. We'll delete your data within 30 days.</li>
-      <li>For immediate deletion, email <a href="mailto:support@cashbff.com">support@cashbff.com</a>.</li>
+      <li><strong>plaid</strong> — connects your bank, returns balances + transactions. they have their own privacy policy and only see what they need to fetch your account data.</li>
+      <li><strong>twilio</strong> — sends our sms one-time codes. they have their own privacy policy and only see your phone number and the code we send you.</li>
+      <li><strong>stripe</strong> — processes payments and (for /school) handles age verification. they have their own privacy policy and only see what's needed to charge you and verify identity.</li>
+      <li><strong>anthropic</strong> — the ai that powers our recurring detection and forecasting features. they have their own privacy policy and only see the prompts we send them, never your raw account or identifying info.</li>
     </ul>
 
-    <h2>Text messaging</h2>
+    <h2>your rights</h2>
     <p>
-      By texting CashBFF, you agree to receive text messages from us. You can text <strong>STOP</strong> at any time to opt out. Text <strong>HELP</strong> for support. Message and data rates may apply. Message frequency varies.
+      you can ask us to delete your data anytime by emailing <a href="mailto:daksh@cashbff.com">daksh@cashbff.com</a>. we delete within <strong>30 days</strong>. you can also ask for a copy of everything we have on you, and we'll send it the same way. if you're in california, the cppa gives you the right to know what we collect, get a copy, delete it, and not be discriminated against for asking — the email above gets you all of that.
+    </p>
+    <p>
+      we keep your data only as long as you're an active user, plus 30 days after deletion to make sure things have actually flushed through our backups.
     </p>
 
-    <h2>Not financial advice</h2>
+    <h2>cookies</h2>
     <p>
-      CashBFF is an educational tool. We are not financial advisors, and nothing we text you should be taken as professional financial advice. We're here to help you think through your debt, not to make financial decisions for you.
+      only what we need to keep you logged in. specifically: <strong>cbff_session</strong> (your auth cookie) and <strong>cbff_signup</strong> / <strong>cbff_school</strong> (temporary signup-state cookies). no analytics cookies. no ad trackers. no third-party trackers of any kind.
     </p>
 
-    <h2>Data security</h2>
+    <h2>under 18</h2>
     <p>
-      Your data is stored on encrypted servers in the United States. We use industry-standard security practices to keep it safe.
+      the regular product is 18+. minors can use cash bff only through our <a href="/school">/school</a> flow with parental consent. the data we collect from minors is the same minimal set as anyone else, plus a record of their parent's consent (parent name, parent email, timestamp). we do not knowingly collect data from anyone under 13. if you think a child under 13 has signed up, email us and we'll delete it.
     </p>
 
-    <h2>Anonymized data</h2>
+    <h2>changes to this policy</h2>
     <p>
-      We may use anonymized, aggregated data to improve the product. This means things like "X% of users pay minimums" and never anything tied to you individually.
+      if anything material changes, we'll email you before the change takes effect. small clarifications and typo fixes get a new "last updated" date here.
     </p>
 
-    <h2>Changes</h2>
+    <h2>contact</h2>
     <p>
-      If we update this policy, we'll post the changes here with a new date.
+      questions, deletion requests, or anything else: <a href="mailto:daksh@cashbff.com">daksh@cashbff.com</a>.
     </p>
 
-    <h2>Questions?</h2>
-    <p>
-      Email us at <a href="mailto:support@cashbff.com">support@cashbff.com</a>.
-    </p>
+    <span class="updated">Last updated: April 29, 2026.</span>
   </main>
 
-  <footer class="footer">
-    <p>&copy; 2026 CashBFF. Owned and operated by Khanna's LLC.</p>
+  <footer class="page-foot">
+    <span>&copy; 2026 cash bff</span>
+    <span>&middot;</span>
+    <a href="privacy.html">privacy</a>
+    <span>&middot;</span>
+    <a href="terms.html">terms</a>
+    <span>&middot;</span>
+    <a href="mailto:daksh@cashbff.com">daksh@cashbff.com</a>
   </footer>
 
 </body>

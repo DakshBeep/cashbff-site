@@ -1,12 +1,30 @@
-// ── Phase 7D auth gate ────────────────────────────
-// plan.html is the cold-start "tell me about your cards" calculator. If
-// the user already has a session (/api/me 200) they're past this step —
-// bounce them to /home.html before they fill in fake numbers. 401 / net
-// errors silently fall through so the public calculator still works.
-(async function gateAuth() {
+// ── Auth probe (Phase 9A — replaces Phase 7D redirect) ────
+// plan.html is the cold-start "tell me about your cards" calculator. Pre-9A
+// we hard-redirected an authed visitor to /home.html so they wouldn't fill
+// in fake numbers; 9A still hides the calculator from authed users (so they
+// don't waste time on a flow they've finished) but renders the page anyway
+// and surfaces the floating "my home →" pill. 401 / network errors fall
+// through so the public calculator keeps working for cold visitors.
+(async function probeAuth() {
   try {
     const res = await fetch('https://api.cashbff.com/api/me', { credentials: 'include' });
-    if (res.status === 200) location.replace('/home.html');
+    if (res.status === 200) {
+      let data = null;
+      try { data = await res.json(); } catch (_) { data = {}; }
+      window.__authedUser = data || {};
+      if (typeof window.showAuthHomeButton === 'function') {
+        window.showAuthHomeButton();
+      }
+      if (typeof window.hidePageInteractionForAuthed === 'function') {
+        // Hide the calculator + result panel and append the friendly note
+        // INTO <main> so it stays visible after the sections are collapsed.
+        window.hidePageInteractionForAuthed(['#form-view', '#result-view', '#calc-btn', '.bar__right'], {
+          heading: "you're already signed in.",
+          body: 'your real numbers are waiting on your home page.',
+          mountInto: 'main',
+        });
+      }
+    }
   } catch (_) {
     // Cold-start network blip — let the page render and behave like a
     // public marketing calculator.

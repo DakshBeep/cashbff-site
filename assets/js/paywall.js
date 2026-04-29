@@ -1,13 +1,28 @@
-// ── Phase 7D auth gate ────────────────────────────
-// paywall.html is a pre-bank-connect step. If /api/me already says the
-// user is authed (and by implication has a session) they don't need to
-// see this page again — drop them on /home.html. Any non-200 response
-// (401, network blip) just lets the page render normally so the public
-// trial flow still works for cold visitors.
-(async function gateAuth() {
+// ── Auth probe (Phase 9A — replaces Phase 7D redirect) ────
+// paywall.html is a pre-bank-connect step in the funnel. Phase 9A no longer
+// hard-redirects an authed visitor to /home.html — instead we render the
+// page, hide the "start trial" CTA so they can't accidentally re-enter the
+// flow, and paint the floating "my home →" pill via auth-banner.js. 401 /
+// network blip lets the page render normally so the public trial flow
+// still works for cold visitors.
+(async function probeAuth() {
   try {
     const res = await fetch('https://api.cashbff.com/api/me', { credentials: 'include' });
-    if (res.status === 200) location.replace('/home.html');
+    if (res.status === 200) {
+      let data = null;
+      try { data = await res.json(); } catch (_) { data = {}; }
+      window.__authedUser = data || {};
+      if (typeof window.showAuthHomeButton === 'function') {
+        window.showAuthHomeButton();
+      }
+      if (typeof window.hidePageInteractionForAuthed === 'function') {
+        window.hidePageInteractionForAuthed(['#start-btn', '.cta-wrap', '.cta-micro', '.bar__right'], {
+          heading: "you're already signed in.",
+          body: 'no need to start a new trial — head back to your home.',
+          mountSelector: '.pcard',
+        });
+      }
+    }
   } catch (_) {
     // Network blip — let the page render. The downstream connect step
     // re-checks auth before any sensitive call.

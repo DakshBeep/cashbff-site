@@ -1,29 +1,40 @@
-// ── Phase 7D auth gate (hardened in Phase 8.5B) ──────────
-// If the user already has a valid cbff_session cookie they shouldn't be
-// looking at the OTP page — bounce them to /home.html before any SMS
-// fires or visible state changes. The gate is a promise the rest of the
-// file awaits before doing anything user-visible. Phase 8.5B tightens the
-// race window so an authed user who hits "back" can't trip an OTP send or
-// a verify request before the redirect lands:
-//   1. The verify button is force-disabled until the gate resolves with
-//      false (i.e. the user is NOT authed). On 200 the button stays
-//      disabled while the location.replace completes.
-//   2. sendOtp() and the verify submit handler BOTH await the gate before
-//      hitting the network.
-//   3. The pageshow handler re-runs the gate on bfcache restore so a back-
-//      navigation doesn't show a stale rendered form alongside an authed
-//      session.
-//
-// Status semantics:
-//   200 → already authed → location.replace('/home.html'), promise pends.
-//   401 / network blip → resolve(false) and let the OTP flow proceed.
+// ── Auth probe (Phase 9A — replaces 7D/8.5B redirect) ──────
+// verify.html is a "functional flow" page. Phase 8.5B explicitly hardened
+// it so an authed user CAN'T trigger an OTP — that protection STAYS. Phase
+// 9A swaps the hard redirect for a softer pattern: render the page, mark
+// it authed (so the OTP form is force-disabled), and surface the floating
+// "my home →" pill via auth-banner.js. The OTP send + verify never fire
+// for an authed visitor. The promise contract from 8.5B is preserved:
+//   • If unauthed (401 / net error), the promise resolves with `false` and
+//     the rest of the file proceeds normally (sends an OTP, etc).
+//   • If authed, the promise NEVER RESOLVES. This pins the verify button
+//     in its disabled state forever and short-circuits sendOtp() /
+//     verify-submit handlers — they all `await gateAuthPromise` and we
+//     keep them stuck on that line, exactly like before, instead of
+//     navigating away.
 async function runAuthGate() {
   try {
     const res = await fetch('https://api.cashbff.com/api/me', { credentials: 'include' });
     if (res.status === 200) {
-      location.replace('/home.html');
-      // Never resolve — pending promise short-circuits any awaiter while
-      // the navigation lands.
+      let data = null;
+      try { data = await res.json(); } catch (_) { data = {}; }
+      window.__authedUser = data || {};
+      if (typeof window.showAuthHomeButton === 'function') {
+        window.showAuthHomeButton();
+      }
+      // Hide the OTP form + insert a friendly inline note. We keep the
+      // module body's `gateResolved` flag false so any latent click can't
+      // submit; sendOtp() also stays parked on `await gateAuthPromise`.
+      if (typeof window.hidePageInteractionForAuthed === 'function') {
+        window.hidePageInteractionForAuthed(['#otp-form', '#verify-btn', '#hint', '.meta-row'], {
+          heading: "you're already signed in.",
+          body: 'no need to verify a code — head back to your home.',
+          mountSelector: '.sub',
+        });
+      }
+      // Pending promise — keeps every awaiter (sendOtp, verify click)
+      // pinned forever. Phase 8.5B's "OTP can't fire for authed users"
+      // guarantee still holds.
       await new Promise(() => {});
     }
   } catch (_) {
@@ -35,7 +46,7 @@ const gateAuthPromise = runAuthGate();
 // bfcache safety: if the page is restored from back/forward cache the
 // module body doesn't re-execute, so a previously-decided gate is reused.
 // On 'pageshow' with persisted=true, re-validate against /api/me — if the
-// user is now authed (or was already), bounce them again.
+// user is now authed (or was already), the gate hides the form again.
 window.addEventListener('pageshow', (e) => {
   if (e.persisted) {
     runAuthGate().catch(() => {});

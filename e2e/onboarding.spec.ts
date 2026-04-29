@@ -300,13 +300,15 @@ function attachConsole(page: Page) {
 // ─────────────────────────────────────────────────
 
 test.describe('onboarding funnel — Phase 7C', () => {
-  test('1. already-authed user is redirected to /home.html', async ({ browser }) => {
+  test('1. already-authed user → page renders + auth-home pill is visible', async ({ browser }) => {
+    // Phase 9A swap: the marketing landing no longer auto-redirects. The
+    // funnel renders so the user can browse, AND a small "my home →" pill
+    // (`#cbff-auth-home-btn`) appears so they can jump back. Clicking it
+    // navigates to /home.html.
     const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
     const page = await context.newPage();
     attachConsole(page);
-    // Stub home.html so it doesn't run its own gateAuth (which would
-    // bounce back to / on the 401 we use in other tests). We only care
-    // that the browser navigated there.
+    // Stub /home.html so the pill click resolves without 404.
     await page.route('**/home.html', async (route) => {
       await route.fulfill({
         status: 200,
@@ -318,10 +320,22 @@ test.describe('onboarding funnel — Phase 7C', () => {
 
     await page.goto(BASE + '/index.html');
 
-    // Wait for the navigation to land on /home.html and the stub to render.
+    // We did NOT redirect — the funnel renders.
+    expect(new URL(page.url()).pathname).toBe('/index.html');
+    await expect(page.locator('#state-connect')).toHaveClass(/is-active/);
+    await expect(page.locator('#connect-btn')).toBeVisible();
+
+    // The auth-home pill IS visible (auth probe finished + 200).
+    const pill = page.locator('#cbff-auth-home-btn');
+    await expect(pill).toBeVisible({ timeout: 5000 });
+    await expect(pill).toContainText(/my home/i);
+
+    expect(hits['GET /api/me']).toBeGreaterThanOrEqual(1);
+
+    // Clicking the pill takes us to /home.html.
+    await pill.click();
     await expect(page.locator('#home-stub')).toBeVisible({ timeout: 5000 });
     expect(new URL(page.url()).pathname).toBe('/home.html');
-    expect(hits['GET /api/me']).toBeGreaterThanOrEqual(1);
 
     await context.close();
   });

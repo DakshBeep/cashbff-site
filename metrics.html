@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <!-- Sentry browser SDK: forwards JS errors + unhandled rejections to our Sentry project. -->
+  <script
+    src="https://js.sentry-cdn.com/2d45e7a7cdc726451c61d775aa22fbf2.min.js"
+    crossorigin="anonymous"
+  ></script>
+  <script src="/assets/js/sentry-init.js"></script>
+  <title>metrics · cash bff</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
+
+  <style>
+    @font-face {
+      font-family: 'Greed Condensed';
+      src: url('fonts/GreedCondensed-Bold.woff2') format('woff2');
+      font-weight: 700; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Greed Condensed';
+      src: url('fonts/GreedCondensed-Medium.woff2') format('woff2');
+      font-weight: 500; font-display: swap;
+    }
+    :root {
+      --cash-green: #014751;
+      --electric-green: #D3FFB4;
+      --periwinkle: #C5B6F1;
+      --off-black: #1A1717;
+      --vanilla: #FCFAF2;
+      --paper: #F3EAD6;
+      --font-display: 'Greed Condensed', 'Archivo Narrow', 'Arial Narrow', Impact, sans-serif;
+      --font-body: 'Instrument Sans', system-ui, -apple-system, sans-serif;
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: var(--font-body);
+      background: var(--vanilla);
+      color: var(--off-black);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      line-height: 1.5;
+      min-height: 100dvh;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+
+    /* ── Top bar (wordmark + signed-in pill) ───────── */
+    .bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.25rem 0.5rem;
+      max-width: 1200px;
+      margin: 0 auto;
+      gap: 1rem;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.5rem;
+      letter-spacing: -0.02em;
+      color: var(--cash-green);
+    }
+    .top-right {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      padding: 0.4rem 0.8rem;
+      border-radius: 100px;
+      background: rgba(252, 250, 242, 0.82);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(26, 23, 23, 0.06);
+      box-shadow: 0 2px 10px -6px rgba(26, 23, 23, 0.25);
+    }
+    .pill-phone {
+      color: var(--cash-green);
+      font-weight: 500;
+      font-size: 0.78rem;
+      letter-spacing: 0.01em;
+    }
+    .home-link {
+      opacity: 0.55;
+      font-weight: 500;
+      font-size: 0.78rem;
+      transition: opacity 0.15s ease, color 0.15s ease;
+    }
+    .home-link:hover { opacity: 1; color: var(--cash-green); }
+
+    /* ── Page layout ────────────────────────────────── */
+    main {
+      max-width: 72rem;
+      margin: 0 auto;
+      padding: 0.5rem 1.5rem 6rem;
+    }
+    .page-title {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 2.75rem;
+      letter-spacing: -0.02em;
+      color: var(--cash-green);
+      text-transform: lowercase;
+      margin: 0.5rem 0 0.25rem;
+    }
+    .page-subtitle {
+      color: var(--off-black);
+      opacity: 0.6;
+      font-size: 0.88rem;
+      margin-bottom: 2rem;
+    }
+
+    /* ── Section ────────────────────────────────────── */
+    section.section { margin-bottom: 2.5rem; }
+    .section-title {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.65rem;
+      color: var(--cash-green);
+      letter-spacing: -0.01em;
+      text-transform: lowercase;
+      margin-bottom: 0.85rem;
+    }
+
+    /* ── Card grid ──────────────────────────────────── */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 0.75rem;
+    }
+    .card {
+      background: var(--paper);
+      border: 1px solid rgba(1, 71, 81, 0.12);
+      border-radius: 0.85rem;
+      padding: 1rem 1.1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+    .card__label {
+      font-size: 0.72rem;
+      color: var(--cash-green);
+      opacity: 0.75;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 600;
+    }
+    .card__value {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 2.25rem;
+      letter-spacing: -0.02em;
+      color: var(--cash-green);
+      line-height: 1;
+    }
+    .card__value--small {
+      font-size: 1.4rem;
+    }
+    .card__hint {
+      font-size: 0.72rem;
+      color: var(--off-black);
+      opacity: 0.55;
+    }
+
+    /* ── Tables ─────────────────────────────────────── */
+    .table-wrap {
+      background: var(--paper);
+      border: 1px solid rgba(1, 71, 81, 0.12);
+      border-radius: 0.85rem;
+      overflow-x: auto;
+      margin-top: 0.75rem;
+    }
+    table.metrics-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    table.metrics-table th,
+    table.metrics-table td {
+      padding: 0.55rem 0.85rem;
+      text-align: left;
+      border-bottom: 1px solid rgba(1, 71, 81, 0.08);
+      vertical-align: top;
+    }
+    table.metrics-table th {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--cash-green);
+      font-weight: 600;
+      background: rgba(1, 71, 81, 0.05);
+    }
+    table.metrics-table tr:last-child td { border-bottom: none; }
+    table.metrics-table td.col-time {
+      font-variant-numeric: tabular-nums;
+      color: var(--off-black);
+      opacity: 0.7;
+      white-space: nowrap;
+    }
+    table.metrics-table td.col-direction {
+      text-transform: lowercase;
+      font-weight: 500;
+    }
+    table.metrics-table td.col-direction[data-direction="inbound"] {
+      color: var(--cash-green);
+    }
+    table.metrics-table td.col-direction[data-direction="outbound"] {
+      color: var(--off-black);
+      opacity: 0.65;
+    }
+    table.metrics-table td.col-body {
+      font-family: 'Menlo', 'Consolas', monospace;
+      font-size: 0.78rem;
+      color: var(--off-black);
+      opacity: 0.85;
+      word-break: break-word;
+      max-width: 28rem;
+    }
+    table.metrics-table td.col-uid {
+      font-family: 'Menlo', 'Consolas', monospace;
+      font-size: 0.78rem;
+      color: var(--cash-green);
+      white-space: nowrap;
+    }
+
+    /* ── List (top merchants, recent signups) ────── */
+    .merchant-list,
+    .signup-list {
+      background: var(--paper);
+      border: 1px solid rgba(1, 71, 81, 0.12);
+      border-radius: 0.85rem;
+      padding: 0.5rem 0;
+      margin-top: 0.75rem;
+    }
+    .merchant-row,
+    .signup-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.55rem 1.1rem;
+      gap: 0.75rem;
+      border-bottom: 1px solid rgba(1, 71, 81, 0.06);
+      font-size: 0.88rem;
+    }
+    .merchant-row:last-child,
+    .signup-row:last-child { border-bottom: none; }
+    .merchant-row__name,
+    .signup-row__uid {
+      font-weight: 500;
+      color: var(--off-black);
+      font-family: 'Menlo', 'Consolas', monospace;
+      font-size: 0.82rem;
+    }
+    .merchant-row__count {
+      font-family: var(--font-display);
+      font-weight: 700;
+      color: var(--cash-green);
+      font-size: 1.2rem;
+    }
+    .signup-row__type {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 600;
+      color: var(--cash-green);
+      background: rgba(211, 255, 180, 0.6);
+      padding: 0.15rem 0.5rem;
+      border-radius: 100px;
+    }
+    .signup-row__type[data-type="school"] {
+      background: rgba(197, 182, 241, 0.45);
+    }
+    .signup-row__time {
+      font-size: 0.78rem;
+      color: var(--off-black);
+      opacity: 0.6;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    /* ── Loading + empty + error states ───────────── */
+    .empty,
+    .loading,
+    .error {
+      padding: 1.25rem 1.1rem;
+      font-size: 0.85rem;
+      color: var(--off-black);
+      opacity: 0.6;
+      text-align: center;
+      font-style: italic;
+    }
+    .error {
+      color: #c0392b;
+      opacity: 0.85;
+      font-style: normal;
+    }
+
+    /* ── Access denied state ────────────────────────── */
+    .denied {
+      max-width: 32rem;
+      margin: 5rem auto;
+      padding: 2.5rem 2rem;
+      background: var(--paper);
+      border: 1px solid rgba(1, 71, 81, 0.12);
+      border-radius: 1rem;
+      text-align: center;
+    }
+    .denied h2 {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 2rem;
+      color: var(--cash-green);
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.02em;
+    }
+    .denied p {
+      color: var(--off-black);
+      opacity: 0.7;
+      font-size: 0.95rem;
+      margin-bottom: 1.25rem;
+    }
+    .denied a {
+      display: inline-block;
+      padding: 0.55rem 1.25rem;
+      border-radius: 100px;
+      border: 1px solid var(--cash-green);
+      color: var(--cash-green);
+      font-weight: 500;
+      font-size: 0.88rem;
+      transition: background 0.15s ease;
+    }
+    .denied a:hover {
+      background: rgba(1, 71, 81, 0.06);
+    }
+
+    /* ── Refresh strip ─────────────────────────────── */
+    .refresh-strip {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin: 0.25rem 0 1.25rem;
+      font-size: 0.75rem;
+      color: var(--off-black);
+      opacity: 0.55;
+    }
+    .refresh-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--cash-green);
+      opacity: 0.6;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 0.85; }
+    }
+
+    /* ── Responsive ─────────────────────────────────── */
+    @media (max-width: 600px) {
+      main { padding: 0.5rem 1rem 5rem; }
+      .page-title { font-size: 2rem; }
+      .section-title { font-size: 1.35rem; }
+      .card { padding: 0.85rem 0.95rem; }
+      .card__value { font-size: 1.85rem; }
+      .card-grid {
+        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+        gap: 0.6rem;
+      }
+      table.metrics-table th,
+      table.metrics-table td { padding: 0.45rem 0.6rem; }
+      table.metrics-table td.col-body { max-width: 14rem; }
+    }
+  </style>
+</head>
+<body>
+  <header class="bar">
+    <a class="wordmark" href="/" aria-label="cash bff home">cash bff</a>
+    <div class="top-right">
+      <span class="pill-phone" id="admin-pill">admin</span>
+      <a class="home-link" href="/home.html">home</a>
+    </div>
+  </header>
+
+  <main id="metrics-main" hidden>
+    <h1 class="page-title">metrics</h1>
+    <p class="page-subtitle">live operational dashboard. auto-refreshes every 30s.</p>
+
+    <div class="refresh-strip">
+      <span class="refresh-dot" aria-hidden="true"></span>
+      <span id="refresh-stamp">loading…</span>
+    </div>
+
+    <!-- 1. Overview -->
+    <section class="section" id="section-overview">
+      <h2 class="section-title">overview</h2>
+      <div class="card-grid" id="overview-grid">
+        <div class="loading" style="grid-column: 1 / -1;">loading overview…</div>
+      </div>
+    </section>
+
+    <!-- 2. SMS -->
+    <section class="section" id="section-sms">
+      <h2 class="section-title">sms activity</h2>
+      <div class="card-grid" id="sms-grid">
+        <div class="loading" style="grid-column: 1 / -1;">loading sms…</div>
+      </div>
+      <div class="table-wrap" id="sms-table-wrap">
+        <div class="loading">loading messages…</div>
+      </div>
+    </section>
+
+    <!-- 3. Signup funnel -->
+    <section class="section" id="section-funnel">
+      <h2 class="section-title">signup funnel · last 30 days</h2>
+      <div class="card-grid" id="funnel-grid">
+        <div class="loading" style="grid-column: 1 / -1;">loading funnel…</div>
+      </div>
+    </section>
+
+    <!-- 4. Recurring streams -->
+    <section class="section" id="section-recurring">
+      <h2 class="section-title">recurring streams</h2>
+      <div class="card-grid" id="recurring-grid">
+        <div class="loading" style="grid-column: 1 / -1;">loading recurring…</div>
+      </div>
+      <div class="merchant-list" id="merchant-list">
+        <div class="loading">loading top merchants…</div>
+      </div>
+    </section>
+
+    <!-- 5. Recent signups -->
+    <section class="section" id="section-signups">
+      <h2 class="section-title">recent signups</h2>
+      <div class="signup-list" id="signup-list">
+        <div class="loading">loading signups…</div>
+      </div>
+    </section>
+  </main>
+
+  <main id="metrics-denied" class="denied" hidden>
+    <h2>not authorized</h2>
+    <p id="denied-message">you're not the admin for this dashboard.</p>
+    <a href="/home.html">go home</a>
+  </main>
+
+  <script src="/assets/js/metrics.js" type="module"></script>
+</body>
+</html>

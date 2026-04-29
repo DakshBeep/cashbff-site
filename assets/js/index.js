@@ -10,9 +10,11 @@
 //                            existing /api/otp/* endpoints, NOT /signup/*.
 //   STATE_RETURNING_OTP    → 6-digit code for returning users.
 //
-// Auto-redirect: at boot we hit GET /api/me. If 200 we replace into
-// /home.html before painting anything (fixes the "logged-in user lands on
-// the marketing page" UX bug).
+// Phase 9A: this is a marketing page. If the user is already authed we no
+// longer auto-redirect to /home.html — instead we let the funnel render and
+// paint a small "my home →" pill via showAuthHomeButton() so they can jump
+// back whenever. The funnel itself stays interactive in case they want to
+// poke at it (e.g. exploring the demo flow).
 //
 // All API calls use credentials:'include' because cbff_session and
 // cbff_signup are HttpOnly cookies on Domain=.cashbff.com.
@@ -169,20 +171,25 @@
     return { ok: res.ok, status: res.status, data };
   }
 
-  // ── Auto-redirect for already-authed users ──────
-  // Run before painting the funnel. If /api/me 200s the user already has a
-  // valid cbff_session — they belong on /home.html, not the landing page.
-  // On 401 we just render normally. On any other error we still render so
-  // the funnel is reachable even if /api/me is briefly down.
-  async function autoRedirectIfLoggedIn() {
+  // ── Auth probe (Phase 9A) ────────────────────────
+  // Hit /api/me at boot to detect whether the visitor already has a session.
+  // If so we paint the "my home →" pill and stash the user so other helpers
+  // can read it; we no longer hard-redirect away from this marketing page.
+  // 401 / network errors fall through silently — the funnel renders normally.
+  async function probeAuthAndPaintBanner() {
     try {
       const res = await fetch(API_BASE + '/api/me', {
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
       });
       if (res.ok) {
-        location.replace('/home.html');
-        return new Promise(() => {}); // page is navigating away
+        let data = null;
+        try { data = await res.json(); } catch (_) { data = {}; }
+        window.__authedUser = data || {};
+        if (typeof window.showAuthHomeButton === 'function') {
+          window.showAuthHomeButton();
+        }
+        return true;
       }
     } catch (_) { /* offline / DNS — render the funnel anyway */ }
     return false;
@@ -564,12 +571,12 @@
   }
 
   // ── Boot ────────────────────────────────────────
-  // Order matters: gate first (so logged-in users never see the funnel),
-  // then wire events. The gate may navigate away, in which case wire() is
-  // moot — but it's still cheap.
+  // Phase 9A: paint the funnel first so logged-in visitors can browse the
+  // marketing page freely. The auth probe runs in parallel and, when 200,
+  // adds the floating "my home →" pill via auth-banner.js.
   (async function boot() {
-    await autoRedirectIfLoggedIn();
     wire();
+    probeAuthAndPaintBanner().catch(() => {});
   })();
 
   // Test hook — only exposed in non-prod-like environments. Some Playwright

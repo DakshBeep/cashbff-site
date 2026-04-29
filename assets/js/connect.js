@@ -79,12 +79,16 @@ function renderPhonePill(phone) {
   phonePill.textContent = last4 ? `···${last4} signed in` : 'signed in';
 }
 
-// ── Auth gate ─────────────────────────────────────
-// Phase 7D legacy-page hygiene: any authed user hitting connect.html should
-// be bounced to /home.html — once /api/me is 200 they don't need to see the
-// connect step again. 401 still falls through to verify.html so unauthed
-// visitors land on the OTP entry point. Any other status keeps the page
-// inert and shows an error.
+// ── Auth probe (Phase 9A — replaces Phase 7D redirect) ────
+// connect.html is a "functional flow" page. Pre-9A we hard-redirected an
+// authed visitor to /home.html so they couldn't re-trigger Plaid. 9A keeps
+// that no-Plaid-for-authed-users guarantee while letting the page render:
+//   • 200 → render the page, stash the user, hide the connect CTA, paint
+//     the floating "my home →" pill + an inline "you're already signed in"
+//     note. Returns a never-resolving promise so any awaiter stays parked.
+//   • 401 → unauthed visitor on a connect page → the existing redirect to
+//     verify.html still applies (no behaviour change here).
+//   • other / network error → show error, disable CTA.
 async function gateAuth() {
   let res;
   try {
@@ -95,10 +99,22 @@ async function gateAuth() {
     return null;
   }
   if (res.status === 200) {
-    // Authed user — they're already past onboarding. Bounce to home before
-    // any visible rendering or API call fires. .replace so this page
-    // doesn't end up in history.
-    location.replace('/home.html');
+    let data = null;
+    try { data = await res.json(); } catch (_) { data = {}; }
+    window.__authedUser = data || {};
+    if (typeof window.showAuthHomeButton === 'function') {
+      window.showAuthHomeButton();
+    }
+    if (typeof window.hidePageInteractionForAuthed === 'function') {
+      window.hidePageInteractionForAuthed(['#connect-btn', '.cta-fine', '.cta-wrap', '.trust', '#status', '.bar__right'], {
+        heading: "you're already signed in.",
+        body: 'your bank is connected — head back to your home whenever you\'re ready.',
+        mountSelector: '.intro',
+      });
+    }
+    renderPhonePill((data && data.phone) || '');
+    // Pending — connectBtn never gets re-enabled, so even if the hide CSS
+    // is bypassed Plaid still won't fire.
     return new Promise(() => {});
   }
   if (res.status === 401) {
