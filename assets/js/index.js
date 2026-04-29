@@ -38,6 +38,8 @@
   const $ = (id) => document.getElementById(id);
 
   const banner          = $('banner');
+  const cardStage       = $('card-stage');
+  const cardName        = $('card-name');
   const institutionName = $('institution-name');
   const phoneInput      = $('phone-input');
   const otpInput        = $('otp-input');
@@ -83,6 +85,14 @@
     });
     // Clear any banner left over from another state.
     hideBanner();
+    // Compact the tilted credit-card hero once we leave STATE_CONNECT so
+    // the form panel below it gets vertical room. The card stays mounted
+    // (visual continuity) — it just shrinks via .is-compact + a CSS
+    // transform.
+    if (cardStage) {
+      if (name === STATE_CONNECT) cardStage.classList.remove('is-compact');
+      else                         cardStage.classList.add('is-compact');
+    }
     // Auto-focus the relevant input on entry.
     if (name === STATE_PHONE) setTimeout(() => phoneInput && phoneInput.focus(), 100);
     if (name === STATE_OTP) setTimeout(() => otpInput && otpInput.focus(), 100);
@@ -274,6 +284,9 @@
         || (metadata && metadata.institution && metadata.institution.name)
         || 'bank';
       if (institutionName) institutionName.textContent = String(inst).toLowerCase();
+      // Subtle delight: stamp the connected institution onto the card's
+      // name slot so the hero card feels like *their* card, not a demo.
+      if (cardName) cardName.textContent = String(inst).toLowerCase();
       inFlight = false;
       if (connectBtn) connectBtn.disabled = false;
       showState(STATE_PHONE);

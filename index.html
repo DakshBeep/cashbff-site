@@ -65,7 +65,7 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      padding: 1.5rem 2rem 2rem;
+      padding: 1.5rem 2rem 1.5rem;
       max-width: 720px;
       margin: 0 auto;
       width: 100%;
@@ -93,26 +93,231 @@
       font-weight: 600;
     }
 
-    /* ── Slim hero ─────────────────────────────────── */
-    .hero {
-      padding: 2.5rem 0 1.5rem;
-      text-align: center;
+    /* ── Card hero (V4-original revived) ───────────── */
+    /* `.card-stage` is the wrapper that holds the tilted credit card. In
+       STATE_CONNECT the card sits at full size; once the user advances
+       (state-plaid / state-phone / state-otp) it shrinks via .is-compact so
+       the form can take over the bottom of the viewport. */
+    .card-stage {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.75rem 0 1.25rem;
+      flex-shrink: 0;
+      transition: padding 0.4s cubic-bezier(0.34, 1.2, 0.64, 1);
     }
-    .hero__title {
+    .card-stage.is-compact { padding: 0.75rem 0 0.5rem; }
+
+    .card-wrap {
+      perspective: 1400px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.4s cubic-bezier(0.34, 1.2, 0.64, 1);
+    }
+    .card-stage.is-compact .card-wrap {
+      transform: scale(0.62);
+    }
+
+    .card {
+      width: min(22rem, 86vw);
+      aspect-ratio: 1.586 / 1;
+      background: var(--cash-green);
+      border-radius: 1.25rem;
+      padding: 1.5rem 1.4rem 1.25rem;
+      position: relative;
+      color: var(--vanilla);
+      transform: rotate(-8deg) translateZ(0);
+      box-shadow:
+        0 30px 60px -20px rgba(26, 23, 23, 0.35),
+        0 12px 24px -10px rgba(1, 71, 81, 0.35),
+        inset 0 0 0 1px rgba(213, 255, 180, 0.08);
+      animation: float 6.5s ease-in-out infinite;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow: hidden;
+      opacity: 0;
+      animation: float 6.5s ease-in-out infinite, cardEnter 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.1s forwards;
+    }
+    @keyframes float {
+      0%, 100% { transform: rotate(-8deg) translateY(0); }
+      50%      { transform: rotate(-8deg) translateY(-6px); }
+    }
+    @keyframes cardEnter {
+      from { opacity: 0; transform: rotate(-2deg) translateY(20px) scale(0.92); }
+      to   { opacity: 1; transform: rotate(-8deg) translateY(0) scale(1); }
+    }
+
+    .card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: radial-gradient(120% 80% at 10% 0%, rgba(213, 255, 180, 0.08), transparent 60%);
+      pointer-events: none;
+    }
+
+    .card__top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      position: relative;
+      z-index: 1;
+    }
+    .chip {
+      width: 2.4rem;
+      height: 1.8rem;
+      background: var(--periwinkle);
+      border-radius: 0.35rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .chip::before, .chip::after {
+      content: "";
+      position: absolute;
+      left: 10%; right: 10%;
+      height: 1px;
+      background: var(--cash-green);
+      opacity: 0.55;
+    }
+    .chip::before { top: 32%; box-shadow: 0 6px 0 rgba(1,71,81,0.55), 0 12px 0 rgba(1,71,81,0.55); }
+    .chip::after  { display: none; }
+
+    .card__brand {
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: 0.85rem;
+      letter-spacing: -0.01em;
+      opacity: 0.85;
+    }
+
+    .numbers {
+      display: flex;
+      gap: 0.9rem;
+      flex-wrap: wrap;
+      position: relative;
+      z-index: 1;
+      mask-image: linear-gradient(90deg, transparent 0%, #000 4%, #000 96%, transparent 100%);
+      -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 4%, #000 96%, transparent 100%);
+    }
+    .group {
+      display: flex;
+      gap: 0.08em;
+    }
+    .digit {
       font-family: var(--font-display);
       font-weight: 700;
-      font-size: clamp(2rem, 5.5vw, 3.25rem);
-      line-height: 0.95;
+      font-size: clamp(1.25rem, 4.2vw, 1.75rem);
+      letter-spacing: 0.04em;
+      color: var(--electric-green);
+      display: inline-block;
+      animation: redact 4.2s cubic-bezier(0.65, 0.05, 0.36, 1) infinite;
+      animation-delay: calc(var(--i) * 180ms);
+      will-change: opacity, filter;
+    }
+
+    @keyframes redact {
+      0%, 100% { opacity: 1;    filter: blur(0);   }
+      38%      { opacity: 0.18; filter: blur(6px); }
+      62%      { opacity: 0.18; filter: blur(6px); }
+    }
+
+    /* gradient sweep that periodically wipes across the numbers */
+    .numbers::before {
+      content: "";
+      position: absolute;
+      inset: -20% -5%;
+      background: linear-gradient(
+        100deg,
+        transparent 0%,
+        transparent 42%,
+        rgba(252, 250, 242, 0.14) 48%,
+        rgba(252, 250, 242, 0.28) 50%,
+        rgba(252, 250, 242, 0.14) 52%,
+        transparent 58%,
+        transparent 100%
+      );
+      background-size: 260% 100%;
+      background-position: -30% 0;
+      mix-blend-mode: screen;
+      pointer-events: none;
+      animation: sweep 7s cubic-bezier(0.85, 0, 0.15, 1) infinite;
+    }
+    @keyframes sweep {
+      0%   { background-position: -30% 0; }
+      55%  { background-position: 130% 0; }
+      100% { background-position: 130% 0; }
+    }
+
+    .card__bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      position: relative;
+      z-index: 1;
+      font-size: 0.62rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      opacity: 0.55;
+    }
+    .card__bottom .name {
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: 0.78rem;
+      letter-spacing: 0;
+      text-transform: lowercase;
+      opacity: 1;
+    }
+    .card__meta {
+      display: flex;
+      gap: 0.9rem;
+      font-family: var(--font-body);
+      font-weight: 500;
+    }
+    .card__meta .dot {
+      display: inline-block;
+      width: 0.45rem; height: 0.45rem;
+      border-radius: 50%;
+      background: var(--electric-green);
+      margin-right: 0.35rem;
+      vertical-align: middle;
+      animation: pulse 2.4s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1;    transform: scale(1);   }
+      50%      { opacity: 0.35; transform: scale(0.8); }
+    }
+
+    /* ── Hero copy block (lives inside state-connect) ── */
+    .hero-copy {
+      text-align: center;
+      max-width: 32rem;
+      margin: 0 auto;
+      padding: 0.5rem 0.5rem 1.25rem;
+      opacity: 0;
+      animation: copyEnter 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.45s forwards;
+    }
+    @keyframes copyEnter {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .headline {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: clamp(2.25rem, 6vw, 3.75rem);
+      line-height: 0.92;
       letter-spacing: -0.015em;
       text-transform: uppercase;
       color: var(--off-black);
-      margin-bottom: 0.6rem;
+      margin-bottom: 0.85rem;
     }
-    .hero__title .period { color: var(--cash-green); }
-    .hero__sub {
-      font-size: clamp(0.95rem, 1.6vw, 1.05rem);
-      max-width: 28rem;
-      margin: 0 auto;
+    .headline .period { color: var(--cash-green); }
+
+    .sub {
+      font-size: clamp(0.95rem, 1.8vw, 1.05rem);
+      max-width: 30rem;
+      margin: 0 auto 1.5rem;
       opacity: 0.7;
       line-height: 1.55;
     }
@@ -123,7 +328,7 @@
       display: flex;
       flex-direction: column;
       justify-content: flex-start;
-      padding: 1.25rem 0 2rem;
+      padding: 0 0 1rem;
     }
 
     /* Each state — only one .is-active at a time. */
@@ -134,10 +339,21 @@
       to   { opacity: 1; transform: translateY(0); }
     }
 
+    /* The connect state is special: it has no panel chrome — the hero copy
+       above sells the page, and a full-width pill CTA sits below. */
+    .connect-actions {
+      max-width: 22rem;
+      margin: 0 auto;
+      width: 100%;
+      text-align: center;
+      opacity: 0;
+      animation: copyEnter 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.7s forwards;
+    }
+
     .panel {
       background: rgba(1, 71, 81, 0.04);
       border-radius: 22px;
-      padding: 1.75rem 1.5rem;
+      padding: 1.5rem 1.5rem;
       max-width: 28rem;
       margin: 0 auto;
       width: 100%;
@@ -155,7 +371,7 @@
     .panel__title {
       font-family: var(--font-display);
       font-weight: 700;
-      font-size: clamp(1.7rem, 4.2vw, 2.25rem);
+      font-size: clamp(1.6rem, 4vw, 2.1rem);
       text-transform: uppercase;
       letter-spacing: -0.015em;
       line-height: 1.05;
@@ -180,6 +396,42 @@
     }
 
     /* ── Primary CTA ─────────────────────────────── */
+    /* Two flavours:
+         .cta-pill  — used in STATE_CONNECT (large pill with arrow micro-translate)
+         .cta-btn   — used inside panels (stays a flat full-width pill)
+       Both share the same hover lift + shadow signature. */
+    .cta-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
+      font-family: var(--font-body);
+      font-weight: 700;
+      font-size: 1rem;
+      padding: 1.05rem 2rem;
+      background: var(--cash-green);
+      color: var(--vanilla);
+      border-radius: 100px;
+      cursor: pointer;
+      letter-spacing: 0.005em;
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+                  box-shadow 0.25s ease,
+                  opacity 0.2s ease;
+    }
+    .cta-pill:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow:
+        0 16px 40px rgba(1, 71, 81, 0.25),
+        0 0 40px rgba(211, 255, 180, 0.18);
+    }
+    .cta-pill:disabled {
+      opacity: 0.55;
+      cursor: progress;
+      transform: none;
+      box-shadow: none;
+    }
+    .cta-pill__arrow { transition: transform 0.25s ease; display: inline-block; }
+    .cta-pill:hover:not(:disabled) .cta-pill__arrow { transform: translateX(3px); }
+
     .cta-btn {
       display: block;
       width: 100%;
@@ -205,6 +457,21 @@
       box-shadow: none;
     }
 
+    /* Micro line under the connect CTA. */
+    .micro {
+      margin-top: 0.95rem;
+      font-size: 0.78rem;
+      color: var(--off-black);
+      opacity: 0.5;
+      letter-spacing: 0.015em;
+      line-height: 1.5;
+    }
+    .micro .sep {
+      display: inline-block;
+      margin: 0 0.45rem;
+      opacity: 0.6;
+    }
+
     /* ── Disclaimer ──────────────────────────────── */
     .disclaimer {
       margin-top: 0.85rem;
@@ -223,7 +490,7 @@
     /* ── Inline link (sign in / change number) ───── */
     .inline-link-wrap {
       text-align: center;
-      margin-top: 1.5rem;
+      margin-top: 1.25rem;
     }
     .inline-link {
       font-size: 0.88rem;
@@ -341,7 +608,7 @@
     /* ── Plaid in-flight panel (state 2) ─────────── */
     .plaid-flight {
       text-align: center;
-      padding: 2.5rem 1rem;
+      padding: 2rem 1rem;
     }
     .plaid-flight__wordmark {
       font-family: var(--font-display);
@@ -414,34 +681,70 @@
     }
 
     /* ── Footer ───────────────────────────────────── */
+    /* `flex-wrap` keeps the row from breaking words at 375px (the inline
+       separator spans become flex items and need horizontal room); we let
+       the whole row wrap as one unit instead. */
     .page-foot {
       flex-shrink: 0;
       display: flex;
+      flex-wrap: wrap;
       justify-content: center;
-      gap: 1.25rem;
+      gap: 0.4rem 1.1rem;
       font-size: 0.72rem;
       opacity: 0.4;
       padding-top: 1rem;
+      text-align: center;
     }
     .page-foot a:hover { opacity: 1; color: var(--cash-green); }
 
     /* ── Mobile (≤ 480px) ─────────────────────────── */
+    @media (max-width: 640px) {
+      .stage { padding: 1.25rem 1.25rem 1.25rem; }
+      .card { transform: rotate(-5deg); }
+      @keyframes float {
+        0%, 100% { transform: rotate(-5deg) translateY(0); }
+        50%      { transform: rotate(-5deg) translateY(-4px); }
+      }
+      @keyframes cardEnter {
+        from { opacity: 0; transform: rotate(-1deg) translateY(16px) scale(0.92); }
+        to   { opacity: 1; transform: rotate(-5deg) translateY(0) scale(1); }
+      }
+      .digit { font-size: clamp(1.1rem, 5.2vw, 1.5rem); }
+      .headline { font-size: clamp(2rem, 9vw, 2.65rem); }
+      .sub { font-size: 0.95rem; }
+      .cta-pill { font-size: 0.95rem; padding: 0.95rem 1.75rem; }
+      .card-stage { padding: 1rem 0 0.75rem; }
+      .card-stage.is-compact .card-wrap { transform: scale(0.55); }
+    }
     @media (max-width: 480px) {
-      .stage { padding: 1.25rem 1.25rem 1.5rem; }
-      .hero { padding: 1.5rem 0 1rem; }
-      .panel { padding: 1.5rem 1.15rem; }
-      .panel__title { font-size: clamp(1.5rem, 7vw, 1.85rem); }
+      .panel { padding: 1.4rem 1.15rem; }
+      .panel__title { font-size: clamp(1.4rem, 7vw, 1.85rem); }
       .otp-input { font-size: 1.3rem; letter-spacing: 0.45rem; padding: 0.9rem 1rem; }
       .otp-input::placeholder { letter-spacing: 0.45rem; }
     }
+    @media (max-width: 380px) {
+      .card { width: min(18rem, 88vw); padding: 1.1rem 1rem 0.95rem; }
+      .numbers { gap: 0.55rem; }
+    }
 
+    /* ── Reduced motion ───────────────────────────── */
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
       }
-      .plaid-flight__pulse { background: var(--cash-green); }
+      .card { opacity: 1; transform: rotate(-8deg); animation: none; }
+      .digit { opacity: 0.3; filter: blur(2px); animation: none; }
+      .numbers::before { animation: none; }
+      .card__meta .dot { animation: none; }
+      .hero-copy, .connect-actions { opacity: 1; transform: none; animation: none; }
+      .plaid-flight__pulse { background: var(--cash-green); animation: none; }
+    }
+
+    /* ── Tall landscape (laptops) — extra breathing room */
+    @media (min-height: 780px) and (min-width: 900px) {
+      .card-stage { padding: 2.25rem 0 1.5rem; }
     }
   </style>
 </head>
@@ -454,16 +757,54 @@
       <div class="bar__right">est. 2026</div>
     </header>
 
-    <!-- ── Slim hero ──────────────────────────────── -->
-    <section class="hero" aria-label="intro">
-      <h1 class="hero__title">
-        close your eyes<span class="period">.</span><br>
-        we'll pay it down<span class="period">.</span>
-      </h1>
-      <p class="hero__sub">
-        a money bff for credit cards. quiet, on your side, never a dashboard.
-      </p>
-    </section>
+    <!-- ── Tilted credit card ─────────────────────── -->
+    <!-- The card stays mounted across all states. JS toggles `.is-compact`
+         on `.card-stage` once the user advances past STATE_CONNECT so the
+         form section gets the room. -->
+    <div class="card-stage" id="card-stage">
+      <div class="card-wrap">
+        <div class="card" role="img" aria-label="a credit card whose numbers are fading out">
+          <div class="card__top">
+            <div class="chip" aria-hidden="true"></div>
+            <div class="card__brand">cash bff</div>
+          </div>
+
+          <div class="numbers" aria-hidden="true">
+            <div class="group">
+              <span class="digit" style="--i: 0;">4</span>
+              <span class="digit" style="--i: 1;">9</span>
+              <span class="digit" style="--i: 2;">2</span>
+              <span class="digit" style="--i: 3;">0</span>
+            </div>
+            <div class="group">
+              <span class="digit" style="--i: 4;">1</span>
+              <span class="digit" style="--i: 5;">3</span>
+              <span class="digit" style="--i: 6;">5</span>
+              <span class="digit" style="--i: 7;">7</span>
+            </div>
+            <div class="group">
+              <span class="digit" style="--i: 8;">8</span>
+              <span class="digit" style="--i: 9;">8</span>
+              <span class="digit" style="--i: 10;">0</span>
+              <span class="digit" style="--i: 11;">2</span>
+            </div>
+            <div class="group">
+              <span class="digit" style="--i: 12;">6</span>
+              <span class="digit" style="--i: 13;">6</span>
+              <span class="digit" style="--i: 14;">4</span>
+              <span class="digit" style="--i: 15;">1</span>
+            </div>
+          </div>
+
+          <div class="card__bottom">
+            <span class="name" id="card-name">your name here</span>
+            <span class="card__meta">
+              <span><span class="dot" aria-hidden="true"></span>handled</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- ── Funnel ─────────────────────────────────── -->
     <main class="funnel" id="funnel">
@@ -472,15 +813,23 @@
 
       <!-- ── State 1 — landing / connect-bank ──────── -->
       <section class="state is-active" id="state-connect" data-state="connect" aria-label="connect your bank">
-        <div class="panel">
-          <div class="panel__step">step 1 of 2</div>
-          <h2 class="panel__title">connect your bank to get started</h2>
-          <p class="panel__sub">
-            read-only. plaid hands us your balances — your password never touches us.
+        <div class="hero-copy">
+          <h1 class="headline">
+            close your eyes<span class="period">.</span><br>
+            we'll pay it down<span class="period">.</span>
+          </h1>
+          <p class="sub">
+            a money bff for credit cards. quiet, on your side, never a dashboard.
           </p>
-          <button class="cta-btn" id="connect-btn" type="button">
-            connect with plaid
+        </div>
+        <div class="connect-actions">
+          <button class="cta-pill" id="connect-btn" type="button">
+            connect your bank
+            <span class="cta-pill__arrow" aria-hidden="true">→</span>
           </button>
+          <div class="micro">
+            7 days free<span class="sep">·</span>no bank connection until you say so<span class="sep">·</span>cancel anytime
+          </div>
           <p class="disclaimer">
             by clicking, you confirm you're 18+ and agree to our <a href="terms.html">terms</a>.
           </p>
@@ -496,7 +845,6 @@
       <section class="state" id="state-plaid" data-state="plaid" aria-label="connecting your bank">
         <div class="panel">
           <div class="plaid-flight">
-            <div class="plaid-flight__wordmark">cash bff</div>
             <div class="plaid-flight__msg">connecting</div>
             <div class="plaid-flight__pulse" aria-hidden="true"></div>
           </div>

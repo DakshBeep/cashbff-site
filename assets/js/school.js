@@ -33,6 +33,13 @@ const states = {
 const banner          = $('banner');
 const form            = $('school-form');
 const submitBtn       = $('submit-btn');
+// Hero card + copy (Phase 11 — V4-original visual revival). The card stays
+// mounted across all states; we shrink it via .is-compact once the user
+// posts the form so the Stripe / success panel gets vertical room. Hero
+// copy hides on non-form states for the same reason.
+const cardStage       = $('card-stage');
+const cardName        = $('card-name');
+const heroCopy        = $('hero-copy');
 
 const parentFirstName = $('parent-first-name');
 const parentEmail     = $('parent-email');
@@ -60,6 +67,19 @@ function showState(name) {
     el.classList.toggle('is-active', key === name);
   });
   hideBanner();
+  // Compact the tilted credit-card hero once the user advances past
+  // STATE_FORM so the form / Stripe / success panel gets vertical room.
+  // The card stays mounted across all states for visual continuity.
+  if (cardStage) {
+    if (name === 'form') cardStage.classList.remove('is-compact');
+    else                  cardStage.classList.add('is-compact');
+  }
+  // Hide the headline copy block on non-form states — the panel title
+  // takes over there. Toggling .hidden keeps the layout clean (no blank
+  // gap) and screen readers skip it.
+  if (heroCopy) {
+    heroCopy.hidden = (name !== 'form');
+  }
   // Scroll back to top so the panel is the first thing they see (helps a lot
   // on small screens after the form blew off the bottom).
   try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (_) {}
@@ -109,11 +129,16 @@ function validateForm(values) {
   return null;
 }
 
-// Mirror the kid's first name into the consent label as they type.
+// Mirror the kid's first name into the consent label as they type — and
+// into the credit-card hero's name slot, so the card visually personalises
+// to "their" card the moment they identify themselves.
 studentFirstName.addEventListener('input', () => {
   const v = studentFirstName.value.trim();
   if (consentNameSlot) {
     consentNameSlot.textContent = v ? v : '[student\'s name]';
+  }
+  if (cardName) {
+    cardName.textContent = v ? v.toLowerCase() : 'your future here';
   }
 });
 
