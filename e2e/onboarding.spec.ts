@@ -370,7 +370,7 @@ test.describe('onboarding funnel — Phase 7C', () => {
     // Disclaimer is right below the CTA.
     const disclaimer1 = page.locator('#state-connect .disclaimer');
     await expect(disclaimer1).toContainText("18+");
-    await expect(disclaimer1.locator('a')).toHaveAttribute('href', 'privacy.html');
+    await expect(disclaimer1.locator('a')).toHaveAttribute('href', 'terms.html');
 
     await page.screenshot({ path: SCREENSHOT_DIR + '/01-state-connect.png', fullPage: false });
 
@@ -404,7 +404,7 @@ test.describe('onboarding funnel — Phase 7C', () => {
 
     const disclaimer3 = page.locator('#state-phone .disclaimer');
     await expect(disclaimer3).toContainText("18+");
-    await expect(disclaimer3.locator('a')).toHaveAttribute('href', 'privacy.html');
+    await expect(disclaimer3.locator('a')).toHaveAttribute('href', 'terms.html');
 
     // Wait for the fadeUp transition (350ms) so the screenshot isn't half-rendered.
     await page.waitForTimeout(450);

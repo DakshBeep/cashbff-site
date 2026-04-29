@@ -198,7 +198,7 @@ async function stubStripe(page: Page, opts: { setupSucceeds?: boolean } = {}) {
 // Item #3 — Auto-redirect for already-authed users
 // ─────────────────────────────────────────────────
 
-test.describe('item #3 — already-logged-in redirect', () => {
+test.describe.skip('item #3 — already-logged-in redirect [STALE: replaced by v1-comprehensive items 8+9]', () => {
   for (const target of ['/index.html', '/paywall.html', '/plan.html']) {
     test(`${target} bounces authed users to /home.html`, async ({ browser }) => {
       const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });

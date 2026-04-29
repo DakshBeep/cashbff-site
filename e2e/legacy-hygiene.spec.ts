@@ -72,7 +72,7 @@ test.afterAll(async () => {
 });
 
 test.describe('phase 7d + 9a · legacy page hygiene', () => {
-  test('verify.html shows the 18+ disclaimer linking to privacy', async ({ page }) => {
+  test('verify.html shows the 18+ disclaimer linking to terms', async ({ page }) => {
     // Force /api/me to 401 so the page renders normally without surfacing
     // the auth-home pill.
     await page.route('**/api/me', (route) => {
@@ -90,7 +90,7 @@ test.describe('phase 7d + 9a · legacy page hygiene', () => {
     await expect(disclaimer).toBeVisible();
     await expect(disclaimer).toContainText('18+');
     await expect(disclaimer).toContainText('terms');
-    await expect(disclaimer.locator('a[href="privacy.html"]')).toBeVisible();
+    await expect(disclaimer.locator('a[href="terms.html"]')).toBeVisible();
 
     // Pill is NOT shown for an unauthed user.
     await expect(page.locator('#cbff-auth-home-btn')).toHaveCount(0);
@@ -101,7 +101,7 @@ test.describe('phase 7d + 9a · legacy page hygiene', () => {
     });
   });
 
-  test('connect.html shows the 18+ disclaimer linking to privacy', async ({ page }) => {
+  test('connect.html shows the 18+ disclaimer linking to terms', async ({ page }) => {
     // Hold /api/me open indefinitely — the gate fires on load and on 401
     // would redirect to verify.html. Hanging the request lets the static
     // page render fully so we can assert + screenshot.
@@ -119,7 +119,7 @@ test.describe('phase 7d + 9a · legacy page hygiene', () => {
     const disclaimer = page.locator('.age-disclaimer');
     await expect(disclaimer).toBeVisible();
     await expect(disclaimer).toContainText('18+');
-    await expect(disclaimer.locator('a[href="privacy.html"]')).toBeVisible();
+    await expect(disclaimer.locator('a[href="terms.html"]')).toBeVisible();
     // Sanity: the connect-with-plaid CTA renders for the unauthed-or-pending case.
     await expect(page.locator('#connect-btn')).toBeVisible();
 

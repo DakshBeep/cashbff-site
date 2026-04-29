@@ -58,9 +58,3 @@ document.getElementById('start-btn').addEventListener('click', (e) => {
   location.href = withPhone('connect.html');
 });
 
-// Terms placeholder
-document.getElementById('terms-link').addEventListener('click', (e) => {
-  e.preventDefault();
-  // TODO: replace with real terms page when available.
-  alert('terms coming soon.');
-});
