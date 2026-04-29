@@ -3,11 +3,13 @@
 //
 //   - Bug B: rollover modal not firing on boot. We hit the live boot
 //     and capture the modal state so a regression is visible.
-//   - Bug C: clicking a confirmed stream row leaves both the recurring
-//     popover AND the schedule popover open ("glitched in 2 menus"). The
-//     fix in home.js closes the recurring popover before opening the
-//     schedule popover, then reopens it on schedule close. The spec
-//     verifies only ONE popover is visible at any time.
+//   - Bug C (Phase 8C update): clicking a confirmed stream row used to
+//     open #schedule-pop alongside #recurring-pop ("glitched in 2 menus").
+//     Phase 8C replaced that with a dedicated #recurring-edit-pop, which
+//     is designed to stack on #recurring-pop intentionally. The assertion
+//     here is now: stream-row click opens #recurring-edit-pop (not the
+//     schedule popover), and only one of {recurring-edit-pop, schedule-
+//     pop} is open at any time.
 //
 // Same pattern as recurring-live.spec.ts: page.route() rewrites
 // api.cashbff.com → http://localhost:3000 (or runs straight against
@@ -294,40 +296,35 @@ test.describe('recurring tab — Phase-6 bug sweep', () => {
     const mainArea = streamRowsAfterReopen.first().locator('.recurring-stream__main');
     await mainArea.click();
 
-    // After the fix: the recurring popover should be CLOSED, the
-    // schedule popover OPEN. Bug C had both visible.
+    // Phase 8C: stream-row click opens the dedicated recurring-edit
+    // modal, not the schedule popover. The recurring panel may stay
+    // open behind it (the new modal is designed to stack on top).
+    const recurringEditPop = page.locator('#recurring-edit-pop');
+    await expect(recurringEditPop).toHaveClass(/(^|\s)open(\s|$)/, { timeout: 4000 });
+    // The old schedule popover MUST stay closed - we no longer route
+    // recurring edits through it.
     const schedPop = page.locator('#schedule-pop');
-    await expect(schedPop).toHaveClass(/(^|\s)open(\s|$)/, { timeout: 4000 });
-    await expect(recurringPop).not.toHaveClass(/(^|\s)open(\s|$)/);
+    await expect(schedPop).not.toHaveClass(/(^|\s)open(\s|$)/);
 
-    // Both popovers transition opacity (0.18s) on .open changes — give
-    // the fade-out a beat to finish so the "after" screenshot doesn't
-    // catch the recurring panel mid-fade and mistakenly render both.
     await page.waitForTimeout(400);
 
     await page.screenshot({
       path: `${SCREENSHOT_DIR}/menu-glitch-after.png`,
       fullPage: true,
     });
-    // Keep the original numbered screenshot too for the rolling phase-6 record.
     await page.screenshot({
       path: `${SCREENSHOT_DIR}/03-after-stream-click.png`,
       fullPage: true,
     });
 
-    // Defensive: count visible "open" popovers in the DOM. There must
-    // be exactly ONE in this wave.
-    const openPopovers = await page.locator(
-      '#recurring-pop.open, #schedule-pop.open, #balances-pop.open, #wallet-pop.open',
-    ).count();
-    expect(openPopovers).toBe(1);
+    // Defensive: schedule popover must NOT be open in this wave.
+    const openSchedule = await page.locator('#schedule-pop.open').count();
+    expect(openSchedule).toBe(0);
 
-    // ── Step 4: closing the schedule reopens the recurring panel ─────
-    // Click the schedule close button to dismiss. closeSchedule() should
-    // reopen the recurring panel so the user lands back in context.
-    await page.locator('#schedule-close').click();
-    await expect(schedPop).not.toHaveClass(/(^|\s)open(\s|$)/, { timeout: 4000 });
-    await expect(recurringPop).toHaveClass(/(^|\s)open(\s|$)/, { timeout: 4000 });
+    // Step 4: closing the edit modal lands back on the recurring panel.
+    await page.locator('#recurring-edit-close').click();
+    await expect(recurringEditPop).not.toHaveClass(/(^|\s)open(\s|$)/, { timeout: 4000 });
+    await expect(recurringPop).toHaveClass(/(^|\s)open(\s|$)/);
 
     await page.screenshot({
       path: `${SCREENSHOT_DIR}/04-schedule-closed-recurring-back.png`,

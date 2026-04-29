@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <!-- Sentry browser SDK: forwards JS errors + unhandled rejections to our Sentry project. -->
+  <script
+    src="https://js.sentry-cdn.com/2d45e7a7cdc726451c61d775aa22fbf2.min.js"
+    crossorigin="anonymous"
+  ></script>
+  <script src="/assets/js/sentry-init.js"></script>
+  <title>cashbff for students</title>
+  <meta name="description" content="cashbff for students — free until you turn 18, no bank connection needed. just a calendar and your scheduled expenses.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
+
+  <!-- Stripe Elements (used in STATE_STRIPE_CARD to verify the parent's card
+       without billing them). school.js mounts the Payment Element into
+       #stripe-card-mount once /api/school/start returns a SetupIntent
+       client_secret. -->
+  <script src="https://js.stripe.com/v3/"></script>
+
+  <style>
+    @font-face {
+      font-family: 'Greed Condensed';
+      src: url('fonts/GreedCondensed-Bold.woff2') format('woff2');
+      font-weight: 700;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Greed Condensed';
+      src: url('fonts/GreedCondensed-Medium.woff2') format('woff2');
+      font-weight: 500;
+      font-display: swap;
+    }
+
+    :root {
+      --cash-green: #014751;
+      --electric-green: #D3FFB4;
+      --periwinkle: #C5B6F1;
+      --off-black: #1A1717;
+      --vanilla: #FCFAF2;
+      --error: #7a1f2a;
+
+      --font-display: 'Greed Condensed', 'Archivo Narrow', 'Arial Narrow', Impact, sans-serif;
+      --font-body: 'Instrument Sans', system-ui, -apple-system, sans-serif;
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font-body);
+      background: var(--vanilla);
+      color: var(--off-black);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      line-height: 1.5;
+      min-height: 100dvh;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { font-family: inherit; cursor: pointer; border: none; background: none; }
+
+    /* ── Stage ─────────────────────────────────────── */
+    .stage {
+      min-height: 100dvh;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 1.5rem 2rem 2rem;
+      max-width: 720px;
+      margin: 0 auto;
+      width: 100%;
+      position: relative;
+    }
+    .bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.5rem;
+      letter-spacing: -0.02em;
+      color: var(--cash-green);
+    }
+    .bar__right {
+      font-size: 0.72rem;
+      opacity: 0.45;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    /* ── Hero ──────────────────────────────────────── */
+    .hero {
+      padding: 2.5rem 0 1rem;
+      text-align: center;
+    }
+    .hero__title {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: clamp(2rem, 5.5vw, 3.25rem);
+      line-height: 0.95;
+      letter-spacing: -0.015em;
+      text-transform: uppercase;
+      color: var(--off-black);
+      margin-bottom: 0.6rem;
+    }
+    .hero__title .period { color: var(--cash-green); }
+    .hero__sub {
+      font-size: clamp(0.95rem, 1.6vw, 1.05rem);
+      max-width: 30rem;
+      margin: 0 auto;
+      opacity: 0.72;
+      line-height: 1.55;
+    }
+
+    /* ── Funnel container ──────────────────────────── */
+    .funnel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      padding: 1.25rem 0 2rem;
+    }
+    .state { display: none; animation: fadeUp 0.35s ease-out; }
+    .state.is-active { display: block; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .panel {
+      background: rgba(1, 71, 81, 0.04);
+      border-radius: 22px;
+      padding: 1.75rem 1.5rem;
+      max-width: 32rem;
+      margin: 0 auto;
+      width: 100%;
+    }
+    .panel__step {
+      font-size: 0.7rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      opacity: 0.55;
+      font-weight: 600;
+      margin-bottom: 0.85rem;
+      text-align: center;
+    }
+    .panel__title {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: clamp(1.5rem, 4vw, 2rem);
+      text-transform: uppercase;
+      letter-spacing: -0.015em;
+      line-height: 1.1;
+      color: var(--off-black);
+      text-align: center;
+      margin-bottom: 0.6rem;
+    }
+    .panel__sub {
+      font-size: 0.95rem;
+      opacity: 0.72;
+      line-height: 1.55;
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+    .panel__sub strong {
+      color: var(--cash-green);
+      font-weight: 600;
+    }
+
+    /* ── Inline note above the form ─────────────────── */
+    .why-parent {
+      background: rgba(197, 182, 241, 0.28);
+      border-radius: 14px;
+      padding: 0.85rem 1.1rem;
+      font-size: 0.88rem;
+      line-height: 1.5;
+      margin-bottom: 1.4rem;
+      color: var(--off-black);
+    }
+    .why-parent strong {
+      color: var(--cash-green);
+      font-weight: 600;
+    }
+
+    /* ── Form ───────────────────────────────────────── */
+    .field {
+      margin-bottom: 0.95rem;
+    }
+    .field__label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      opacity: 0.7;
+      margin-bottom: 0.35rem;
+    }
+    .field__input {
+      width: 100%;
+      padding: 0.85rem 1.05rem;
+      border: 1px solid rgba(26, 23, 23, 0.18);
+      border-radius: 14px;
+      background: rgba(252, 250, 242, 0.85);
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--off-black);
+      outline: none;
+      transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    .field__input::placeholder { color: rgba(26, 23, 23, 0.32); }
+    .field__input:focus {
+      border-color: var(--cash-green);
+      background: #fff;
+      box-shadow: 0 4px 14px rgba(1, 71, 81, 0.10);
+    }
+    .field__input[aria-invalid="true"] {
+      border-color: var(--error);
+    }
+    .field__hint {
+      font-size: 0.78rem;
+      opacity: 0.6;
+      margin-top: 0.3rem;
+      line-height: 1.4;
+    }
+
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; }
+    @media (max-width: 480px) {
+      .row { grid-template-columns: 1fr; gap: 0; }
+    }
+
+    /* ── Consent block ──────────────────────────────── */
+    .consent {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 1rem 1.1rem;
+      background: rgba(211, 255, 180, 0.32);
+      border-radius: 14px;
+      margin: 0.4rem 0 1.25rem;
+      cursor: pointer;
+      line-height: 1.5;
+    }
+    .consent input[type="checkbox"] {
+      width: 1.15rem;
+      height: 1.15rem;
+      margin-top: 0.18rem;
+      accent-color: var(--cash-green);
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+    .consent__text {
+      font-size: 0.88rem;
+    }
+    .consent__text a {
+      text-decoration: underline;
+      color: var(--cash-green);
+    }
+
+    /* ── Submit CTA ─────────────────────────────────── */
+    .cta-btn {
+      display: block;
+      width: 100%;
+      background: var(--cash-green);
+      color: var(--vanilla);
+      padding: 1.05rem 1.5rem;
+      font-weight: 700;
+      font-size: 1rem;
+      border-radius: 100px;
+      text-align: center;
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+                  box-shadow 0.25s ease,
+                  opacity 0.2s ease;
+    }
+    .cta-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 40px rgba(1, 71, 81, 0.22);
+    }
+    .cta-btn:disabled {
+      opacity: 0.55;
+      cursor: progress;
+      transform: none;
+      box-shadow: none;
+    }
+
+    /* ── Banner (errors) ─────────────────────────────── */
+    .banner {
+      max-width: 32rem;
+      margin: 0 auto 1rem;
+      padding: 0.85rem 1.15rem;
+      border-radius: 14px;
+      font-size: 0.88rem;
+      line-height: 1.45;
+      text-align: center;
+      animation: fadeUp 0.3s ease-out;
+    }
+    .banner[hidden] { display: none; }
+    .banner--info {
+      background: rgba(197, 182, 241, 0.35);
+      color: var(--off-black);
+    }
+    .banner--error {
+      background: rgba(122, 31, 42, 0.08);
+      color: var(--error);
+      border: 1px solid rgba(122, 31, 42, 0.18);
+    }
+
+    /* ── Success / age-out states ────────────────────── */
+    .success__big {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: clamp(2rem, 5vw, 2.5rem);
+      letter-spacing: -0.015em;
+      text-transform: uppercase;
+      color: var(--cash-green);
+      text-align: center;
+      margin-bottom: 0.85rem;
+      line-height: 1.05;
+    }
+    .success__body,
+    .ageout__body {
+      font-size: 1rem;
+      line-height: 1.6;
+      text-align: center;
+      max-width: 30rem;
+      margin: 0 auto;
+      opacity: 0.85;
+    }
+    .success__body strong,
+    .ageout__body strong {
+      color: var(--cash-green);
+      font-weight: 600;
+    }
+    .success__refresh,
+    .ageout__back {
+      display: block;
+      margin: 1.5rem auto 0;
+      font-size: 0.85rem;
+      opacity: 0.6;
+      text-align: center;
+      text-decoration: underline;
+    }
+    .success__refresh:hover,
+    .ageout__back:hover { opacity: 1; color: var(--cash-green); }
+
+    .ageout__cta {
+      display: block;
+      width: max-content;
+      max-width: 100%;
+      margin: 1.5rem auto 0;
+      background: var(--cash-green);
+      color: var(--vanilla);
+      padding: 0.9rem 1.5rem;
+      font-weight: 700;
+      font-size: 0.95rem;
+      border-radius: 100px;
+      text-align: center;
+    }
+    .ageout__cta:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 40px rgba(1, 71, 81, 0.22);
+    }
+
+    /* ── Stripe Elements mount + spinner ───────────── */
+    #stripe-card-mount {
+      background: #fff;
+      border: 1px solid rgba(26, 23, 23, 0.18);
+      border-radius: 14px;
+      padding: 0.85rem 1.05rem;
+      margin-bottom: 1.25rem;
+      min-height: 3.5rem;
+    }
+    .stripe-fallback {
+      font-size: 0.86rem;
+      color: var(--error);
+      background: rgba(122, 31, 42, 0.08);
+      border: 1px solid rgba(122, 31, 42, 0.18);
+      padding: 0.75rem 1rem;
+      border-radius: 12px;
+      margin-bottom: 1rem;
+      line-height: 1.4;
+    }
+    .stripe-fallback[hidden] { display: none; }
+    .spinner {
+      display: block;
+      width: 36px;
+      height: 36px;
+      margin: 1rem auto 1.25rem;
+      border: 3px solid rgba(1, 71, 81, 0.18);
+      border-top-color: var(--cash-green);
+      border-radius: 50%;
+      animation: spin 0.85s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) {
+      .spinner { animation: none; opacity: 0.6; }
+    }
+
+    /* ── Success — share URL row ─────────────────── */
+    .share-row {
+      display: flex;
+      gap: 0.5rem;
+      margin: 1rem 0 0.75rem;
+      align-items: stretch;
+    }
+    .share-row input {
+      flex: 1;
+      min-width: 0;
+      padding: 0.7rem 0.85rem;
+      border: 1px solid rgba(26, 23, 23, 0.18);
+      border-radius: 12px;
+      background: #fff;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.85rem;
+      color: var(--off-black);
+      outline: none;
+    }
+    .share-row input:focus {
+      border-color: var(--cash-green);
+      box-shadow: 0 4px 14px rgba(1, 71, 81, 0.10);
+    }
+    .copy-btn {
+      background: var(--cash-green);
+      color: var(--vanilla);
+      font-weight: 700;
+      font-size: 0.85rem;
+      padding: 0 1rem;
+      border-radius: 12px;
+      flex-shrink: 0;
+      letter-spacing: 0.02em;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    .copy-btn:hover { transform: translateY(-1px); }
+    .copy-btn.copied { background: var(--electric-green); color: var(--cash-green); }
+    .share-tip {
+      font-size: 0.82rem;
+      opacity: 0.6;
+      text-align: center;
+      margin-top: 0.5rem;
+      line-height: 1.45;
+    }
+
+    /* ── Footer ───────────────────────────────────── */
+    .page-foot {
+      flex-shrink: 0;
+      display: flex;
+      justify-content: center;
+      gap: 1.25rem;
+      font-size: 0.72rem;
+      opacity: 0.4;
+      padding-top: 1rem;
+    }
+    .page-foot a:hover { opacity: 1; color: var(--cash-green); }
+
+    /* ── Mobile (≤ 480px) ─────────────────────────── */
+    @media (max-width: 480px) {
+      .stage { padding: 1.25rem 1.25rem 1.5rem; }
+      .hero { padding: 1.25rem 0 0.75rem; }
+      .panel { padding: 1.4rem 1.1rem; }
+      .panel__title { font-size: clamp(1.4rem, 6.5vw, 1.8rem); }
+      .why-parent { font-size: 0.85rem; padding: 0.75rem 0.95rem; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <!-- ── Top bar ────────────────────────────────── -->
+    <header class="bar">
+      <a href="/" class="wordmark" aria-label="cash bff home">cash bff</a>
+      <div class="bar__right">for students</div>
+    </header>
+
+    <!-- ── Hero ───────────────────────────────────── -->
+    <section class="hero" aria-label="intro">
+      <h1 class="hero__title">
+        cashbff for students<span class="period">.</span>
+      </h1>
+      <p class="hero__sub">
+        the version of cashbff that's free until you're 18, no bank connection needed. just the calendar, your scheduled expenses, and a way to plan ahead. you do you.
+      </p>
+    </section>
+
+    <!-- ── Funnel ─────────────────────────────────── -->
+    <main class="funnel" id="funnel">
+      <div class="banner" id="banner" role="status" aria-live="polite" hidden></div>
+
+      <!-- ── State 1 — form ─────────────────────────── -->
+      <section class="state is-active" id="state-form" data-state="form" aria-label="sign up form">
+        <div class="panel">
+          <div class="panel__step">step 1 of 1</div>
+          <h2 class="panel__title">we just need a parent to sign you up</h2>
+          <p class="panel__sub">
+            you're under 18, so the law says a parent has to say it's ok. they only need to do this once — fill it in, hit submit, and we'll set you up.
+          </p>
+
+          <div class="why-parent">
+            <strong>quick heads up:</strong> your parent's submission counts as legal consent for you to use cashbff for free until you turn 18 (plus a free year after that). after that, it's the regular plaid version.
+          </div>
+
+          <form id="school-form" novalidate autocomplete="on">
+            <!-- Parent block -->
+            <div class="field">
+              <label class="field__label" for="parent-first-name">your parent's first name</label>
+              <input
+                class="field__input"
+                type="text"
+                id="parent-first-name"
+                name="parent_first_name"
+                placeholder="alex"
+                autocomplete="off"
+                required
+                maxlength="80"
+              >
+            </div>
+            <div class="field">
+              <label class="field__label" for="parent-email">your parent's email</label>
+              <input
+                class="field__input"
+                type="email"
+                id="parent-email"
+                name="parent_email"
+                placeholder="parent@email.com"
+                autocomplete="email"
+                inputmode="email"
+                required
+              >
+              <div class="field__hint">we'll email them to confirm and let them know you're set up.</div>
+            </div>
+
+            <!-- Student block -->
+            <div class="field">
+              <label class="field__label" for="student-first-name">your first name (so we can say hi)</label>
+              <input
+                class="field__input"
+                type="text"
+                id="student-first-name"
+                name="student_first_name"
+                placeholder="sam"
+                autocomplete="off"
+                required
+                maxlength="80"
+              >
+            </div>
+            <div class="field">
+              <label class="field__label" for="student-email">your email</label>
+              <input
+                class="field__input"
+                type="email"
+                id="student-email"
+                name="student_email"
+                placeholder="you@school.edu"
+                autocomplete="email"
+                inputmode="email"
+                required
+              >
+              <div class="field__hint">has to be different from your parent's email.</div>
+            </div>
+            <div class="field">
+              <label class="field__label" for="student-dob">your date of birth</label>
+              <input
+                class="field__input"
+                type="date"
+                id="student-dob"
+                name="student_dob"
+                autocomplete="bday"
+                required
+              >
+              <div class="field__hint">we use this to keep you on the free under-18 plan. if you're 18+, head over to <a href="/" style="text-decoration:underline;color:var(--cash-green)">cashbff.com</a>.</div>
+            </div>
+
+            <!-- Consent -->
+            <label class="consent" for="consent">
+              <input type="checkbox" id="consent" name="consent_given" required>
+              <span class="consent__text">
+                i am <strong id="consent-name-slot">[student's name]</strong>'s parent or legal guardian. i consent to them using cashbff for free until they're 18, and i agree to the <a href="privacy.html">terms</a> on their behalf.
+              </span>
+            </label>
+
+            <button class="cta-btn" type="submit" id="submit-btn">
+              count me in
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <!-- ── State 2 — verifying (waiting for /api/school/start) ─── -->
+      <section class="state" id="state-verifying" data-state="verifying" aria-label="verifying details">
+        <div class="panel">
+          <div class="panel__step">step 2 of 3</div>
+          <h2 class="panel__title">checking your details<span class="period" style="color:var(--cash-green)">.</span></h2>
+          <p class="panel__sub">one sec — we're getting your card screen ready.</p>
+          <div class="spinner" aria-hidden="true"></div>
+        </div>
+      </section>
+
+      <!-- ── State 3 — Stripe card verification ──────────────────── -->
+      <section class="state" id="state-stripe-card" data-state="stripe-card" aria-label="verify card">
+        <div class="panel">
+          <div class="panel__step">step 2 of 3</div>
+          <h2 class="panel__title">we just need to confirm you're a parent<span class="period" style="color:var(--cash-green)">.</span></h2>
+          <p class="panel__sub">
+            we save your card to keep underage signups honest — <strong>we don't charge it</strong>. cashbff for students is free until they turn 18.
+          </p>
+          <div class="stripe-fallback" id="stripe-fallback" hidden>
+            card verification isn't configured yet — please email <a href="mailto:hi@cashbff.com" style="text-decoration:underline;color:var(--cash-green)">hi@cashbff.com</a> and we'll get you set up.
+          </div>
+          <div id="stripe-card-mount" aria-label="card details"></div>
+          <button class="cta-btn" type="button" id="verify-card-btn">
+            verify my card
+          </button>
+          <a href="#" class="success__refresh" id="card-back">← back to the form</a>
+        </div>
+      </section>
+
+      <!-- ── State 4 — finalizing (waiting for /api/school/finalize) -->
+      <section class="state" id="state-finalizing" data-state="finalizing" aria-label="finishing up">
+        <div class="panel">
+          <div class="panel__step">step 3 of 3</div>
+          <h2 class="panel__title">setting them up<span class="period" style="color:var(--cash-green)">.</span></h2>
+          <p class="panel__sub">creating their login code and mailbox… give us a beat.</p>
+          <div class="spinner" aria-hidden="true"></div>
+        </div>
+      </section>
+
+      <!-- ── State 5 — success (kid login URL) ───────────────────── -->
+      <section class="state" id="state-success" data-state="success" aria-label="all set">
+        <div class="panel">
+          <div class="success__big"><span id="success-student-name">your kid</span> is in<span style="color:var(--off-black)">.</span></div>
+          <p class="success__body">
+            send them this URL — it has their login code baked in, so all they have to do is open it.
+          </p>
+          <div class="share-row">
+            <input id="kid-login-url" type="text" readonly aria-label="kid login URL">
+            <button class="copy-btn" type="button" id="copy-url-btn">copy</button>
+          </div>
+          <p class="share-tip">
+            or share via SMS / WhatsApp — long-press the box above to grab it on mobile.
+          </p>
+          <a href="/school" class="success__refresh">need to add another kid? hit refresh.</a>
+        </div>
+      </section>
+
+      <!-- ── State 6 — age-out ──────────────────────────────────── -->
+      <section class="state" id="state-ageout" data-state="ageout" aria-label="too old for the school plan">
+        <div class="panel">
+          <div class="success__big">you're 18+<span style="color:var(--off-black)">.</span></div>
+          <p class="ageout__body">
+            looks like you're already 18+ — head to <strong>cashbff.com</strong> for the full version, you don't need this one.
+          </p>
+          <a href="/" class="ageout__cta">take me to cashbff.com</a>
+          <a href="#" class="ageout__back" id="ageout-back">wrong birthday? go back</a>
+        </div>
+      </section>
+    </main>
+
+    <!-- ── Page footer ───────────────────────────── -->
+    <footer class="page-foot">
+      <a href="privacy.html">privacy</a>
+      <span>·</span>
+      <a href="mailto:hi@cashbff.com">hi@cashbff.com</a>
+    </footer>
+  </div>
+
+  <script src="/assets/js/school.js" defer></script>
+</body>
+</html>

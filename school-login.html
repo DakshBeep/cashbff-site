@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <!-- Sentry browser SDK: forwards JS errors + unhandled rejections to our Sentry project. -->
+  <script
+    src="https://js.sentry-cdn.com/2d45e7a7cdc726451c61d775aa22fbf2.min.js"
+    crossorigin="anonymous"
+  ></script>
+  <script src="/assets/js/sentry-init.js"></script>
+  <title>log in · cash bff for students</title>
+  <meta name="description" content="log in to your cashbff for students account.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
+
+  <style>
+    @font-face {
+      font-family: 'Greed Condensed';
+      src: url('fonts/GreedCondensed-Bold.woff2') format('woff2');
+      font-weight: 700; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Greed Condensed';
+      src: url('fonts/GreedCondensed-Medium.woff2') format('woff2');
+      font-weight: 500; font-display: swap;
+    }
+    :root {
+      --cash-green: #014751;
+      --electric-green: #D3FFB4;
+      --periwinkle: #C5B6F1;
+      --off-black: #1A1717;
+      --vanilla: #FCFAF2;
+      --error: #7a1f2a;
+      --font-display: 'Greed Condensed', 'Archivo Narrow', 'Arial Narrow', Impact, sans-serif;
+      --font-body: 'Instrument Sans', system-ui, -apple-system, sans-serif;
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: var(--font-body);
+      background: var(--vanilla);
+      color: var(--off-black);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      line-height: 1.5;
+      min-height: 100dvh;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { font-family: inherit; cursor: pointer; border: none; background: none; }
+
+    .stage {
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      padding: 1.75rem 2rem 2rem;
+    }
+    .bar {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-weight: 700; font-size: 1.5rem;
+      letter-spacing: -0.02em;
+      color: var(--cash-green);
+    }
+    .bar__right {
+      font-size: 0.72rem;
+      opacity: 0.45;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .center {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      max-width: 28rem;
+      margin: 0 auto;
+      width: 100%;
+      text-align: center;
+      padding: 1rem 0;
+    }
+
+    .step {
+      font-size: 0.7rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      opacity: 0.5;
+      font-weight: 600;
+      margin-bottom: 0.85rem;
+    }
+    .title {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: clamp(2rem, 6vw, 3rem);
+      text-transform: uppercase;
+      letter-spacing: -0.015em;
+      line-height: 1;
+      color: var(--off-black);
+      margin-bottom: 0.85rem;
+    }
+    .title .period { color: var(--cash-green); }
+    .sub {
+      font-size: 1rem;
+      opacity: 0.7;
+      margin-bottom: 1.75rem;
+      line-height: 1.55;
+    }
+
+    .form {
+      width: 100%;
+      text-align: left;
+    }
+    .field { margin-bottom: 0.95rem; }
+    .field__label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      opacity: 0.7;
+      margin-bottom: 0.35rem;
+    }
+    .field__input {
+      width: 100%;
+      padding: 0.85rem 1.05rem;
+      border: 1px solid rgba(26, 23, 23, 0.18);
+      border-radius: 14px;
+      background: #fff;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--off-black);
+      outline: none;
+      transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    .field__input:focus {
+      border-color: var(--cash-green);
+      box-shadow: 0 4px 14px rgba(1, 71, 81, 0.10);
+    }
+    .field__input--code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      font-size: 1.15rem;
+      font-weight: 600;
+    }
+
+    .submit-btn {
+      display: block;
+      width: 100%;
+      background: var(--cash-green);
+      color: var(--vanilla);
+      padding: 1.05rem 1.5rem;
+      font-weight: 700;
+      font-size: 1rem;
+      border-radius: 100px;
+      text-align: center;
+      margin-top: 0.5rem;
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+                  box-shadow 0.25s ease,
+                  opacity 0.2s ease;
+    }
+    .submit-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 40px rgba(1, 71, 81, 0.22);
+    }
+    .submit-btn:disabled {
+      opacity: 0.55;
+      cursor: progress;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .banner {
+      width: 100%;
+      margin: 0 0 1rem;
+      padding: 0.85rem 1.15rem;
+      border-radius: 14px;
+      font-size: 0.88rem;
+      line-height: 1.45;
+      text-align: left;
+      animation: fadeUp 0.3s ease-out;
+    }
+    .banner[hidden] { display: none; }
+    .banner--info {
+      background: rgba(197, 182, 241, 0.35);
+      color: var(--off-black);
+    }
+    .banner--error {
+      background: rgba(122, 31, 42, 0.08);
+      color: var(--error);
+      border: 1px solid rgba(122, 31, 42, 0.18);
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .footer-note {
+      margin-top: 1.5rem;
+      font-size: 0.82rem;
+      opacity: 0.55;
+      line-height: 1.5;
+    }
+    .footer-note a {
+      color: var(--cash-green);
+      text-decoration: underline;
+    }
+
+    .page-foot {
+      flex-shrink: 0;
+      display: flex;
+      justify-content: center;
+      gap: 1.25rem;
+      font-size: 0.72rem;
+      opacity: 0.35;
+      padding-top: 1rem;
+    }
+    .page-foot a:hover { opacity: 1; color: var(--cash-green); }
+
+    @media (max-width: 480px) {
+      .stage { padding: 1.25rem 1.25rem 1.5rem; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <header class="bar">
+      <a href="/" class="wordmark" aria-label="cash bff home">cash bff</a>
+      <div class="bar__right">log in</div>
+    </header>
+
+    <main class="center">
+      <div class="step">step · log in</div>
+      <h1 class="title">let's get you in<span class="period">.</span></h1>
+      <p class="sub">enter your email and the code your parent gave you.</p>
+
+      <div class="banner" id="banner" role="status" aria-live="polite" hidden></div>
+
+      <form class="form" id="login-form" novalidate autocomplete="on">
+        <div class="field">
+          <label class="field__label" for="student_email">your email</label>
+          <input
+            class="field__input"
+            type="email"
+            id="student_email"
+            name="email"
+            placeholder="you@school.edu"
+            autocomplete="email"
+            inputmode="email"
+            required
+          >
+        </div>
+        <div class="field">
+          <label class="field__label" for="kid_code">login code</label>
+          <input
+            class="field__input field__input--code"
+            type="text"
+            id="kid_code"
+            name="code"
+            placeholder="ABCD1234"
+            autocomplete="one-time-code"
+            inputmode="latin"
+            maxlength="8"
+            minlength="8"
+            required
+          >
+        </div>
+        <button class="submit-btn" type="submit" id="login-btn">log in</button>
+      </form>
+
+      <p class="footer-note">
+        lost your code? ask your parent for a new one — they can grab it from <a href="/school">cashbff.com/school</a>.
+      </p>
+    </main>
+
+    <footer class="page-foot">
+      <a href="privacy.html">privacy</a>
+      <span>·</span>
+      <a href="mailto:hi@cashbff.com">hi@cashbff.com</a>
+    </footer>
+  </div>
+
+  <script src="/assets/js/school-login.js" defer></script>
+</body>
+</html>

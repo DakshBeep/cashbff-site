@@ -146,11 +146,34 @@
   var recurringBtn, recurringBtnCount, recurringOverlay, recurringPop,
       recurringClose, recurringStatus,
       recurringSuggestionsList, recurringSuggestionsCount,
-      recurringStreamsList, recurringStreamsCount;
+      recurringStreamsList, recurringStreamsCount,
+      recurringAddBtn;
   var recurringSuggestionsCache = null;
   var recurringSuggestionsFetchInflight = null;
   var recurringStreamsCache = null;
   var recurringStreamsFetchInflight = null;
+  // Phase 8C: explicit fetch-state flags so the panel can distinguish
+  // "loading" (paint skeleton) from "loaded-empty" (paint empty-state copy)
+  // from "loaded-with-items" (paint cards). Without this the panel briefly
+  // showed "nothing tracked yet" while the GET was still in flight, which
+  // was triggering users to mass-refresh thinking the data was lost.
+  var recurringSuggestionsLoaded = false;
+  var recurringStreamsLoaded = false;
+  // Recurring add modal (Phase 8C: manual entry for streams the bridge
+  // didn't catch).
+  var recurringAddOverlay, recurringAddPop, recurringAddClose,
+      recurringAddForm, recurringAddName, recurringAddAmount,
+      recurringAddDate, recurringAddEnd, recurringAddFreqChips,
+      recurringAddError, recurringAddSubmit;
+  // Recurring edit modal (Phase 8C: dedicated stream editor with frequency
+  // + end_date support, replaces the old "open schedule popover from row").
+  var recurringEditOverlay, recurringEditPop, recurringEditClose,
+      recurringEditForm, recurringEditName, recurringEditAmount,
+      recurringEditDate, recurringEditEnd, recurringEditFreqChips,
+      recurringEditError, recurringEditSubmit,
+      recurringEditDelete, recurringEditDeleteConfirm,
+      recurringEditDeleteYes, recurringEditDeleteCancel;
+  var recurringEditCurrent = null; // the stream currently being edited
   // Rollover modal — single-merchant prompt, walks through prompts one-by-one.
   var rolloverOverlay, rolloverPop, rolloverDismiss, rolloverTitle,
       rolloverSub, rolloverError,
@@ -347,13 +370,17 @@
     }
     // Recurring suggestions + streams — SWR. Last-known list paints the panel
     // instantly on first open; the live GET refreshes both panels.
+    // Phase 8C: a cached array satisfies the "loaded" flag so the user
+    // doesn't see a skeleton flash on top of data that's already on disk.
     var cachedRecurringSuggestions = cacheRead('recurring_suggestions');
     if (Array.isArray(cachedRecurringSuggestions)) {
       recurringSuggestionsCache = cachedRecurringSuggestions;
+      recurringSuggestionsLoaded = true;
     }
     var cachedRecurringStreams = cacheRead('recurring_streams');
     if (Array.isArray(cachedRecurringStreams)) {
       recurringStreamsCache = cachedRecurringStreams;
+      recurringStreamsLoaded = true;
     }
   }
 
@@ -2641,6 +2668,7 @@
     }).then(function (data) {
       var items = (data && Array.isArray(data.items)) ? data.items : [];
       recurringSuggestionsCache = items;
+      recurringSuggestionsLoaded = true;
       try {
         Object.defineProperty(recurringSuggestionsCache, '_fresh',
           { value: true, enumerable: false, configurable: true });
@@ -2674,6 +2702,7 @@
     }).then(function (data) {
       var items = (data && Array.isArray(data.items)) ? data.items : [];
       recurringStreamsCache = items;
+      recurringStreamsLoaded = true;
       try {
         Object.defineProperty(recurringStreamsCache, '_fresh',
           { value: true, enumerable: false, configurable: true });
@@ -2993,46 +3022,15 @@
     actions.appendChild(trash);
     row.appendChild(actions);
 
-    // Open the schedule popover in edit mode when the row body is clicked.
-    // We don't have the full scheduled txn object on hand (only the linked id +
-    // a name + date + amount + the merchant key), so we synthesize a minimal
-    // one that the schedule form can render. After save, the schedule form's
-    // PATCH handles the calendar side; we then PATCH the recurring stream so
-    // the two stay in sync.
+    // Phase 8C: open the new dedicated #recurring-edit-pop modal. The old
+    // flow opened the schedule popover (which was originally for one-off
+    // scheduled txns) and then mirrored saves back onto the stream. The
+    // new modal owns the recurring concept end-to-end — including
+    // frequency + end_date — so the mental models stay clean. Stream-row
+    // edits no longer touch /api/transactions/schedule.
     var openEditFlow = function (ev) {
       if (ev) ev.stopPropagation();
-      if (!item.linked_scheduled_txn_id) {
-        // No linked scheduled txn — fall back to editing the stream directly
-        // by patching with a fresh date prompt. Rare; happens if cron deleted
-        // the linked row out from under us.
-        var dateOnly = window.prompt('new date (yyyy-mm-dd)', item.next_due_date || '');
-        if (!dateOnly) return;
-        patchRecurringStream(item.merchant, { next_due_date: dateOnly })
-          .catch(function () {});
-        return;
-      }
-      var synthesized = {
-        id: item.linked_scheduled_txn_id,
-        date: item.next_due_date,
-        amount: amtNum,
-        name: name.textContent,
-        type: 'sub',
-        card_account_id: null,
-        note: null
-      };
-      // Wire the post-edit hook so any save also patches the stream.
-      pendingRecurringEdit = {
-        merchant: item.merchant,
-        scheduledId: item.linked_scheduled_txn_id
-      };
-      // Bug C: close the recurring popover BEFORE opening the schedule
-      // popover. They share an overlay layer (z-index 40/41) so opening
-      // the schedule on top leaves both visible — the user reported being
-      // "glitched in 2 menus." closeSchedule() reads the flag below and
-      // reopens the recurring panel so the user lands back in context.
-      reopenRecurringAfterSchedule = true;
-      try { closeRecurring(); } catch (_) {}
-      openSchedule(synthesized);
+      openRecurringEdit(item);
     };
     row.addEventListener('click', function (ev) {
       // Ignore clicks that landed on the trash/edit icons (they handle
@@ -3117,41 +3115,78 @@
   // Without this both popovers would visibly stack ("glitched in 2 menus").
   var reopenRecurringAfterSchedule = false;
 
+  // Phase 8C: paint a 3-card skeleton while a fetch is in flight. Replaces
+  // the empty-state copy that used to flash during a slow GET (which made
+  // users mass-refresh thinking the data was gone). variant ='card' for
+  // the suggestions section (taller cards), 'row' for streams (compact).
+  function buildRecurringSkeleton(variant) {
+    var wrap = document.createElement('div');
+    wrap.className = 'recurring-skeleton';
+    wrap.setAttribute('data-skeleton', variant || 'card');
+    var cls = variant === 'row'
+      ? 'recurring-skeleton__row'
+      : 'recurring-skeleton__card';
+    for (var i = 0; i < 3; i++) {
+      var c = document.createElement('div');
+      c.className = cls;
+      c.setAttribute('aria-hidden', 'true');
+      wrap.appendChild(c);
+    }
+    return wrap;
+  }
+
   function renderRecurring() {
     if (recurringSuggestionsList) {
       recurringSuggestionsList.innerHTML = '';
-      var suggestions = Array.isArray(recurringSuggestionsCache)
-        ? recurringSuggestionsCache : [];
-      if (recurringSuggestionsCount) {
-        recurringSuggestionsCount.textContent = '(' + suggestions.length + ')';
-      }
-      if (!suggestions.length) {
-        var empty1 = document.createElement('div');
-        empty1.className = 'recurring-empty';
-        empty1.textContent = 'all caught up \u2014 we\u2019ll surface new ones as we see them.';
-        recurringSuggestionsList.appendChild(empty1);
+      // Three-state machine: loading -> skeleton, loaded-empty -> empty
+      // copy, loaded-with-items -> cards. Without the explicit loaded
+      // flag the empty-state copy flashes during a fetch (Phase 8C bug).
+      if (!recurringSuggestionsLoaded && !Array.isArray(recurringSuggestionsCache)) {
+        if (recurringSuggestionsCount) {
+          recurringSuggestionsCount.textContent = '';
+        }
+        recurringSuggestionsList.appendChild(buildRecurringSkeleton('card'));
       } else {
-        suggestions.forEach(function (it) {
-          recurringSuggestionsList.appendChild(buildRecurringSuggestionCard(it));
-        });
+        var suggestions = Array.isArray(recurringSuggestionsCache)
+          ? recurringSuggestionsCache : [];
+        if (recurringSuggestionsCount) {
+          recurringSuggestionsCount.textContent = '(' + suggestions.length + ')';
+        }
+        if (!suggestions.length) {
+          var empty1 = document.createElement('div');
+          empty1.className = 'recurring-empty';
+          empty1.textContent = 'all caught up \u2014 we\u2019ll surface new ones as we see them.';
+          recurringSuggestionsList.appendChild(empty1);
+        } else {
+          suggestions.forEach(function (it) {
+            recurringSuggestionsList.appendChild(buildRecurringSuggestionCard(it));
+          });
+        }
       }
     }
     if (recurringStreamsList) {
       recurringStreamsList.innerHTML = '';
-      var streams = Array.isArray(recurringStreamsCache)
-        ? recurringStreamsCache : [];
-      if (recurringStreamsCount) {
-        recurringStreamsCount.textContent = '(' + streams.length + ')';
-      }
-      if (!streams.length) {
-        var empty2 = document.createElement('div');
-        empty2.className = 'recurring-empty';
-        empty2.textContent = 'nothing tracked yet \u2014 start with a suggestion above \ud83d\udc46';
-        recurringStreamsList.appendChild(empty2);
+      if (!recurringStreamsLoaded && !Array.isArray(recurringStreamsCache)) {
+        if (recurringStreamsCount) {
+          recurringStreamsCount.textContent = '';
+        }
+        recurringStreamsList.appendChild(buildRecurringSkeleton('row'));
       } else {
-        streams.forEach(function (it) {
-          recurringStreamsList.appendChild(buildRecurringStreamRow(it));
-        });
+        var streams = Array.isArray(recurringStreamsCache)
+          ? recurringStreamsCache : [];
+        if (recurringStreamsCount) {
+          recurringStreamsCount.textContent = '(' + streams.length + ')';
+        }
+        if (!streams.length) {
+          var empty2 = document.createElement('div');
+          empty2.className = 'recurring-empty';
+          empty2.textContent = 'nothing tracked yet \u2014 add one above or wait for a suggestion.';
+          recurringStreamsList.appendChild(empty2);
+        } else {
+          streams.forEach(function (it) {
+            recurringStreamsList.appendChild(buildRecurringStreamRow(it));
+          });
+        }
       }
     }
     updateRecurringBadge();
@@ -3311,17 +3346,15 @@
     recurringPop.setAttribute('aria-hidden', 'false');
     setRecurringStatus('');
 
-    // Paint whatever's in cache up front so the panel doesn't blink empty.
-    if (Array.isArray(recurringSuggestionsCache) || Array.isArray(recurringStreamsCache)) {
-      renderRecurring();
-    }
+    // Phase 8C: ALWAYS render on open. If the caches aren't loaded yet
+    // renderRecurring() paints the skeleton (3 ghost cards/rows). If the
+    // caches ARE loaded (cache-hydrated boot or a prior session) it paints
+    // real items. Either way, no empty-state flash on a slow fetch.
+    renderRecurring();
     // Skip refetch when both caches are backend-fresh from this session.
     var sFresh = Array.isArray(recurringSuggestionsCache) && recurringSuggestionsCache._fresh;
     var stFresh = Array.isArray(recurringStreamsCache) && recurringStreamsCache._fresh;
     if (!sFresh || !stFresh) {
-      if (!Array.isArray(recurringSuggestionsCache) && !Array.isArray(recurringStreamsCache)) {
-        setRecurringStatus('loading\u2026');
-      }
       Promise.all([
         fetchRecurringSuggestionsOnce(),
         fetchRecurringStreamsOnce()
@@ -3329,6 +3362,12 @@
         setRecurringStatus('');
         renderRecurring();
       }).catch(function () {
+        // On error, mark loaded so the empty-state replaces the skeleton
+        // (skeleton spinning forever is worse than an empty list + a
+        // visible error message).
+        recurringSuggestionsLoaded = true;
+        recurringStreamsLoaded = true;
+        renderRecurring();
         setRecurringStatus('couldn\u2019t load \u2014 refresh and try again.');
       });
     }
@@ -3356,14 +3395,368 @@
     recurringSuggestionsCount  = document.getElementById('recurring-suggestions-count');
     recurringStreamsList       = document.getElementById('recurring-streams-list');
     recurringStreamsCount      = document.getElementById('recurring-streams-count');
+    recurringAddBtn            = document.getElementById('recurring-add-btn');
 
     if (recurringBtn)     recurringBtn.addEventListener('click', openRecurring);
     if (recurringClose)   recurringClose.addEventListener('click', closeRecurring);
     if (recurringOverlay) recurringOverlay.addEventListener('click', closeRecurring);
+    if (recurringAddBtn)  recurringAddBtn.addEventListener('click', openRecurringAdd);
 
     // If a hydrated cache exists, paint the badge up front so a returning user
     // sees the "review N" pill without waiting for the live fetch.
     updateRecurringBadge();
+  }
+
+  // ── Recurring add modal (Phase 8C) ──────────────
+  // Manual entry path for streams the bridge didn't catch. POSTs to the
+  // new /api/recurring/streams endpoint. On success the modal closes and
+  // the recurring panel + calendar refetch so the user sees the new row +
+  // its forward projection paint immediately.
+  function setRecurringAddError(text) {
+    if (recurringAddError) recurringAddError.textContent = text || '';
+  }
+
+  function getSelectedFreq(chipsEl) {
+    if (!chipsEl) return 'monthly';
+    var active = chipsEl.querySelector('.freq-chip.is-active');
+    return (active && active.getAttribute('data-freq')) || 'monthly';
+  }
+
+  function setSelectedFreq(chipsEl, value) {
+    if (!chipsEl) return;
+    var chips = chipsEl.querySelectorAll('.freq-chip');
+    var matched = false;
+    chips.forEach(function (c) {
+      var f = c.getAttribute('data-freq');
+      var on = f === value;
+      if (on) matched = true;
+      c.classList.toggle('is-active', on);
+      c.setAttribute('aria-checked', on ? 'true' : 'false');
+    });
+    if (!matched) {
+      // Default monthly if the requested value isn't in the chip set.
+      chips.forEach(function (c) {
+        var on = c.getAttribute('data-freq') === 'monthly';
+        c.classList.toggle('is-active', on);
+        c.setAttribute('aria-checked', on ? 'true' : 'false');
+      });
+    }
+  }
+
+  function wireFreqChips(chipsEl) {
+    if (!chipsEl) return;
+    chipsEl.addEventListener('click', function (ev) {
+      var btn = ev.target && ev.target.closest && ev.target.closest('.freq-chip');
+      if (!btn) return;
+      var f = btn.getAttribute('data-freq');
+      if (!f) return;
+      setSelectedFreq(chipsEl, f);
+    });
+  }
+
+  function resetRecurringAddForm() {
+    if (recurringAddName)   recurringAddName.value = '';
+    if (recurringAddAmount) recurringAddAmount.value = '';
+    if (recurringAddDate)   recurringAddDate.value = '';
+    if (recurringAddEnd)    recurringAddEnd.value = '';
+    setSelectedFreq(recurringAddFreqChips, 'monthly');
+    setRecurringAddError('');
+    if (recurringAddSubmit) {
+      recurringAddSubmit.disabled = false;
+      recurringAddSubmit.textContent = 'add it';
+    }
+  }
+
+  function openRecurringAdd() {
+    if (!recurringAddPop || !recurringAddOverlay) return;
+    resetRecurringAddForm();
+    // Default the date to today + 30 (sensible for monthly bills).
+    if (recurringAddDate) {
+      try { recurringAddDate.value = defaultNextDueIso(); } catch (_) {}
+    }
+    recurringAddPop.classList.add('open');
+    recurringAddOverlay.classList.add('open');
+    recurringAddPop.setAttribute('aria-hidden', 'false');
+    if (recurringAddName) {
+      try { recurringAddName.focus({ preventScroll: true }); }
+      catch (_) { recurringAddName.focus(); }
+    }
+  }
+
+  function closeRecurringAdd() {
+    if (!recurringAddPop || !recurringAddOverlay) return;
+    recurringAddPop.classList.remove('open');
+    recurringAddOverlay.classList.remove('open');
+    recurringAddPop.setAttribute('aria-hidden', 'true');
+  }
+
+  function postRecurringStream(body) {
+    return fetch(API_BASE + '/api/recurring/streams', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    }).then(function (res) {
+      if (res.status === 401) { location.replace('/'); throw new Error('unauthed'); }
+      if (!res.ok) {
+        return res.json().catch(function () { return {}; }).then(function (data) {
+          var err = new Error('add failed ' + res.status);
+          err.userMessage = (data && data.error) || 'couldn’t add — try again.';
+          throw err;
+        });
+      }
+      return res.json();
+    });
+  }
+
+  function handleRecurringAddSubmit(ev) {
+    ev.preventDefault();
+    setRecurringAddError('');
+    var nameVal = (recurringAddName && recurringAddName.value || '').trim();
+    var amtRaw  = (recurringAddAmount && recurringAddAmount.value || '').trim();
+    var dateVal = (recurringAddDate && recurringAddDate.value || '').trim();
+    var endVal  = (recurringAddEnd && recurringAddEnd.value || '').trim();
+    var freqVal = getSelectedFreq(recurringAddFreqChips);
+
+    if (!nameVal) { setRecurringAddError('give it a name.'); return; }
+    var amtNum = parseFloat(amtRaw);
+    if (!amtRaw || isNaN(amtNum) || amtNum <= 0) {
+      setRecurringAddError('enter an amount above zero.'); return;
+    }
+    if (!dateVal) { setRecurringAddError('pick a next-charge date.'); return; }
+    if (endVal && endVal < dateVal) {
+      setRecurringAddError('end date must be on or after the next charge date.');
+      return;
+    }
+
+    var body = {
+      display_name: nameVal,
+      next_due_date: dateVal,
+      amount: Math.round(amtNum * 100) / 100,
+      frequency: freqVal
+    };
+    if (endVal) body.end_date = endVal;
+
+    if (recurringAddSubmit) {
+      recurringAddSubmit.disabled = true;
+      recurringAddSubmit.textContent = 'adding…';
+    }
+
+    postRecurringStream(body).then(function () {
+      closeRecurringAdd();
+      // Refetch streams + suggestions + invalidate calendar so the new
+      // projection paints immediately.
+      reloadRecurringAfterMutation([dateVal]);
+    }).catch(function (e) {
+      if (recurringAddSubmit) {
+        recurringAddSubmit.disabled = false;
+        recurringAddSubmit.textContent = 'add it';
+      }
+      setRecurringAddError((e && e.userMessage) || 'couldn’t add — try again.');
+    });
+  }
+
+  function wireRecurringAddModal() {
+    recurringAddOverlay   = document.getElementById('recurring-add-overlay');
+    recurringAddPop       = document.getElementById('recurring-add-pop');
+    recurringAddClose     = document.getElementById('recurring-add-close');
+    recurringAddForm      = document.getElementById('recurring-add-form');
+    recurringAddName      = document.getElementById('rec-add-name');
+    recurringAddAmount    = document.getElementById('rec-add-amount');
+    recurringAddDate      = document.getElementById('rec-add-date');
+    recurringAddEnd       = document.getElementById('rec-add-end');
+    recurringAddFreqChips = document.getElementById('rec-add-freq-chips');
+    recurringAddError     = document.getElementById('rec-add-error');
+    recurringAddSubmit    = document.getElementById('rec-add-submit');
+
+    if (recurringAddClose)   recurringAddClose.addEventListener('click', closeRecurringAdd);
+    if (recurringAddOverlay) recurringAddOverlay.addEventListener('click', closeRecurringAdd);
+    if (recurringAddForm)    recurringAddForm.addEventListener('submit', handleRecurringAddSubmit);
+    wireFreqChips(recurringAddFreqChips);
+  }
+
+  // ── Recurring edit modal (Phase 8C) ─────────────
+  // Dedicated stream editor — replaces the old "open schedule popover from
+  // a stream row" flow. Owns name/amount/next_due_date/frequency/end_date
+  // + a "stop tracking this" delete affordance with inline confirm.
+  function setRecurringEditError(text) {
+    if (recurringEditError) recurringEditError.textContent = text || '';
+  }
+
+  function resetRecurringEditForm() {
+    if (recurringEditName)   recurringEditName.value = '';
+    if (recurringEditAmount) recurringEditAmount.value = '';
+    if (recurringEditDate)   recurringEditDate.value = '';
+    if (recurringEditEnd)    recurringEditEnd.value = '';
+    setSelectedFreq(recurringEditFreqChips, 'monthly');
+    setRecurringEditError('');
+    if (recurringEditSubmit) {
+      recurringEditSubmit.disabled = false;
+      recurringEditSubmit.textContent = 'save changes';
+    }
+    if (recurringEditDeleteConfirm) recurringEditDeleteConfirm.hidden = true;
+    if (recurringEditDelete) {
+      recurringEditDelete.hidden = false;
+      recurringEditDelete.disabled = false;
+    }
+    if (recurringEditDeleteYes) {
+      recurringEditDeleteYes.disabled = false;
+      recurringEditDeleteYes.textContent = 'yes';
+    }
+  }
+
+  function openRecurringEdit(stream) {
+    if (!recurringEditPop || !recurringEditOverlay) return;
+    if (!stream) return;
+    recurringEditCurrent = stream;
+    resetRecurringEditForm();
+
+    if (recurringEditName) {
+      recurringEditName.value = (typeof stream.display_name === 'string'
+        && stream.display_name.length > 0)
+        ? stream.display_name
+        : (stream.merchant || '');
+    }
+    if (recurringEditAmount) {
+      var amt = (typeof stream.amount === 'number' && isFinite(stream.amount))
+        ? stream.amount : 0;
+      recurringEditAmount.value = amt > 0 ? amt.toFixed(2) : '';
+    }
+    if (recurringEditDate) {
+      recurringEditDate.value = (typeof stream.next_due_date === 'string'
+        && stream.next_due_date.length >= 10)
+        ? stream.next_due_date.slice(0, 10) : '';
+    }
+    if (recurringEditEnd) {
+      recurringEditEnd.value = (typeof stream.end_date === 'string'
+        && stream.end_date.length >= 10)
+        ? stream.end_date.slice(0, 10) : '';
+    }
+    setSelectedFreq(recurringEditFreqChips,
+      (typeof stream.frequency === 'string' && stream.frequency.length > 0)
+        ? stream.frequency : 'monthly');
+
+    recurringEditPop.classList.add('open');
+    recurringEditOverlay.classList.add('open');
+    recurringEditPop.setAttribute('aria-hidden', 'false');
+    if (recurringEditName) {
+      try { recurringEditName.focus({ preventScroll: true }); }
+      catch (_) { recurringEditName.focus(); }
+    }
+  }
+
+  function closeRecurringEdit() {
+    if (!recurringEditPop || !recurringEditOverlay) return;
+    recurringEditPop.classList.remove('open');
+    recurringEditOverlay.classList.remove('open');
+    recurringEditPop.setAttribute('aria-hidden', 'true');
+    recurringEditCurrent = null;
+  }
+
+  function handleRecurringEditSubmit(ev) {
+    ev.preventDefault();
+    if (!recurringEditCurrent) return;
+    setRecurringEditError('');
+    var merchant = recurringEditCurrent.merchant;
+    var nameVal = (recurringEditName && recurringEditName.value || '').trim();
+    var amtRaw  = (recurringEditAmount && recurringEditAmount.value || '').trim();
+    var dateVal = (recurringEditDate && recurringEditDate.value || '').trim();
+    var endRaw  = (recurringEditEnd && recurringEditEnd.value || '');
+    var endVal  = endRaw.trim();
+    var freqVal = getSelectedFreq(recurringEditFreqChips);
+
+    if (!nameVal) { setRecurringEditError('give it a name.'); return; }
+    var amtNum = parseFloat(amtRaw);
+    if (!amtRaw || isNaN(amtNum) || amtNum <= 0) {
+      setRecurringEditError('enter an amount above zero.'); return;
+    }
+    if (!dateVal) { setRecurringEditError('pick a next-charge date.'); return; }
+    if (endVal && endVal < dateVal) {
+      setRecurringEditError('end date must be on or after the next charge date.');
+      return;
+    }
+
+    // PATCH semantics: undefined means "don't change". For end_date the
+    // user clearing the field means "clear it server-side" — we send null.
+    // Always send the four other editable fields so the cache stays
+    // canonical even if the user only changed one.
+    var body = {
+      display_name: nameVal,
+      amount: Math.round(amtNum * 100) / 100,
+      next_due_date: dateVal,
+      frequency: freqVal,
+      end_date: endVal ? endVal : null
+    };
+
+    if (recurringEditSubmit) {
+      recurringEditSubmit.disabled = true;
+      recurringEditSubmit.textContent = 'saving…';
+    }
+
+    patchRecurringStream(merchant, body).then(function () {
+      closeRecurringEdit();
+    }).catch(function (e) {
+      if (recurringEditSubmit) {
+        recurringEditSubmit.disabled = false;
+        recurringEditSubmit.textContent = 'save changes';
+      }
+      setRecurringEditError((e && e.userMessage) || 'couldn’t save — try again.');
+    });
+  }
+
+  function showRecurringEditDeleteConfirm() {
+    if (recurringEditDelete) recurringEditDelete.hidden = true;
+    if (recurringEditDeleteConfirm) recurringEditDeleteConfirm.hidden = false;
+  }
+
+  function hideRecurringEditDeleteConfirm() {
+    if (recurringEditDelete) recurringEditDelete.hidden = false;
+    if (recurringEditDeleteConfirm) recurringEditDeleteConfirm.hidden = true;
+  }
+
+  function handleRecurringEditDelete() {
+    if (!recurringEditCurrent) return;
+    var merchant = recurringEditCurrent.merchant;
+    if (recurringEditDeleteYes) {
+      recurringEditDeleteYes.disabled = true;
+      recurringEditDeleteYes.textContent = 'removing…';
+    }
+    setRecurringEditError('');
+    deleteRecurringStream(merchant).then(function () {
+      closeRecurringEdit();
+    }).catch(function (e) {
+      if (recurringEditDeleteYes) {
+        recurringEditDeleteYes.disabled = false;
+        recurringEditDeleteYes.textContent = 'yes';
+      }
+      setRecurringEditError((e && e.userMessage) || 'couldn’t remove — try again.');
+    });
+  }
+
+  function wireRecurringEditModal() {
+    recurringEditOverlay      = document.getElementById('recurring-edit-overlay');
+    recurringEditPop          = document.getElementById('recurring-edit-pop');
+    recurringEditClose        = document.getElementById('recurring-edit-close');
+    recurringEditForm         = document.getElementById('recurring-edit-form-modal');
+    recurringEditName         = document.getElementById('rec-edit-name');
+    recurringEditAmount       = document.getElementById('rec-edit-amount');
+    recurringEditDate         = document.getElementById('rec-edit-date');
+    recurringEditEnd          = document.getElementById('rec-edit-end');
+    recurringEditFreqChips    = document.getElementById('rec-edit-freq-chips');
+    recurringEditError        = document.getElementById('rec-edit-error');
+    recurringEditSubmit       = document.getElementById('rec-edit-submit');
+    recurringEditDelete       = document.getElementById('rec-edit-delete');
+    recurringEditDeleteConfirm= document.getElementById('rec-edit-delete-confirm');
+    recurringEditDeleteYes    = document.getElementById('rec-edit-delete-yes');
+    recurringEditDeleteCancel = document.getElementById('rec-edit-delete-cancel');
+
+    if (recurringEditClose)        recurringEditClose.addEventListener('click', closeRecurringEdit);
+    if (recurringEditOverlay)      recurringEditOverlay.addEventListener('click', closeRecurringEdit);
+    if (recurringEditForm)         recurringEditForm.addEventListener('submit', handleRecurringEditSubmit);
+    if (recurringEditDelete)       recurringEditDelete.addEventListener('click', showRecurringEditDeleteConfirm);
+    if (recurringEditDeleteCancel) recurringEditDeleteCancel.addEventListener('click', hideRecurringEditDeleteConfirm);
+    if (recurringEditDeleteYes)    recurringEditDeleteYes.addEventListener('click', handleRecurringEditDelete);
+    wireFreqChips(recurringEditFreqChips);
   }
 
   // ── Rollover modal ──────────────────────────────
@@ -3385,7 +3778,7 @@
     // Strings here mirror the markup in home.html.
     if (rolloverYes) {
       rolloverYes.disabled = false;
-      rolloverYes.textContent = 'yes, it charged';
+      rolloverYes.textContent = 'yes, plan for it';
     }
     if (rolloverEditSubmit) {
       rolloverEditSubmit.disabled = false;
@@ -3408,16 +3801,28 @@
     resetRolloverFormState();
     var displayName = (typeof prompt.display_name === 'string' && prompt.display_name.length > 0)
       ? prompt.display_name : (prompt.merchant || '');
+    // Phase 8C: forward-looking framing. Backend now sends forward_due_date
+    // (the NEXT projected date going forward) — that's what we're planning
+    // for. Fall back to next_due_date if the field is missing for any
+    // reason (older API or a manual prompt).
+    var forwardDate = (typeof prompt.forward_due_date === 'string'
+      && prompt.forward_due_date.length >= 10)
+      ? prompt.forward_due_date
+      : prompt.next_due_date;
     if (rolloverTitle) {
-      rolloverTitle.textContent = 'did ' + displayName + ' charge again?';
+      rolloverTitle.textContent = 'will ' + displayName + ' charge again on '
+        + formatRecurringDate(forwardDate) + '?';
     }
     if (rolloverSub) {
-      rolloverSub.textContent = 'we expected this on '
-        + formatRecurringDate(prompt.next_due_date) + '.';
+      // Sub-line is no longer "we expected this" — that was past-tense.
+      // Keep it minimal so the title carries the question.
+      rolloverSub.textContent = '';
     }
     if (rolloverNewDate) {
-      rolloverNewDate.value = (typeof prompt.next_due_date === 'string')
-        ? prompt.next_due_date.slice(0, 10) : '';
+      // Default the inline edit-date picker to the forward date so a
+      // "change date" tap starts from the projected next charge.
+      rolloverNewDate.value = (typeof forwardDate === 'string')
+        ? forwardDate.slice(0, 10) : '';
     }
     rolloverPop.classList.add('open');
     rolloverOverlay.classList.add('open');
@@ -4238,6 +4643,8 @@
     wireReimbursementsBtn();
     wireTodoBtn();
     wireRecurringBtn();
+    wireRecurringAddModal();
+    wireRecurringEditModal();
     wireRolloverModal();
     wireWalletBtn();
     // Reimbursements + wallet are SWR — hydrate their in-memory caches from

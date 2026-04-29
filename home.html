@@ -1495,6 +1495,346 @@
       padding: 0.4rem 0.2rem;
       line-height: 1.4;
     }
+    /* Skeleton loader — three stacked ghost cards painted while a fetch is
+       in flight. Replaces the "loading…" status flash that made users mass-
+       refresh during a slow fetch. Kept the same height as a real card so
+       layout doesn't shift when items pop in. */
+    .recurring-skeleton {
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+    }
+    .recurring-skeleton__card {
+      height: 4.6rem;
+      border-radius: 0.55rem;
+      background: var(--vanilla);
+      border: 1px solid rgba(1, 71, 81, 0.05);
+      position: relative;
+      overflow: hidden;
+    }
+    .recurring-skeleton__card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(1, 71, 81, 0.06) 50%,
+        transparent 100%
+      );
+      transform: translateX(-100%);
+      animation: recurring-skeleton-shimmer 1.4s ease-in-out infinite;
+    }
+    /* Compact variant for the streams section (mirrors stream row height
+       so the loader doesn't visually jump to a card-shaped placeholder). */
+    .recurring-skeleton__row {
+      height: 2.4rem;
+      border-radius: 0.4rem;
+      background: var(--vanilla);
+      border: 1px solid rgba(1, 71, 81, 0.05);
+      position: relative;
+      overflow: hidden;
+    }
+    .recurring-skeleton__row::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(1, 71, 81, 0.06) 50%,
+        transparent 100%
+      );
+      transform: translateX(-100%);
+      animation: recurring-skeleton-shimmer 1.4s ease-in-out infinite;
+    }
+    @keyframes recurring-skeleton-shimmer {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+    /* "+ add a recurring bill" primary CTA — sits above the suggestions
+       section, full-width, cash-green. Mirrors .reimb-add__btn shape but
+       sized as a primary action for the panel. */
+    .recurring-add-btn {
+      display: block;
+      width: 100%;
+      padding: 0.65rem 1rem;
+      border-radius: 12px;
+      background: var(--cash-green);
+      color: var(--vanilla);
+      border: none;
+      cursor: pointer;
+      font-family: var(--font-body);
+      font-size: 0.88rem;
+      font-weight: 500;
+      letter-spacing: 0.01em;
+      transition: background 0.15s ease, opacity 0.15s ease;
+      margin-bottom: 1.1rem;
+    }
+    .recurring-add-btn:hover { background: #023239; }
+    .recurring-add-btn:focus-visible {
+      outline: 2px solid var(--cash-green);
+      outline-offset: 2px;
+    }
+    .recurring-add-btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      background: var(--cash-green);
+    }
+
+    /* ── Recurring add/edit modals ──────────────────
+       Both modals mirror #schedule-pop chrome (paper-tint overlay + centered
+       card). The forms reuse .schedule-form .field markup so the inputs all
+       look consistent. The modals stack on top of #recurring-pop (z-index 50
+       > 41) so when the user opens add/edit from inside the recurring panel
+       both stay visible — closing the modal pops them back to the panel. */
+    .recurring-add-overlay,
+    .recurring-edit-overlay {
+      position: fixed; inset: 0;
+      background: rgba(26, 23, 23, 0.18);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease;
+      z-index: 50;
+    }
+    .recurring-add-overlay.open,
+    .recurring-edit-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .recurring-add-pop,
+    .recurring-edit-pop {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%) scale(0.96);
+      opacity: 0;
+      pointer-events: none;
+      background: #F3EAD6;
+      border: 1px solid rgba(1, 71, 81, 0.12);
+      border-radius: 0.85rem;
+      padding: 1.5rem 1.5rem 1.25rem;
+      max-width: 22rem;
+      width: calc(100% - 2.5rem);
+      max-height: min(85vh, 38rem);
+      overflow-y: auto;
+      box-shadow: 0 16px 40px rgba(26, 23, 23, 0.18);
+      transition: transform 0.18s ease, opacity 0.18s ease;
+      z-index: 51;
+    }
+    .recurring-add-pop.open,
+    .recurring-edit-pop.open {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .recurring-add-pop h2,
+    .recurring-edit-pop h2 {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.3rem;
+      color: var(--cash-green);
+      letter-spacing: -0.01em;
+      margin-bottom: 0.85rem;
+    }
+    .recurring-add-pop p,
+    .recurring-edit-pop p {
+      font-size: 0.82rem;
+      color: var(--off-black);
+      opacity: 0.7;
+      line-height: 1.45;
+      margin-bottom: 1rem;
+    }
+    /* Reuse .schedule-form styles for the add/edit forms (same field markup,
+       same chip pattern). The .recurring-add-form / .recurring-edit-form
+       classes are aliases that pull in identical visual rules. */
+    .recurring-add-form,
+    .recurring-edit-form-modal {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .recurring-add-form .field,
+    .recurring-edit-form-modal .field { gap: 0.3rem; }
+    .recurring-add-form .field__label,
+    .recurring-edit-form-modal .field__label {
+      font-size: 0.74rem;
+      font-weight: 500;
+      opacity: 0.7;
+      text-transform: lowercase;
+      letter-spacing: 0.01em;
+    }
+    .recurring-add-form .field__hint,
+    .recurring-edit-form-modal .field__hint {
+      font-size: 0.7rem;
+      opacity: 0.5;
+      font-style: italic;
+      margin-top: 0.15rem;
+    }
+    .recurring-add-form .field__input,
+    .recurring-add-form .field__select,
+    .recurring-edit-form-modal .field__input,
+    .recurring-edit-form-modal .field__select {
+      width: 100%;
+      padding: 0.55rem 0.75rem;
+      border-radius: 10px;
+      border: 1.5px solid rgba(26,23,23,0.12);
+      background: rgba(252,250,242,0.8);
+      font-family: inherit;
+      font-size: 0.92rem;
+      color: var(--off-black);
+      transition: border-color 0.15s ease, background 0.15s ease;
+      box-sizing: border-box;
+    }
+    .recurring-add-form .field__input:focus,
+    .recurring-add-form .field__select:focus,
+    .recurring-edit-form-modal .field__input:focus,
+    .recurring-edit-form-modal .field__select:focus {
+      outline: none;
+      border-color: var(--cash-green);
+      background: #fff;
+    }
+    .recurring-add-form .field--amount,
+    .recurring-edit-form-modal .field--amount { position: relative; }
+    .recurring-add-form .field--amount .amount-prefix,
+    .recurring-edit-form-modal .field--amount .amount-prefix {
+      position: absolute;
+      left: 0.75rem;
+      bottom: 0.55rem;
+      font-size: 0.92rem;
+      color: var(--cash-green);
+      opacity: 0.65;
+      pointer-events: none;
+      font-weight: 500;
+    }
+    .recurring-add-form .field--amount .field__input,
+    .recurring-edit-form-modal .field--amount .field__input { padding-left: 1.45rem; }
+    .recurring-add-form .form__error,
+    .recurring-edit-form-modal .form__error {
+      font-size: 0.78rem;
+      color: #8a2a2a;
+      min-height: 0;
+    }
+    .recurring-add-form .form__error:empty,
+    .recurring-edit-form-modal .form__error:empty { display: none; }
+    .recurring-add-form .form__actions,
+    .recurring-edit-form-modal .form__actions {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      margin-top: 0.2rem;
+    }
+    .recurring-add-submit,
+    .recurring-edit-submit {
+      flex: 1;
+      padding: 0.7rem 1rem;
+      border-radius: 12px;
+      background: var(--cash-green);
+      color: var(--vanilla);
+      border: none;
+      font-family: inherit;
+      font-size: 0.92rem;
+      font-weight: 600;
+      letter-spacing: 0.005em;
+      cursor: pointer;
+      transition: transform 0.15s ease, background 0.15s ease, opacity 0.15s ease;
+    }
+    .recurring-add-submit:hover,
+    .recurring-edit-submit:hover { transform: translateY(-1px); background: #023239; }
+    .recurring-add-submit:disabled,
+    .recurring-edit-submit:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+      background: var(--cash-green);
+    }
+    .recurring-add-submit:focus-visible,
+    .recurring-edit-submit:focus-visible {
+      outline: 2px solid var(--cash-green);
+      outline-offset: 2px;
+    }
+    .recurring-add-pop .recurring-add-close,
+    .recurring-edit-pop .recurring-edit-close {
+      font-family: var(--font-body);
+      font-size: 0.82rem;
+      color: var(--cash-green);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 0.25rem 0;
+      opacity: 0.7;
+      transition: opacity 0.15s ease;
+      align-self: flex-start;
+      margin-top: 0.9rem;
+    }
+    .recurring-add-pop .recurring-add-close:hover,
+    .recurring-edit-pop .recurring-edit-close:hover { opacity: 1; }
+    /* Frequency chips — mirror .type-chip pattern. Default monthly is
+       active. Only one selected at a time. */
+    .freq-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.3rem;
+    }
+    .freq-chip {
+      font-family: inherit;
+      font-size: 0.78rem;
+      font-weight: 500;
+      padding: 0.32rem 0.7rem;
+      border-radius: 100px;
+      background: transparent;
+      color: var(--off-black);
+      border: 1px solid rgba(1, 71, 81, 0.22);
+      opacity: 0.7;
+      cursor: pointer;
+      transition: opacity 0.15s ease, background 0.15s ease,
+                  color 0.15s ease, border-color 0.15s ease;
+    }
+    .freq-chip:hover { opacity: 1; }
+    .freq-chip.is-active {
+      background: var(--cash-green);
+      color: var(--vanilla);
+      border-color: var(--cash-green);
+      opacity: 1;
+    }
+    .freq-chip:focus-visible {
+      outline: 2px solid var(--cash-green);
+      outline-offset: 2px;
+    }
+    /* Edit-modal footer: "stop tracking this" delete affordance + inline
+       confirm. Mirrors .schedule-pop__footer / .schedule-delete pattern. */
+    .recurring-edit-pop__footer {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 0.5rem;
+      min-height: 1.25rem;
+      margin-top: 0.5rem;
+    }
+    .recurring-edit-delete {
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      color: var(--cash-green);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 0.15rem 0;
+      opacity: 0.55;
+      transition: opacity 0.15s ease;
+      letter-spacing: 0.01em;
+    }
+    .recurring-edit-delete:hover { opacity: 1; }
+    .recurring-edit-delete:focus-visible {
+      outline: 2px solid var(--cash-green);
+      outline-offset: 2px;
+    }
+    .recurring-edit-delete-confirm {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.78rem;
+      color: var(--off-black);
+    }
+    .recurring-edit-delete-confirm[hidden] { display: none; }
 
     /* ── Rollover modal ─────────────────────────────
        Mirrors .schedule-pop chrome (overlay + centered card). One merchant
@@ -2791,6 +3131,7 @@
     <aside class="recurring-pop" id="recurring-pop" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="recurring-pop-title">
       <h2 id="recurring-pop-title">recurring</h2>
       <p class="recurring-subtitle">the things that hit your account on a rhythm &mdash; we surface them, you confirm.</p>
+      <button type="button" class="recurring-add-btn" id="recurring-add-btn" aria-haspopup="dialog" aria-controls="recurring-add-pop">+ add a recurring bill</button>
       <div class="recurring-status" id="recurring-status" aria-live="polite"></div>
       <section class="recurring-section" id="recurring-suggestions-section">
         <div class="recurring-section__heading">
@@ -2807,6 +3148,105 @@
       <button class="recurring-close" id="recurring-close" type="button">close</button>
     </aside>
 
+    <!-- Recurring add modal — manual entry for streams the bridge didn't
+         catch (e.g. a brand-new utility bill the user just signed up for).
+         POSTs to /api/recurring/streams. Mirrors #schedule-pop chrome but
+         stacks on top of #recurring-pop (z-index 51). -->
+    <div class="recurring-add-overlay" id="recurring-add-overlay"></div>
+    <aside class="recurring-add-pop" id="recurring-add-pop" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="recurring-add-pop-title">
+      <h2 id="recurring-add-pop-title">add a recurring bill</h2>
+      <p>something we missed? add it manually &mdash; we&rsquo;ll project it forward on the calendar.</p>
+      <form class="recurring-add-form" id="recurring-add-form" novalidate>
+        <div class="field">
+          <label class="field__label" for="rec-add-name">name</label>
+          <input class="field__input" type="text" id="rec-add-name" name="name" maxlength="80" placeholder="comcast internet &middot; netflix &middot; etc" autocomplete="off" required>
+        </div>
+        <div class="field field--amount">
+          <label class="field__label" for="rec-add-amount">amount</label>
+          <span class="amount-prefix" aria-hidden="true">$</span>
+          <input class="field__input" type="number" id="rec-add-amount" name="amount" step="0.01" min="0.01" inputmode="decimal" placeholder="0.00" required>
+        </div>
+        <div class="field">
+          <label class="field__label" for="rec-add-date">next charge date</label>
+          <input class="field__input" type="date" id="rec-add-date" name="next_due_date" required>
+        </div>
+        <div class="field">
+          <span class="field__label">frequency</span>
+          <div class="freq-chips" id="rec-add-freq-chips" role="radiogroup" aria-label="frequency">
+            <button type="button" class="freq-chip" data-freq="weekly" role="radio" aria-checked="false">weekly</button>
+            <button type="button" class="freq-chip" data-freq="biweekly" role="radio" aria-checked="false">biweekly</button>
+            <button type="button" class="freq-chip is-active" data-freq="monthly" role="radio" aria-checked="true">monthly</button>
+            <button type="button" class="freq-chip" data-freq="quarterly" role="radio" aria-checked="false">quarterly</button>
+            <button type="button" class="freq-chip" data-freq="yearly" role="radio" aria-checked="false">yearly</button>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field__label" for="rec-add-end">end date</label>
+          <input class="field__input" type="date" id="rec-add-end" name="end_date">
+          <span class="field__hint">leave empty if it goes forever</span>
+        </div>
+        <div class="form__error" id="rec-add-error" aria-live="polite"></div>
+        <div class="form__actions">
+          <button type="submit" class="recurring-add-submit" id="rec-add-submit">add it</button>
+        </div>
+      </form>
+      <button class="recurring-add-close" id="recurring-add-close" type="button">back</button>
+    </aside>
+
+    <!-- Recurring edit modal — dedicated stream editor with frequency +
+         end_date support. Replaces the old "open the schedule popover from
+         a stream row" flow (the schedule popover is for one-off scheduled
+         txns; a stream is a recurring concept and needs its own form). -->
+    <div class="recurring-edit-overlay" id="recurring-edit-overlay"></div>
+    <aside class="recurring-edit-pop" id="recurring-edit-pop" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="recurring-edit-pop-title">
+      <h2 id="recurring-edit-pop-title">edit recurring</h2>
+      <form class="recurring-edit-form-modal" id="recurring-edit-form-modal" novalidate>
+        <div class="field">
+          <label class="field__label" for="rec-edit-name">name</label>
+          <input class="field__input" type="text" id="rec-edit-name" name="name" maxlength="80" autocomplete="off" required>
+        </div>
+        <div class="field field--amount">
+          <label class="field__label" for="rec-edit-amount">amount</label>
+          <span class="amount-prefix" aria-hidden="true">$</span>
+          <input class="field__input" type="number" id="rec-edit-amount" name="amount" step="0.01" min="0.01" inputmode="decimal" required>
+        </div>
+        <div class="field">
+          <label class="field__label" for="rec-edit-date">next charge date</label>
+          <input class="field__input" type="date" id="rec-edit-date" name="next_due_date" required>
+        </div>
+        <div class="field">
+          <span class="field__label">frequency</span>
+          <div class="freq-chips" id="rec-edit-freq-chips" role="radiogroup" aria-label="frequency">
+            <button type="button" class="freq-chip" data-freq="weekly" role="radio" aria-checked="false">weekly</button>
+            <button type="button" class="freq-chip" data-freq="biweekly" role="radio" aria-checked="false">biweekly</button>
+            <button type="button" class="freq-chip is-active" data-freq="monthly" role="radio" aria-checked="true">monthly</button>
+            <button type="button" class="freq-chip" data-freq="quarterly" role="radio" aria-checked="false">quarterly</button>
+            <button type="button" class="freq-chip" data-freq="yearly" role="radio" aria-checked="false">yearly</button>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field__label" for="rec-edit-end">end date</label>
+          <input class="field__input" type="date" id="rec-edit-end" name="end_date">
+          <span class="field__hint">leave empty if it goes forever</span>
+        </div>
+        <div class="form__error" id="rec-edit-error" aria-live="polite"></div>
+        <div class="form__actions">
+          <button type="submit" class="recurring-edit-submit" id="rec-edit-submit">save changes</button>
+        </div>
+      </form>
+      <div class="recurring-edit-pop__footer" id="recurring-edit-footer">
+        <button type="button" class="recurring-edit-delete" id="rec-edit-delete">stop tracking this</button>
+        <div class="recurring-edit-delete-confirm" id="rec-edit-delete-confirm" hidden>
+          <span>stop tracking?</span>
+          <span class="schedule-delete-confirm__sep">&middot;</span>
+          <button type="button" class="schedule-delete-confirm__yes" id="rec-edit-delete-yes">yes</button>
+          <span class="schedule-delete-confirm__sep">&middot;</span>
+          <button type="button" class="schedule-delete-confirm__cancel" id="rec-edit-delete-cancel">cancel</button>
+        </div>
+      </div>
+      <button class="recurring-edit-close" id="recurring-edit-close" type="button">back</button>
+    </aside>
+
     <!-- Rollover modal — single-merchant prompt fired AFTER auth + every time
          the recurring tab opens. Mirrors #schedule-pop chrome (overlay +
          centered card) but uses a brand-voice question + three stacked
@@ -2814,11 +3254,11 @@
     <div class="rollover-overlay" id="rollover-overlay"></div>
     <aside class="rollover-pop" id="rollover-pop" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="rollover-pop-title">
       <button type="button" class="rollover-dismiss" id="rollover-dismiss" aria-label="snooze 24h">&times;</button>
-      <h2 id="rollover-pop-title" class="rollover-title">did this charge again?</h2>
-      <p class="rollover-sub" id="rollover-sub">we expected this on &mdash;&mdash;.</p>
+      <h2 id="rollover-pop-title" class="rollover-title">will this charge again?</h2>
+      <p class="rollover-sub" id="rollover-sub">on &mdash;&mdash;.</p>
       <div class="rollover-error" id="rollover-error" aria-live="polite"></div>
       <div class="rollover-actions" id="rollover-actions">
-        <button type="button" class="rollover-yes" id="rollover-yes">yes, it charged</button>
+        <button type="button" class="rollover-yes" id="rollover-yes">yes, plan for it</button>
         <button type="button" class="rollover-edit-date" id="rollover-edit-date">change the date</button>
         <button type="button" class="rollover-not-recurring" id="rollover-not-recurring">not recurring anymore</button>
       </div>
