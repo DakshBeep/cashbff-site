@@ -623,17 +623,54 @@ async function installHomeMocks(page: Page, opts: HomeMockOpts = {}) {
   });
 
   // DELETE /api/transactions/schedule/:id — STREAM_LINKED 409 path.
+  // Phase 10B: the 409 body now carries an `actions: ['acknowledge',
+  // 'stop_stream']` array so the frontend can render the new two-button
+  // surface. Item #8 below relies on the acknowledge button being present.
   await page.route('**/api.cashbff.com/api/transactions/schedule/*', async (route) => {
-    if (route.request().method() === 'DELETE' && opts.deleteReturnsStreamLinked) {
+    const url = route.request().url();
+    const method = route.request().method();
+    // POST /api/transactions/schedule/:id/acknowledge — soft-delete path.
+    if (method === 'POST' && /\/acknowledge$/.test(url)) {
+      record('POST /api/transactions/schedule/acknowledge');
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers: corsHeaders(),
+        body: JSON.stringify({
+          ok: true,
+          transaction: {
+            id: 9001,
+            date: '2026-04-29',
+            amount: 25,
+            name: 'Self Financial',
+            type: 'sub',
+            card_account_id: null,
+            note: 'recurring-projection:self-financial',
+            confidence: 1,
+            pending: false,
+            source: 'scheduled',
+            institution: 'Chase',
+            mask: '1234',
+            acknowledged: true,
+          },
+        }),
+      });
+      return;
+    }
+    if (method === 'DELETE' && opts.deleteReturnsStreamLinked) {
       record('DELETE /api/transactions/schedule (STREAM_LINKED)');
       await route.fulfill({
         status: 409,
         contentType: 'application/json',
         headers: corsHeaders(),
         body: JSON.stringify({
-          error: 'This expense is part of a recurring stream. Edit it from the recurring tab.',
+          error:
+            'this is part of your "' + opts.deleteReturnsStreamLinked.merchant +
+            '" recurring stream. mark it ✓ paid here to keep the reminder, OR open the recurring tab to set an end date.',
           code: 'STREAM_LINKED',
           merchant: opts.deleteReturnsStreamLinked.merchant,
+          display_name: opts.deleteReturnsStreamLinked.merchant,
+          actions: ['acknowledge', 'stop_stream'],
         }),
       });
       return;
@@ -1068,6 +1105,10 @@ test.describe('item #8 — calendar STREAM_LINKED 409 → friendly message', () 
     // the recurring panel.
     expect.soft(inlineText, 'expected "recurring" wording in friendly STREAM_LINKED message').toMatch(/recurring/i);
     expect.soft(inlineText, 'expected merchant name in friendly message').toMatch(/self financial/i);
+    // Phase 10B: the surface now offers BOTH options inline — assert the
+    // acknowledge CTA + the stop-tracking link are present.
+    expect.soft(inlineText, 'expected "I already paid this" CTA in 2-button surface').toMatch(/already paid/i);
+    expect.soft(inlineText, 'expected "stop tracking" affordance').toMatch(/stop tracking/i);
 
     await safeClose(context);
   });

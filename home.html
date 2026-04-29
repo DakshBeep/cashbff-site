@@ -179,7 +179,8 @@
     .reimbursements-btn,
     .todo-btn,
     .recurring-btn,
-    .wallet-btn {
+    .wallet-btn,
+    .snapshot-btn {
       font-family: var(--font-body);
       font-size: 0.78rem;
       font-weight: 500;
@@ -197,7 +198,8 @@
     .reimbursements-btn:hover,
     .todo-btn:hover,
     .recurring-btn:hover,
-    .wallet-btn:hover {
+    .wallet-btn:hover,
+    .snapshot-btn:hover {
       background: rgba(1, 71, 81, 0.05);
       border-color: var(--cash-green);
     }
@@ -206,7 +208,8 @@
     .reimbursements-btn:focus-visible,
     .todo-btn:focus-visible,
     .recurring-btn:focus-visible,
-    .wallet-btn:focus-visible {
+    .wallet-btn:focus-visible,
+    .snapshot-btn:focus-visible {
       outline: 2px solid var(--cash-green);
       outline-offset: 3px;
     }
@@ -2220,6 +2223,174 @@
     }
     .wallet-pop .wallet-close:hover { opacity: 1; }
 
+    /* ── Snapshot popup (mirrors schedule-pop / wallet-pop chrome) ──
+       The big read-only textarea is the centerpiece — user copies the
+       whole thing into ChatGPT / Claude / Gemini, then asks any money
+       question. Three small "ask <llm> →" links underneath open each
+       chat home in a new tab; we don't try to deep-link the snapshot,
+       the user pastes after copy. */
+    .snapshot-overlay {
+      position: fixed; inset: 0;
+      background: rgba(26, 23, 23, 0.18);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease;
+      z-index: 40;
+    }
+    .snapshot-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .snapshot-pop {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%) scale(0.96);
+      opacity: 0;
+      pointer-events: none;
+      background: #F3EAD6;
+      border: 1px solid rgba(1, 71, 81, 0.12);
+      border-radius: 0.85rem;
+      padding: 1.5rem 1.5rem 1.25rem;
+      max-width: 32rem;
+      width: calc(100% - 2.5rem);
+      max-height: min(88vh, 44rem);
+      overflow-y: auto;
+      box-shadow: 0 16px 40px rgba(26, 23, 23, 0.18);
+      transition: transform 0.18s ease, opacity 0.18s ease;
+      z-index: 41;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .snapshot-pop.open {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .snapshot-pop h2 {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.3rem;
+      color: var(--cash-green);
+      letter-spacing: -0.01em;
+      margin-bottom: 0;
+    }
+    .snapshot-subtitle {
+      font-size: 0.82rem;
+      color: var(--off-black);
+      opacity: 0.7;
+      line-height: 1.4;
+      margin: 0 0 0.25rem;
+    }
+    /* Read-only Markdown viewer. Monospace + tighter line-height so the
+       tables in the snapshot still render aligned. Heights tuned so the
+       textarea breathes on mobile and gets some elbow room on desktop. */
+    .snapshot-textarea {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.78rem;
+      line-height: 1.45;
+      width: 100%;
+      height: 24rem;
+      padding: 0.75rem 0.85rem;
+      border-radius: 10px;
+      border: 1.5px solid rgba(26,23,23,0.12);
+      background: rgba(252,250,242,0.85);
+      color: var(--off-black);
+      resize: vertical;
+      box-sizing: border-box;
+      transition: border-color 0.15s ease, background 0.15s ease;
+    }
+    .snapshot-textarea:focus {
+      outline: none;
+      border-color: var(--cash-green);
+      background: #fff;
+    }
+    @media (min-width: 640px) {
+      .snapshot-textarea { height: 30rem; }
+    }
+    /* Big copy CTA — full-width on mobile, cash-green like the primary
+       affordances elsewhere. Shows transient "✓ copied!" feedback by
+       swapping its own text content. */
+    .snapshot-copy {
+      font-family: var(--font-body);
+      font-size: 0.92rem;
+      font-weight: 600;
+      padding: 0.7rem 1.1rem;
+      border-radius: 100px;
+      background: var(--cash-green);
+      color: var(--vanilla);
+      border: none;
+      cursor: pointer;
+      transition: background 0.15s ease, opacity 0.15s ease;
+      letter-spacing: 0.01em;
+      width: 100%;
+    }
+    .snapshot-copy:hover { background: #023239; }
+    .snapshot-copy:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      background: var(--cash-green);
+    }
+    .snapshot-copy:focus-visible {
+      outline: 2px solid var(--cash-green);
+      outline-offset: 3px;
+    }
+    .snapshot-copy.is-copied {
+      background: #0f7a3a;
+    }
+    /* Three small inline links — "ask chatgpt →" / "ask claude →" /
+       "ask gemini →". Each opens the LLM's chat home in a new tab. */
+    .snapshot-llms {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    .snapshot-llm {
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      font-weight: 500;
+      padding: 0.35rem 0.7rem;
+      border-radius: 100px;
+      background: transparent;
+      color: var(--cash-green);
+      border: 1px solid rgba(1, 71, 81, 0.28);
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.15s ease, border-color 0.15s ease;
+      letter-spacing: 0.01em;
+    }
+    .snapshot-llm:hover {
+      background: rgba(1, 71, 81, 0.05);
+      border-color: var(--cash-green);
+    }
+    .snapshot-llm:focus-visible {
+      outline: 2px solid var(--cash-green);
+      outline-offset: 2px;
+    }
+    .snapshot-status {
+      font-size: 0.78rem;
+      opacity: 0.55;
+      min-height: 0;
+    }
+    .snapshot-status:empty { display: none; }
+    .snapshot-pop .snapshot-close {
+      position: absolute;
+      top: 0.6rem;
+      right: 0.85rem;
+      font-family: var(--font-body);
+      font-size: 1.1rem;
+      line-height: 1;
+      color: var(--cash-green);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 0.35rem 0.45rem;
+      opacity: 0.65;
+      transition: opacity 0.15s ease;
+    }
+    .snapshot-pop .snapshot-close:hover { opacity: 1; }
+
     .weekday-row {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
@@ -2526,6 +2697,53 @@
       flex: 1 1 auto;
       min-width: 0;
     }
+    /* Phase 10B — stacked layout for the new TWO-button stream-linked surface.
+       The label sits on its own line; the two action buttons + cancel sit on
+       a second line so the "✓ I already paid this" affordance is unmistakable
+       and doesn't fight for width with "stop tracking this stream". */
+    .row-confirm--stacked {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.45rem;
+    }
+    .row-confirm--stacked .row-confirm__label {
+      width: 100%;
+      line-height: 1.35;
+    }
+    .row-confirm__actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.55rem;
+    }
+    /* The "✓ I already paid this" affordance. Cash-green, unmistakably the
+       primary action — visually heavier than the secondary "stop tracking"
+       link to match the user's request that this be an obvious CTA. */
+    .row-confirm__ack {
+      color: var(--cash-green);
+      font-weight: 600;
+      text-decoration: none;
+      background: rgba(1, 71, 81, 0.08);
+      border-radius: 6px;
+      padding: 0.25rem 0.55rem;
+    }
+    .row-confirm__ack:hover { background: rgba(1, 71, 81, 0.14); opacity: 1; }
+    .row-confirm__ack:disabled { background: transparent; }
+    /* Secondary action — text link tone, sits next to the cash-green CTA. */
+    .row-confirm__stop-stream {
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      color: var(--cash-green);
+      background: transparent;
+      border: none;
+      padding: 0.05rem 0.15rem;
+      cursor: pointer;
+      font-weight: 500;
+      opacity: 0.85;
+      text-decoration: underline;
+      transition: opacity 0.15s ease;
+    }
+    .row-confirm__stop-stream:hover { opacity: 1; }
     /* Schedule-popup error slot can host an inline button when the backend
        rejects a delete with 409 STREAM_LINKED. Mirrors row-confirm__yes
        styling so the UX feels consistent. */
@@ -2542,6 +2760,57 @@
       text-decoration: underline;
     }
     .sched-error-link:hover { opacity: 0.8; }
+    /* Phase 10B — the "✓ I already paid this" variant inside the schedule-popup
+       error slot gets a slight pill chrome so it stands apart from the regular
+       text-link "stop tracking" affordance that follows it. */
+    .sched-error-link--ack {
+      color: var(--cash-green);
+      font-weight: 600;
+      text-decoration: none;
+      background: rgba(1, 71, 81, 0.08);
+      border-radius: 6px;
+      padding: 0.18rem 0.45rem;
+      margin-right: 0.35rem;
+    }
+    .sched-error-link--ack:hover { background: rgba(1, 71, 81, 0.14); opacity: 1; }
+    /* Phase 10B — acknowledged ("✓ already paid") rows. Both the day-drawer
+       row and the cell pill get line-through + reduced opacity. The "✓ paid"
+       badge in the drawer name row is rendered in cash-green so it reads as
+       a soft confirmation rather than a warning. */
+    .drawer-item.is-acknowledged {
+      opacity: 0.55;
+    }
+    .drawer-item.is-acknowledged .name,
+    .drawer-item.is-acknowledged .amt {
+      text-decoration: line-through;
+      text-decoration-color: rgba(1, 71, 81, 0.55);
+    }
+    .ack-badge {
+      display: inline-block;
+      font-size: 0.66rem;
+      font-weight: 600;
+      color: var(--cash-green);
+      background: rgba(1, 71, 81, 0.10);
+      border-radius: 999px;
+      padding: 0.05rem 0.4rem;
+      margin-left: 0.25rem;
+      text-decoration: none;
+      letter-spacing: 0.01em;
+      vertical-align: middle;
+      line-height: 1.5;
+    }
+    /* The badge itself never gets struck-through, even though it lives inside
+       a struck-through name div. */
+    .drawer-item.is-acknowledged .name .ack-badge {
+      text-decoration: none;
+    }
+    /* Calendar grid pill for an acknowledged future projection — keep the
+       semantic type color so the user can still read what it was, just dim it. */
+    .pill.is-acknowledged {
+      opacity: 0.5;
+      text-decoration: line-through;
+      text-decoration-color: rgba(1, 71, 81, 0.5);
+    }
     .drawer-empty { opacity: 0.5; font-style: italic; padding: 0.4rem 0.2rem; text-align: center; font-size: 0.82rem; }
     /* Per-day "+ schedule" button at the bottom of the day popover. Quiet
        outlined pill so it sits below the list without competing visually
@@ -2839,6 +3108,7 @@
           recurring<span class="recurring-btn__count" id="recurring-btn-count" hidden></span>
         </button>
         <button class="wallet-btn" id="wallet-btn" type="button" aria-haspopup="dialog" aria-controls="wallet-pop" aria-label="wallet">&#128093;</button>
+        <button class="snapshot-btn" id="snapshot-btn" type="button" aria-haspopup="dialog" aria-controls="snapshot-pop">&#128203; snapshot</button>
       </div>
     </div>
 
@@ -3151,6 +3421,29 @@
         <button type="submit" class="wallet-add__submit" id="wt-submit">+ track it</button>
       </form>
       <button class="wallet-close" id="wallet-close" type="button">close</button>
+    </aside>
+
+    <!-- Snapshot popup — copy-pasteable Markdown brief of the user's
+         CashBFF data they can drop into ChatGPT / Claude / Gemini.
+         Auto-fetches /api/snapshot on open. Replaces what the SMS bot
+         used to do — full self-contained context on demand. -->
+    <div class="snapshot-overlay" id="snapshot-overlay"></div>
+    <aside class="snapshot-pop" id="snapshot-pop" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="snapshot-pop-title">
+      <button class="snapshot-close" id="snapshot-close" type="button" aria-label="close">&times;</button>
+      <h2 id="snapshot-pop-title">snapshot for ai</h2>
+      <p class="snapshot-subtitle">copy this and paste it into chatgpt, claude, or any AI to ask questions about your money.</p>
+      <textarea
+        class="snapshot-textarea"
+        id="snapshot-textarea"
+        readonly
+        aria-label="snapshot markdown — copy and paste into your favorite LLM"></textarea>
+      <div class="snapshot-status" id="snapshot-status" aria-live="polite"></div>
+      <button type="button" class="snapshot-copy" id="snapshot-copy">&#128203; copy</button>
+      <div class="snapshot-llms" aria-label="open an LLM in a new tab">
+        <a class="snapshot-llm" id="snapshot-ask-chatgpt" href="https://chat.openai.com/" target="_blank" rel="noopener noreferrer">ask chatgpt &rarr;</a>
+        <a class="snapshot-llm" id="snapshot-ask-claude" href="https://claude.ai/" target="_blank" rel="noopener noreferrer">ask claude &rarr;</a>
+        <a class="snapshot-llm" id="snapshot-ask-gemini" href="https://gemini.google.com/" target="_blank" rel="noopener noreferrer">ask gemini &rarr;</a>
+      </div>
     </aside>
 
     <div class="weekday-row" aria-hidden="true">

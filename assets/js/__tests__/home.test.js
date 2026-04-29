@@ -201,6 +201,58 @@ describe('computeDayProjection', () => {
     const out = math.computeDayProjection(new Date(2026, 3, 29));
     expect(out.runningBalance).toBeCloseTo(-150, 2);
   });
+
+  // ── Phase 10B: acknowledged ("✓ already paid") rows excluded ─────
+  //
+  // The user's habit when a recurring expense charges early is to delete the
+  // future calendar projection. With acknowledge soft-delete, the row stays
+  // visible greyed-out as a paid reminder, but it does NOT contribute to
+  // the projected running balance — the actual charge will appear in
+  // raw_transactions and reduce the balance there.
+  it('skips acknowledged scheduled rows in the projection (Phase 10B)', () => {
+    math.__setWalletCacheForTest({
+      summary: { running_balance_usd: 1000 },
+    });
+    math.__setPrecommitsForTest([
+      // Active future scheduled — DOES count toward projection.
+      { date: '2026-04-28', amount: 50, type: 'sub', source: 'scheduled' },
+      // Acknowledged ("paid") future scheduled — DOES NOT count.
+      {
+        date: '2026-04-28',
+        amount: 200,
+        type: 'sub',
+        source: 'scheduled',
+        acknowledged: true,
+      },
+    ]);
+    const out = math.computeDayProjection(new Date(2026, 3, 29));
+    // 1000 − 50 (active) − 0 (acknowledged skipped) = 950.
+    expect(out.runningBalance).toBeCloseTo(950, 2);
+  });
+
+  it('a fully-acknowledged set leaves the projection at the base balance', () => {
+    math.__setWalletCacheForTest({
+      summary: { running_balance_usd: 1000 },
+    });
+    math.__setPrecommitsForTest([
+      {
+        date: '2026-04-28',
+        amount: 100,
+        type: 'sub',
+        source: 'scheduled',
+        acknowledged: true,
+      },
+      {
+        date: '2026-04-28',
+        amount: 50,
+        type: 'sub',
+        source: 'scheduled',
+        acknowledged: true,
+      },
+    ]);
+    const out = math.computeDayProjection(new Date(2026, 3, 29));
+    expect(out.runningBalance).toBeCloseTo(1000, 2);
+  });
 });
 
 // ── formatSignedMoney ─────────────────────────────────────────────

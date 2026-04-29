@@ -190,12 +190,18 @@ test.describe('phase 8.5b · rollover modal removed', () => {
 
 test.describe('phase 8.5b · calendar 409 stream-linked', () => {
   test('trash on a stream-linked row shows friendly message + open-recurring link', async ({ page }) => {
+    // Phase 10B: 409 body now also includes the actions array so the new
+    // 2-button surface ("✓ I already paid this" + "stop tracking this stream")
+    // can render. The recurring-tab redirect we assert on below is now
+    // reached via the second of those buttons.
     const STREAM_LINKED_409 = {
       status: 409,
       body: {
-        error: 'this row is part of a recurring stream',
+        error:
+          'this is part of your "Self Financial" recurring stream. mark it ✓ paid here to keep the reminder, OR open the recurring tab to set an end date.',
         code: 'STREAM_LINKED',
         merchant: 'Self Financial',
+        actions: ['acknowledge', 'stop_stream'],
       },
     };
     await mockHomeBootEndpoints(page, { deleteResponse: STREAM_LINKED_409 });
@@ -224,16 +230,23 @@ test.describe('phase 8.5b · calendar 409 stream-linked', () => {
     await confirmYes.click();
 
     // After the 409, the friendly message should replace the confirm row.
-    // We assert on the merchant name + the "open recurring tab" affordance.
+    // We assert on the merchant name + the "stop tracking this stream"
+    // affordance — that's the Phase 10B replacement for the prior single
+    // "open recurring tab" link.
     const friendlyRow = page.locator('#drawer-list .row-confirm--stream-linked');
     await expect(friendlyRow).toBeVisible({ timeout: 3000 });
     await expect(friendlyRow).toContainText('Self Financial');
     await expect(friendlyRow).toContainText('recurring stream');
 
-    const openLink = friendlyRow.locator('button', { hasText: 'open recurring tab' });
+    // Phase 10B: the new "✓ I already paid this" CTA must be rendered.
+    const ackLink = friendlyRow.locator('.row-confirm__ack');
+    await expect(ackLink).toBeVisible();
+    await expect(ackLink).toContainText(/already paid/i);
+
+    const openLink = friendlyRow.locator('.row-confirm__stop-stream');
     await expect(openLink).toBeVisible();
 
-    // Clicking the link opens the recurring panel.
+    // Clicking the stop-tracking link opens the recurring panel.
     await openLink.click();
     await expect(page.locator('#recurring-pop')).toHaveClass(/(^|\s)open(\s|$)/, {
       timeout: 4000,

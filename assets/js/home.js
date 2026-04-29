@@ -189,6 +189,13 @@
       walletTrackedGroup, walletTrackedList,
       walletAddForm, walletAddName, walletAddBalance, walletAddCurrency,
       walletAddDate, walletAddKindChips, walletAddSubmit, walletAddError;
+  // Snapshot popup — copy-pasteable Markdown brief of the user's data.
+  // Backed by /api/snapshot. The textarea is filled on every open from
+  // a fresh GET — we don't cache because the snapshot is point-in-time
+  // (balances + transactions) and a stale paste would mislead the LLM.
+  var snapshotBtn, snapshotOverlay, snapshotPop, snapshotClose,
+      snapshotTextarea, snapshotCopy, snapshotStatus;
+  var snapshotCopiedTimer = null;
   // To-do items live in localStorage under cbff_v1_todos via the existing
   // cacheRead/cacheWrite helpers. Shape: [{ id, text, done, created_at }].
   // null on boot until ensureTodosLoaded() seeds from cache + adds the example.
@@ -327,6 +334,12 @@
     var net = 0;
     PRECOMMITS.forEach(function (e) {
       if (!e || e.source !== 'scheduled') return;
+      // Phase 10B: acknowledged ("✓ already paid") rows do NOT contribute to
+      // FUTURE running-balance projection. The user has flagged them as paid
+      // already — the actual charge appears in raw_transactions and reduces
+      // the balance there, so projecting a phantom future debit too would
+      // double-count.
+      if (e.acknowledged) return;
       // Strictly between today (exclusive) and d (exclusive). We exclude
       // today because today's actual balance already reflects whatever has
       // settled today; the "running balance up to day d" is the position
@@ -559,6 +572,9 @@
         // Pending (not-yet-settled) transactions render italic — same color,
         // just a visual "about to settle" cue.
         if (e.pending) p.classList.add('pending-tx');
+        // Phase 10B: acknowledged rows still render in the cell so the
+        // visual reminder survives, but they get the greyed-out styling.
+        if (e.acknowledged) p.classList.add('is-acknowledged');
         // First-word label keeps pills narrow inside cramped cells.
         // Income gets a leading "+" so it reads as money in at a glance.
         var prefix = e.type === 'income' ? '+$' : '$';
@@ -643,11 +659,15 @@
 
     // Sum scheduled-only items for THIS exact day (used for the projection
     // line below). Income from scheduled adds, scheduled outflows subtract.
+    // Phase 10B: skip acknowledged rows — they're "already paid" so the
+    // real charge will show up in raw_transactions; counting them again
+    // here would double-debit the "after your plans" line.
     var dayScheduledOut = 0;
     var dayScheduledIn = 0;
     var thisDayKey = iso(d);
     PRECOMMITS.forEach(function (e) {
       if (e.source !== 'scheduled') return;
+      if (e.acknowledged) return;
       if (e.date !== thisDayKey) return;
       if (e.type === 'income') dayScheduledIn  += Number(e.amount) || 0;
       else                     dayScheduledOut += Number(e.amount) || 0;
@@ -695,6 +715,10 @@
         item.className = 'drawer-item';
         // Pending: italic on the name via the same class used on cell pills.
         if (e.pending) item.classList.add('pending-tx');
+        // Phase 10B: acknowledged ("✓ already paid") rows render greyed-out
+        // with line-through + a "✓ paid" badge so the user keeps the visual
+        // reminder without it counting against the projected balance.
+        if (e.acknowledged) item.classList.add('is-acknowledged');
 
         // Scheduled rows are clickable to open the edit popup. Plaid rows
         // stay non-interactive for this pass — backend doesn't support edit
@@ -716,6 +740,16 @@
         var nameDiv = document.createElement('div');
         nameDiv.className = 'name';
         nameDiv.textContent = e.name;
+        // Phase 10B: append a tiny "✓ paid" badge after the name when the
+        // row has been acknowledged. CSS gives it cash-green color + small
+        // pill chrome.
+        if (e.acknowledged) {
+          var badge = document.createElement('span');
+          badge.className = 'ack-badge';
+          badge.textContent = '✓ paid';
+          nameDiv.appendChild(document.createTextNode(' '));
+          nameDiv.appendChild(badge);
+        }
         rowMain.appendChild(nameDiv);
 
         // Card chip: "from <institution> ···<mask>" — shown for Plaid AND
@@ -747,6 +781,15 @@
         // Trash + pencil glyphs for scheduled rows — fade in on hover/focus
         // via CSS. Built with createElementNS so the SVGs stay inert and
         // CSP-safe (no innerHTML for executable-ish surfaces).
+        //
+        // Phase 10B TODO: clicking trash on an already-acknowledged row
+        // currently triggers the same 409 STREAM_LINKED 2-button surface as
+        // an active stream-linked row (since acknowledged rows are also
+        // stream-linked). v1 keeps this behavior — the user can re-tap
+        // "✓ I already paid this" (idempotent: backend returns 404 since
+        // acknowledged_at IS NOT NULL) or "stop tracking this stream". A
+        // future task could add an "un-acknowledge" affordance, but for
+        // now the duplicate-acknowledge no-op is acceptable.
         if (isEditable) {
           // Trash glyph — sits LEFT of the pencil, click triggers inline
           // "delete? yes / cancel" confirm in the row's right-side area.
@@ -871,12 +914,16 @@
               }).then(function (res) {
                 if (res.status === 401) { location.replace('/'); return null; }
                 // Phase 8.5B: 409 STREAM_LINKED — row is projected forward
-                // from a recurring stream. Read the body for {merchant} so we
-                // can name it, and route the user to the recurring tab where
-                // they can set an end_date on the stream.
+                // from a recurring stream. Phase 10B: the body now also
+                // includes `actions: ['acknowledge', 'stop_stream']` so we
+                // surface BOTH options inline.
                 if (res.status === 409) {
                   return res.json().catch(function () { return {}; }).then(function (data) {
-                    return { __streamLinked: true, merchant: (data && data.merchant) || null };
+                    return {
+                      __streamLinked: true,
+                      merchant: (data && data.merchant) || null,
+                      actions: (data && Array.isArray(data.actions)) ? data.actions : ['stop_stream'],
+                    };
                   });
                 }
                 // 404 = already gone server-side (e.g. zombie from a stale
@@ -887,32 +934,84 @@
               }).then(function (out) {
                 if (!out) return; // 401 path already navigated.
                 if (out.__streamLinked) {
-                  // Friendly inline message replacing the confirm row. Mirrors
-                  // the day-popover row-confirm chrome (small text + inline
-                  // link styled as a button) so it sits naturally in the row
-                  // instead of looking like an error toast. The link opens
-                  // the recurring tab so the user can end the stream.
+                  // Phase 10B: render the new TWO-button surface stacked.
+                  //   1. "✓ I already paid this" — soft-acknowledge: row stays
+                  //      visible greyed-out, no longer counts against the
+                  //      running balance projection.
+                  //   2. "stop tracking this stream" — opens the recurring
+                  //      tab so the user can set an end_date on the stream.
+                  // Cancel link bails out of the surface entirely.
                   var merchant = out.merchant || 'this';
+                  var actions = out.actions || ['stop_stream'];
                   var newRow = document.createElement('div');
-                  newRow.className = 'row-confirm row-confirm--stream-linked';
+                  newRow.className = 'row-confirm row-confirm--stream-linked row-confirm--stacked';
                   var msg = document.createElement('span');
                   msg.className = 'row-confirm__label';
                   msg.textContent = 'this is part of your ' + merchant
-                    + ' recurring stream. ';
+                    + ' recurring stream.';
                   newRow.appendChild(msg);
-                  var openLink = document.createElement('button');
-                  openLink.type = 'button';
-                  openLink.className = 'row-confirm__yes';
-                  openLink.textContent = 'open recurring tab';
-                  openLink.addEventListener('click', function (lev) {
+
+                  var actionsWrap = document.createElement('span');
+                  actionsWrap.className = 'row-confirm__actions';
+                  newRow.appendChild(actionsWrap);
+
+                  if (actions.indexOf('acknowledge') !== -1) {
+                    var ackBtn = document.createElement('button');
+                    ackBtn.type = 'button';
+                    ackBtn.className = 'row-confirm__yes row-confirm__ack';
+                    ackBtn.textContent = '✓ I already paid this';
+                    ackBtn.addEventListener('click', function (aev) {
+                      aev.stopPropagation();
+                      ackBtn.disabled = true;
+                      ackBtn.textContent = 'marking…';
+                      fetch(API_BASE + '/api/transactions/schedule/'
+                            + encodeURIComponent(txnSnapshot.id) + '/acknowledge',
+                            { method: 'POST', credentials: 'include' })
+                        .then(function (ackRes) {
+                          if (ackRes.status === 401) { location.replace('/'); return null; }
+                          if (!ackRes.ok && ackRes.status !== 404) {
+                            throw new Error('acknowledge failed ' + ackRes.status);
+                          }
+                          return ackRes.json().catch(function () { return null; });
+                        })
+                        .then(function (ackOut) {
+                          if (!ackOut) return;
+                          // Flip the in-memory row so renderGrid + the day
+                          // drawer immediately reflect the new state without
+                          // a full refetch.
+                          for (var i = 0; i < PRECOMMITS.length; i++) {
+                            var p = PRECOMMITS[i];
+                            if (p && p.source === 'scheduled' && p.id === txnSnapshot.id) {
+                              p.acknowledged = true;
+                              break;
+                            }
+                          }
+                          if (newRow.parentNode) newRow.parentNode.removeChild(newRow);
+                          if (item.parentNode) item.parentNode.removeChild(item);
+                          renderGrid();
+                          // Re-open the drawer with the updated state so the
+                          // user sees the row return as "✓ paid".
+                          try { closeDrawer(); openDrawer(d); } catch (_) {}
+                        })
+                        .catch(function (ackErr) {
+                          try { console.warn('[home] acknowledge failed:', ackErr); } catch (_) {}
+                          ackBtn.disabled = false;
+                          ackBtn.textContent = '✓ I already paid this';
+                        });
+                    });
+                    actionsWrap.appendChild(ackBtn);
+                  }
+
+                  var stopBtn = document.createElement('button');
+                  stopBtn.type = 'button';
+                  stopBtn.className = 'row-confirm__stop-stream';
+                  stopBtn.textContent = 'stop tracking this stream';
+                  stopBtn.addEventListener('click', function (lev) {
                     lev.stopPropagation();
                     try { openRecurring(); } catch (_) {}
                   });
-                  newRow.appendChild(openLink);
-                  var sep2 = document.createElement('span');
-                  sep2.className = 'row-confirm__sep';
-                  sep2.textContent = '·';
-                  newRow.appendChild(sep2);
+                  actionsWrap.appendChild(stopBtn);
+
                   var dismissBtn = document.createElement('button');
                   dismissBtn.type = 'button';
                   dismissBtn.className = 'row-confirm__no';
@@ -922,7 +1021,7 @@
                     if (newRow.parentNode) newRow.parentNode.removeChild(newRow);
                     existingRight.forEach(function (n) { n.style.display = ''; });
                   });
-                  newRow.appendChild(dismissBtn);
+                  actionsWrap.appendChild(dismissBtn);
                   if (confirmRow.parentNode) {
                     confirmRow.parentNode.replaceChild(newRow, confirmRow);
                   }
@@ -1115,6 +1214,7 @@
         closeTodo();
         closeRecurring();
         closeWallet();
+        closeSnapshot();
       }
     });
   }
@@ -1427,19 +1527,74 @@
       // success so the local state purges instead of error-displaying.
       if (!out.ok && out.status !== 404) {
         // Phase 8.5B: 409 STREAM_LINKED — row is projected forward from a
-        // recurring stream. Show a friendly inline message in the error
-        // slot with a tappable link to the recurring tab. We render a real
-        // <button> appended to the error node so the link is keyboard-
-        // accessible (no inline onclick — CSP-safe).
+        // recurring stream. Phase 10B: surface BOTH options inline:
+        //   1. "✓ I already paid this" — POST /acknowledge, soft-delete.
+        //   2. "stop tracking this stream" — open recurring tab.
+        // Both buttons are appended to the #sched-error region so the layout
+        // stays consistent with the existing error chrome. CSP-safe (no
+        // inline handlers).
         if (out.status === 409 && out.data && out.data.code === 'STREAM_LINKED') {
           var merchant = (out.data && out.data.merchant) || 'this';
+          var actions = (out.data && Array.isArray(out.data.actions))
+            ? out.data.actions
+            : ['stop_stream'];
           if (schedError) {
             schedError.textContent = 'this is part of your ' + merchant
               + ' recurring stream. ';
+
+            if (actions.indexOf('acknowledge') !== -1) {
+              var ackLink = document.createElement('button');
+              ackLink.type = 'button';
+              ackLink.className = 'sched-error-link sched-error-link--ack';
+              ackLink.textContent = '✓ I already paid this';
+              ackLink.addEventListener('click', function () {
+                ackLink.disabled = true;
+                ackLink.textContent = 'marking…';
+                fetch(API_BASE + '/api/transactions/schedule/'
+                      + encodeURIComponent(id) + '/acknowledge',
+                      { method: 'POST', credentials: 'include' })
+                  .then(function (ackRes) {
+                    if (ackRes.status === 401) { location.replace('/'); return null; }
+                    if (!ackRes.ok && ackRes.status !== 404) {
+                      throw new Error('acknowledge failed ' + ackRes.status);
+                    }
+                    return ackRes.json().catch(function () { return null; });
+                  })
+                  .then(function (ackOut) {
+                    if (!ackOut) return;
+                    // Flip the in-memory row so the calendar reflects the
+                    // change immediately, then close the popover and let
+                    // refreshAfterScheduleChange pull canonical state.
+                    for (var i = 0; i < PRECOMMITS.length; i++) {
+                      var p = PRECOMMITS[i];
+                      if (p && p.source === 'scheduled' && p.id === id) {
+                        p.acknowledged = true;
+                        break;
+                      }
+                    }
+                    if (schedDeleteYes) {
+                      schedDeleteYes.disabled = false;
+                      schedDeleteYes.textContent = 'yes';
+                    }
+                    hideDeleteConfirm();
+                    closeSchedule();
+                    refreshAfterScheduleChange();
+                  })
+                  .catch(function (ackErr) {
+                    try { console.warn('[home] acknowledge failed:', ackErr); } catch (_) {}
+                    if (schedError) {
+                      schedError.textContent = 'couldn’t mark paid — try again.';
+                    }
+                  });
+              });
+              schedError.appendChild(ackLink);
+              schedError.appendChild(document.createTextNode(' OR '));
+            }
+
             var link = document.createElement('button');
             link.type = 'button';
             link.className = 'sched-error-link';
-            link.textContent = 'open recurring tab';
+            link.textContent = 'stop tracking this stream';
             link.addEventListener('click', function () {
               try { closeSchedule(); } catch (_) {}
               try { openRecurring(); } catch (_) {}
@@ -4415,6 +4570,127 @@
     }
   }
 
+  // ── Snapshot popup ──────────────────────────────
+  // Copy-pasteable Markdown brief — the user opens the modal, the text
+  // auto-fills from /api/snapshot, they hit "copy", paste into ChatGPT /
+  // Claude / Gemini, and ask a money question. Replaces the SMS bot.
+  // The textarea is re-fetched on every open (the data is point-in-time
+  // and a cached paste would mislead the LLM).
+  function setSnapshotStatus(text) {
+    if (snapshotStatus) snapshotStatus.textContent = text || '';
+  }
+
+  function fetchSnapshot() {
+    return fetch(API_BASE + '/api/snapshot', {
+      credentials: 'include'
+    }).then(function (res) {
+      if (res.status === 401) { location.replace('/'); throw new Error('unauthed'); }
+      if (!res.ok) throw new Error('snapshot fetch failed: ' + res.status);
+      return res.json();
+    });
+  }
+
+  function openSnapshot() {
+    if (!snapshotPop || !snapshotOverlay) return;
+    snapshotPop.classList.add('open');
+    snapshotOverlay.classList.add('open');
+    snapshotPop.setAttribute('aria-hidden', 'false');
+
+    // Reset any prior "copied!" pulse on the button so a re-open doesn't
+    // start in the success state.
+    if (snapshotCopiedTimer) {
+      clearTimeout(snapshotCopiedTimer);
+      snapshotCopiedTimer = null;
+    }
+    if (snapshotCopy) {
+      snapshotCopy.classList.remove('is-copied');
+      snapshotCopy.textContent = '📋 copy';
+      snapshotCopy.disabled = true;
+    }
+    if (snapshotTextarea) snapshotTextarea.value = '';
+    setSnapshotStatus('loading…');
+
+    fetchSnapshot().then(function (payload) {
+      var md = payload && typeof payload.snapshot === 'string'
+        ? payload.snapshot
+        : '';
+      if (snapshotTextarea) snapshotTextarea.value = md;
+      setSnapshotStatus('');
+      if (snapshotCopy) snapshotCopy.disabled = !md;
+    }).catch(function () {
+      setSnapshotStatus('couldn’t load — refresh and try again.');
+      if (snapshotCopy) snapshotCopy.disabled = true;
+    });
+  }
+
+  function closeSnapshot() {
+    if (!snapshotPop || !snapshotOverlay) return;
+    snapshotPop.classList.remove('open');
+    snapshotOverlay.classList.remove('open');
+    snapshotPop.setAttribute('aria-hidden', 'true');
+    setSnapshotStatus('');
+  }
+
+  function copySnapshotToClipboard() {
+    if (!snapshotTextarea || !snapshotCopy) return;
+    var text = snapshotTextarea.value || '';
+    if (!text) return;
+
+    function flashCopied() {
+      snapshotCopy.classList.add('is-copied');
+      snapshotCopy.textContent = '✓ copied!';
+      if (snapshotCopiedTimer) clearTimeout(snapshotCopiedTimer);
+      snapshotCopiedTimer = setTimeout(function () {
+        snapshotCopy.classList.remove('is-copied');
+        snapshotCopy.textContent = '📋 copy';
+        snapshotCopiedTimer = null;
+      }, 1800);
+    }
+
+    // Modern Async Clipboard API — only available on https / localhost.
+    // Fall back to the textarea-select trick if clipboard isn't writable.
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(flashCopied).catch(function () {
+        try {
+          snapshotTextarea.focus();
+          snapshotTextarea.select();
+          var ok = document.execCommand && document.execCommand('copy');
+          if (ok) flashCopied();
+          else setSnapshotStatus('select + copy manually if your browser blocks clipboard.');
+        } catch (_) {
+          setSnapshotStatus('select + copy manually if your browser blocks clipboard.');
+        }
+      });
+    } else {
+      try {
+        snapshotTextarea.focus();
+        snapshotTextarea.select();
+        var ok = document.execCommand && document.execCommand('copy');
+        if (ok) flashCopied();
+        else setSnapshotStatus('select + copy manually if your browser blocks clipboard.');
+      } catch (_) {
+        setSnapshotStatus('select + copy manually if your browser blocks clipboard.');
+      }
+    }
+  }
+
+  function wireSnapshotBtn() {
+    snapshotBtn       = document.getElementById('snapshot-btn');
+    snapshotOverlay   = document.getElementById('snapshot-overlay');
+    snapshotPop       = document.getElementById('snapshot-pop');
+    snapshotClose     = document.getElementById('snapshot-close');
+    snapshotTextarea  = document.getElementById('snapshot-textarea');
+    snapshotCopy      = document.getElementById('snapshot-copy');
+    snapshotStatus    = document.getElementById('snapshot-status');
+
+    if (snapshotBtn)     snapshotBtn.addEventListener('click', openSnapshot);
+    if (snapshotClose)   snapshotClose.addEventListener('click', closeSnapshot);
+    if (snapshotOverlay) snapshotOverlay.addEventListener('click', closeSnapshot);
+    if (snapshotCopy)    snapshotCopy.addEventListener('click', copySnapshotToClipboard);
+    // The 3 LLM links are <a target="_blank"> — no JS needed; the browser
+    // opens each chat home in a new tab and the user pastes after copy.
+  }
+
   // ── Add-account button wiring ───────────────────
   function wireAddAccountBtn() {
     var btn = document.getElementById('add-account-btn');
@@ -4440,6 +4716,7 @@
     wireRecurringAddModal();
     wireRecurringEditModal();
     wireWalletBtn();
+    wireSnapshotBtn();
     // Reimbursements + wallet are SWR — hydrate their in-memory caches from
     // localStorage so the panels paint instantly when opened. Calendar +
     // balances are NOT hydrated; they wait for the live fetches below.
