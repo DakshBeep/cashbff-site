@@ -1,6 +1,6 @@
-// ── Auth probe (Phase 9A — replaces 7D/8.5B redirect) ──────
+// ── Auth probe (Phase 9A. replaces 7D/8.5B redirect) ──────
 // verify.html is a "functional flow" page. Phase 8.5B explicitly hardened
-// it so an authed user CAN'T trigger an OTP — that protection STAYS. Phase
+// it so an authed user CAN'T trigger an OTP. that protection STAYS. Phase
 // 9A swaps the hard redirect for a softer pattern: render the page, mark
 // it authed (so the OTP form is force-disabled), and surface the floating
 // "my home →" pill via auth-banner.js. The OTP send + verify never fire
@@ -9,7 +9,7 @@
 //     the rest of the file proceeds normally (sends an OTP, etc).
 //   • If authed, the promise NEVER RESOLVES. This pins the verify button
 //     in its disabled state forever and short-circuits sendOtp() /
-//     verify-submit handlers — they all `await gateAuthPromise` and we
+//     verify-submit handlers. they all `await gateAuthPromise` and we
 //     keep them stuck on that line, exactly like before, instead of
 //     navigating away.
 async function runAuthGate() {
@@ -28,11 +28,11 @@ async function runAuthGate() {
       if (typeof window.hidePageInteractionForAuthed === 'function') {
         window.hidePageInteractionForAuthed(['#otp-form', '#verify-btn', '#hint', '.meta-row'], {
           heading: "you're already signed in.",
-          body: 'no need to verify a code — head back to your home.',
+          body: 'no need to verify a code. head back to your home.',
           mountSelector: '.sub',
         });
       }
-      // Pending promise — keeps every awaiter (sendOtp, verify click)
+      // Pending promise. keeps every awaiter (sendOtp, verify click)
       // pinned forever. Phase 8.5B's "OTP can't fire for authed users"
       // guarantee still holds.
       await new Promise(() => {});
@@ -45,7 +45,7 @@ async function runAuthGate() {
 const gateAuthPromise = runAuthGate();
 // bfcache safety: if the page is restored from back/forward cache the
 // module body doesn't re-execute, so a previously-decided gate is reused.
-// On 'pageshow' with persisted=true, re-validate against /api/me — if the
+// On 'pageshow' with persisted=true, re-validate against /api/me. if the
 // user is now authed (or was already), the gate hides the form again.
 window.addEventListener('pageshow', (e) => {
   if (e.persisted) {
@@ -71,7 +71,7 @@ const verifyBtn = document.getElementById('verify-btn');
 
 // Phase 8.5B: gate-resolved flag flips to true the moment the auth gate
 // returns false (i.e. the user is NOT authed). Until then, checkComplete
-// keeps the verify button disabled even if all 6 digits are filled — this
+// keeps the verify button disabled even if all 6 digits are filled. this
 // removes the race where a fast user could submit the OTP form before the
 // /api/me redirect lands. resend button is also force-disabled while the
 // gate is in flight (see the resend handler below).
@@ -213,13 +213,13 @@ function setHint(text, isError) {
 }
 
 async function sendOtp() {
-  // Wait for the auth gate first — if /api/me returns 200 we'll be in the
+  // Wait for the auth gate first. if /api/me returns 200 we'll be in the
   // middle of navigating to home and don't want to fire an SMS at the
   // user's phone on the way out.
   await gateAuthPromise;
   const phone = e164(rawPhone);
   if (!phone) {
-    setHint("that number doesn't look right — try again?", true);
+    setHint("that number doesn't look right. try again?", true);
     return;
   }
   setHint('sending your code…');
@@ -230,7 +230,7 @@ async function sendOtp() {
       body: JSON.stringify({ phone }),
     });
     if (res.status === 429) {
-      setHint('slow down — too many codes. try again in a bit.', true);
+      setHint('slow down. too many codes. try again in a bit.', true);
       return;
     }
     if (!res.ok) {
@@ -296,7 +296,7 @@ verifyBtn.addEventListener('click', async (e) => {
     if (data.is_returning && !data.has_email) {
       location.href = 'welcome.html' + query;
     } else if (data.is_returning) {
-      // Returning user who already gave us an email — straight to home.
+      // Returning user who already gave us an email. straight to home.
       location.href = 'home.html' + query;
     } else {
       location.href = 'plan.html' + query;

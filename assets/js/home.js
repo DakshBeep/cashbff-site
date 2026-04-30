@@ -1,4 +1,4 @@
-// home.js — auth-gated calendar-month view backed by /api/calendar.
+// home.js. auth-gated calendar-month view backed by /api/calendar.
 //
 // This is the post-login landing page. It:
 //   1. Calls GET /api/me to gate the page. 401 => redirect to "/".
@@ -6,7 +6,7 @@
 //      digits of the returned phone number.
 //   3. Wires the sign-out link to POST /api/logout + redirect.
 //   4. Fetches real expenses from GET /api/calendar?from=&to=. On boot the
-//      calendar + balances are fetched fresh on every page load — no
+//      calendar + balances are fetched fresh on every page load. no
 //      localStorage hydration. The thin progress bar at the top of
 //      home.html (#page-loader) communicates the wait while /api/me,
 //      /api/calendar, and /api/balances are in flight. Renders results in a
@@ -15,7 +15,7 @@
 //   5. Wires the floating "+ add account" button to the existing add-account
 //      modal via window.CashBFFAddAccount.open().
 //
-// Keep inline JS out of home.html — CSP blocks inline scripts. Everything
+// Keep inline JS out of home.html. CSP blocks inline scripts. Everything
 // executable lives here or in add-account.js / sentry-init.js.
 (function () {
   'use strict';
@@ -23,14 +23,14 @@
   var API_BASE = 'https://api.cashbff.com';
 
   // ── Tiny SWR cache module ────────────────────────
-  // Versioned localStorage shim. Currently only used by reimbursements —
+  // Versioned localStorage shim. Currently only used by reimbursements.
   // calendar + balances were intentionally pulled off SWR (zombie scheduled
   // txns + stale running-balance figures kept surfacing on boot before the
   // live fetches could resolve). Helpers and the cbff_v1_ prefix are kept
   // in case we want SWR back for those panels later. Bump STORAGE_PREFIX
   // to invalidate old keys.
   var STORAGE_PREFIX = 'cbff_v1_';
-  var CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24h — cap age so we don't hydrate truly ancient data
+  var CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24h. cap age so we don't hydrate truly ancient data
 
   function cacheRead(key) {
     try {
@@ -47,7 +47,7 @@
       localStorage.setItem(STORAGE_PREFIX + key, JSON.stringify({
         savedAt: Date.now(), value: value
       }));
-    } catch (_) { /* private mode / quota — silently skip */ }
+    } catch (_) { /* private mode / quota. silently skip */ }
   }
   function cacheClearAll() {
     try {
@@ -94,7 +94,7 @@
 
   // Expenses for the logged-in user. Empty by default; populated by the
   // /api/calendar fetch on boot. Calendar data is no longer hydrated from
-  // localStorage — the user wants a fresh load every time, with the page
+  // localStorage. the user wants a fresh load every time, with the page
   // loader bar communicating the wait. See hydrateFromCache() below.
   var PRECOMMITS = [];
 
@@ -134,7 +134,7 @@
   // To-do popup (localStorage-backed mockup; no backend yet).
   var todoBtn, todoBtnCount, todoOverlay, todoPop, todoClose,
       todoAddForm, todoAddInput, todoAddBtn, todoError, todoList;
-  // Recurring popup — backed by /api/recurring/{suggestions,streams}.
+  // Recurring popup. backed by /api/recurring/{suggestions,streams}.
   // Cache shape:
   //   recurringSuggestionsCache: array of {merchant, display_name, amount,
   //                                        next_due_date, cadence_days,
@@ -178,9 +178,9 @@
   // forward until the user sets an end_date on the stream itself; there's no
   // longer a per-charge "did this fire?" prompt. The backend's
   // /api/recurring/rollover-prompts endpoint still exists but is contracted
-  // to return {items: []}. Markup, CSS, and wiring are all gone — searching
+  // to return {items: []}. Markup, CSS, and wiring are all gone. searching
   // for "rollover" in this file should yield nothing.
-  // Wallet popup — linked Plaid accounts (read-only) + manually-tracked cards.
+  // Wallet popup. linked Plaid accounts (read-only) + manually-tracked cards.
   // Backed by /api/wallet for read, /api/tracked-accounts (POST/DELETE) for
   // mutations on the user-added cards.
   var walletBtn, walletOverlay, walletPop, walletClose,
@@ -189,9 +189,9 @@
       walletTrackedGroup, walletTrackedList,
       walletAddForm, walletAddName, walletAddBalance, walletAddCurrency,
       walletAddDate, walletAddKindChips, walletAddSubmit, walletAddError;
-  // Snapshot popup — copy-pasteable Markdown brief of the user's data.
+  // Snapshot popup. copy-pasteable Markdown brief of the user's data.
   // Backed by /api/snapshot. The textarea is filled on every open from
-  // a fresh GET — we don't cache because the snapshot is point-in-time
+  // a fresh GET. we don't cache because the snapshot is point-in-time
   // (balances + transactions) and a stale paste would mislead the LLM.
   var snapshotBtn, snapshotOverlay, snapshotPop, snapshotClose,
       snapshotTextarea, snapshotCopy, snapshotStatus;
@@ -212,7 +212,7 @@
   var cardsFetchInflight = null;
 
   // Balances list for the balances popup. Lazily fetched on first open and
-  // reused on subsequent opens — the panel doesn't refetch on close/reopen.
+  // reused on subsequent opens. the panel doesn't refetch on close/reopen.
   var balancesCache = null;
   var balancesFetchInflight = null;
 
@@ -220,7 +220,7 @@
   // open, then evicted on every successful mutation (POST/PATCH/DELETE) so the
   // next open refetches. Still SWR: hydrated from localStorage on boot for
   // instant paint when the panel opens, then refreshed from the live API.
-  // (Calendar + balances were pulled off SWR — this panel kept it because
+  // (Calendar + balances were pulled off SWR. this panel kept it because
   // the data is small and panel-scoped.)
   var reimbursementsCache = null;
   var reimbursementsFetchInflight = null;
@@ -240,7 +240,7 @@
 
   // Earliest month the calendar lets the user nav back to. Initialized from
   // signup_month (via /api/me). Then extended backward whenever a calendar
-  // fetch surfaces transactions older than the current boundary — Plaid's
+  // fetch surfaces transactions older than the current boundary. Plaid's
   // historical sync is often deeper than the user's CashBFF signup date,
   // and that data is still genuinely theirs to see.
   var earliestViewableMonth = null;
@@ -289,7 +289,7 @@
     return sign + '$' + abs;
   }
 
-  // Today's actual cash position — what the user has RIGHT NOW, before any
+  // Today's actual cash position. what the user has RIGHT NOW, before any
   // future plans are layered in. Pulled from /api/wallet's
   // running_balance_usd (depository − cc_owed + tracked) when available;
   // falls back to a frontend recomputation from balancesCache (depository −
@@ -316,14 +316,14 @@
     return null;
   }
 
-  // Project the running cash balance to the START of day `d` — i.e. today's
+  // Project the running cash balance to the START of day `d`. i.e. today's
   // base balance plus the net of every scheduled item dated AFTER today and
   // STRICTLY BEFORE `d`. The clicked day's own scheduled txns are NOT
   // included here; they're shown separately in the "after your plans this
   // day" line so the user can see the before/after.
   //
   // Returns { hasBase: boolean, runningBalance: number }. hasBase=false
-  // when neither /api/wallet nor /api/balances has resolved yet — caller
+  // when neither /api/wallet nor /api/balances has resolved yet. caller
   // hides the running-balance line.
   function computeDayProjection(d) {
     var base = computeTodayBaseBalance();
@@ -336,7 +336,7 @@
       if (!e || e.source !== 'scheduled') return;
       // Phase 10B: acknowledged ("✓ already paid") rows do NOT contribute to
       // FUTURE running-balance projection. The user has flagged them as paid
-      // already — the actual charge appears in raw_transactions and reduces
+      // already. the actual charge appears in raw_transactions and reduces
       // the balance there, so projecting a phantom future debit too would
       // double-count.
       if (e.acknowledged) return;
@@ -356,7 +356,7 @@
 
   // ── SWR hydration (reimbursements only) ──────────
   // Calendar + balances are NO LONGER hydrated from localStorage. The user
-  // wants a fresh load every time — the page-loader bar at the top of
+  // wants a fresh load every time. the page-loader bar at the top of
   // home.html signals the wait. Hydrating calendar from a stale cache was
   // surfacing zombie scheduled txns and stale running-balance figures until
   // the live fetches resolved. Reimbursements stays SWR (small data,
@@ -368,19 +368,19 @@
     if (Array.isArray(cachedReimbursements)) {
       reimbursementsCache = cachedReimbursements;
     }
-    // To-dos are mockup-only — same cache helper, no backend hydration.
+    // To-dos are mockup-only. same cache helper, no backend hydration.
     var cachedTodos = cacheRead('todos');
     if (Array.isArray(cachedTodos)) {
       todosCache = cachedTodos;
     }
-    // Wallet is SWR — last-known payload paints the panel instantly on reopen.
+    // Wallet is SWR. last-known payload paints the panel instantly on reopen.
     // The boot prefetch refreshes this with canonical server state so the
     // running-balance hero in balances reflects fresh tracked totals.
     var cachedWallet = cacheRead('wallet');
     if (cachedWallet && typeof cachedWallet === 'object') {
       walletCache = cachedWallet;
     }
-    // Recurring suggestions + streams — SWR. Last-known list paints the panel
+    // Recurring suggestions + streams. SWR. Last-known list paints the panel
     // instantly on first open; the live GET refreshes both panels.
     // Phase 8C: a cached array satisfies the "loaded" flag so the user
     // doesn't see a skeleton flash on top of data that's already on disk.
@@ -453,12 +453,12 @@
       // Extend earliestViewableMonth backward if this batch contained txns
       // from before the signup-month clamp. Plaid's historical sync often
       // pulls 12-24 months of bank-side data, all of which is genuinely the
-      // user's — they should be able to navigate to it.
+      // user's. they should be able to navigate to it.
       extendEarliestFromData();
       renderGrid();
-      // No localStorage write — calendar is fresh on every load now.
+      // No localStorage write. calendar is fresh on every load now.
       // /api/calendar may have triggered an on-demand Plaid sync server-side
-      // (debounced 5min). If it did, balances may have changed too — evict
+      // (debounced 5min). If it did, balances may have changed too. evict
       // the in-memory cache so the next balances open refetches fresh data
       // instead of returning a stale pre-sync snapshot.
       balancesCache = null;
@@ -492,7 +492,7 @@
   // the common case where today is mid-month-ish; the month-key cache then
   // suppresses a redundant refetch when the user stays on this month.
   function fetchInitialWindow() {
-    // Backfill ALL the user's data on boot — past 350 days + next 2 months.
+    // Backfill ALL the user's data on boot. past 350 days + next 2 months.
     // /api/calendar caps a single request at 365 days, so we issue TWO
     // parallel range fetches and merge. Covers the full Plaid historical
     // sync (typically 12-24 months of bank-side data) AND near-future
@@ -569,7 +569,7 @@
       exps.slice(0, maxPills).forEach(function (e) {
         var p = document.createElement('span');
         p.className = 'pill ' + e.type;
-        // Pending (not-yet-settled) transactions render italic — same color,
+        // Pending (not-yet-settled) transactions render italic. same color,
         // just a visual "about to settle" cue.
         if (e.pending) p.classList.add('pending-tx');
         // Phase 10B: acknowledged rows still render in the cell so the
@@ -653,13 +653,13 @@
       return e.type === 'income' ? s : s + e.amount;
     }, 0);
     drawerDate.textContent = MONTHS[d.getMonth()] + ' ' + d.getDate();
-    // Past days are intentionally quiet — no day total, no projection. Just
+    // Past days are intentionally quiet. no day total, no projection. Just
     // notes/items in the list. Per-day math only matters going forward.
     var isPastDay = d.getTime() < today.getTime();
 
     // Sum scheduled-only items for THIS exact day (used for the projection
     // line below). Income from scheduled adds, scheduled outflows subtract.
-    // Phase 10B: skip acknowledged rows — they're "already paid" so the
+    // Phase 10B: skip acknowledged rows. they're "already paid" so the
     // real charge will show up in raw_transactions; counting them again
     // here would double-debit the "after your plans" line.
     var dayScheduledOut = 0;
@@ -674,12 +674,12 @@
     });
 
     // Bug 1 fix: "running balance" is the carry-forward cash position
-    // projected to the start of the clicked day — i.e. today's actual
+    // projected to the start of the clicked day. i.e. today's actual
     // balance MINUS scheduled outflows for every day BETWEEN today and
     // d (exclusive of d itself, since d's plans are folded into the
     // "after your plans" line). Previously this line showed only the
     // day's own outflow, which made a $25 plan on a day where the user
-    // had $1000+ cash render as "running balance: $25.00" — confusing
+    // had $1000+ cash render as "running balance: $25.00". confusing
     // and just wrong.
     var dayProjection = computeDayProjection(d);
     if (!isPastDay && dayProjection.hasBase) {
@@ -689,7 +689,7 @@
       drawerTotal.innerHTML = '';
     }
 
-    // Bottom line: "after your plans this day: $Y" — running balance
+    // Bottom line: "after your plans this day: $Y". running balance
     // MINUS today's scheduled outflow + today's scheduled income.
     // Hidden for past days, when we don't have a balance baseline, and
     // when this day has no scheduled activity to project through.
@@ -706,7 +706,7 @@
     }
     drawerList.innerHTML = '';
     if (!exps.length) {
-      // Free day — render nothing in the list. The date header is enough; an
+      // Free day. render nothing in the list. The date header is enough; an
       // explicit "nothing scheduled" line just adds noise to an already-quiet
       // popover.
     } else {
@@ -721,7 +721,7 @@
         if (e.acknowledged) item.classList.add('is-acknowledged');
 
         // Scheduled rows are clickable to open the edit popup. Plaid rows
-        // stay non-interactive for this pass — backend doesn't support edit
+        // stay non-interactive for this pass. backend doesn't support edit
         // there yet, so no affordance, no click handler.
         var isEditable = e.source === 'scheduled' && e.id != null;
         if (isEditable) {
@@ -732,7 +732,7 @@
         }
 
         // Left-side stack: name, optional from-card chip, optional note.
-        // textContent-safe construction — backend has already cleaned the
+        // textContent-safe construction. backend has already cleaned the
         // strings, but keep the XSS-safe path regardless.
         var rowMain = document.createElement('div');
         rowMain.className = 'row-main';
@@ -752,7 +752,7 @@
         }
         rowMain.appendChild(nameDiv);
 
-        // Card chip: "from <institution> ···<mask>" — shown for Plaid AND
+        // Card chip: "from <institution> ···<mask>". shown for Plaid AND
         // scheduled items whenever the backend has a card on the row. Skip
         // entirely if no card is linked (institution + mask both absent).
         if (e.institution || e.mask) {
@@ -768,7 +768,7 @@
         // Note: only on scheduled items for this pass. Plaid-item note
         // editing comes in a future task; backend always returns "" for them.
         // Stream-projected rows have an internal `recurring-projection:<merchant>` tag
-        // that's for backend bookkeeping — never expose it to the user.
+        // that's for backend bookkeeping. never expose it to the user.
         if (e.note && String(e.note).trim() && !String(e.note).startsWith('recurring-projection:')) {
           var noteDiv = document.createElement('div');
           noteDiv.className = 'note';
@@ -778,20 +778,20 @@
 
         item.appendChild(rowMain);
 
-        // Trash + pencil glyphs for scheduled rows — fade in on hover/focus
+        // Trash + pencil glyphs for scheduled rows. fade in on hover/focus
         // via CSS. Built with createElementNS so the SVGs stay inert and
         // CSP-safe (no innerHTML for executable-ish surfaces).
         //
         // Phase 10B TODO: clicking trash on an already-acknowledged row
         // currently triggers the same 409 STREAM_LINKED 2-button surface as
         // an active stream-linked row (since acknowledged rows are also
-        // stream-linked). v1 keeps this behavior — the user can re-tap
+        // stream-linked). v1 keeps this behavior. the user can re-tap
         // "✓ I already paid this" (idempotent: backend returns 404 since
         // acknowledged_at IS NOT NULL) or "stop tracking this stream". A
         // future task could add an "un-acknowledge" affordance, but for
         // now the duplicate-acknowledge no-op is acceptable.
         if (isEditable) {
-          // Trash glyph — sits LEFT of the pencil, click triggers inline
+          // Trash glyph. sits LEFT of the pencil, click triggers inline
           // "delete? yes / cancel" confirm in the row's right-side area.
           var trash = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
           trash.setAttribute('class', 'drawer-item__trash');
@@ -810,7 +810,7 @@
           trash.appendChild(trashPath);
           item.appendChild(trash);
 
-          // Pencil glyph — opens edit popup (existing behavior).
+          // Pencil glyph. opens edit popup (existing behavior).
           var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
           svg.setAttribute('class', 'drawer-item__edit');
           svg.setAttribute('viewBox', '0 0 16 16');
@@ -913,7 +913,7 @@
                 credentials: 'include'
               }).then(function (res) {
                 if (res.status === 401) { location.replace('/'); return null; }
-                // Phase 8.5B: 409 STREAM_LINKED — row is projected forward
+                // Phase 8.5B: 409 STREAM_LINKED. row is projected forward
                 // from a recurring stream. Phase 10B: the body now also
                 // includes `actions: ['acknowledge', 'stop_stream']` so we
                 // surface BOTH options inline.
@@ -927,7 +927,7 @@
                   });
                 }
                 // 404 = already gone server-side (e.g. zombie from a stale
-                // localStorage cache). Treat it as success — purge locally so
+                // localStorage cache). Treat it as success. purge locally so
                 // the row stops haunting the UI on every reload.
                 if (!res.ok && res.status !== 404) throw new Error('delete failed ' + res.status);
                 return { __ok: true };
@@ -935,10 +935,10 @@
                 if (!out) return; // 401 path already navigated.
                 if (out.__streamLinked) {
                   // Phase 10B: render the new TWO-button surface stacked.
-                  //   1. "✓ I already paid this" — soft-acknowledge: row stays
+                  //   1. "✓ I already paid this". soft-acknowledge: row stays
                   //      visible greyed-out, no longer counts against the
                   //      running balance projection.
-                  //   2. "stop tracking this stream" — opens the recurring
+                  //   2. "stop tracking this stream". opens the recurring
                   //      tab so the user can set an end_date on the stream.
                   // Cancel link bails out of the surface entirely.
                   var merchant = out.merchant || 'this';
@@ -1037,7 +1037,7 @@
                     return !(x.source === 'scheduled' && x.id === txnSnapshot.id);
                   });
                 }
-                // No localStorage write — calendar is fresh on every load.
+                // No localStorage write. calendar is fresh on every load.
                 // The in-memory PRECOMMITS update above is enough for the
                 // current session; next reload pulls fresh from /api/calendar.
                 // Pop the row out of the drawer DOM.
@@ -1069,7 +1069,7 @@
     // Lets the user create a scheduled transaction directly from the day
     // they're looking at, with the date pre-filled. Sits below the list.
     // Past days still allow scheduling (you may want to log a planned thing
-    // retroactively for projection purposes — backend has no date guard).
+    // retroactively for projection purposes. backend has no date guard).
     var schedHere = document.createElement('button');
     schedHere.type = 'button';
     schedHere.className = 'drawer-schedule-btn';
@@ -1115,7 +1115,7 @@
     }).then(function (res) {
       if (res.status === 401) {
         location.replace('/');
-        return new Promise(function () {}); // never resolves — page is navigating away
+        return new Promise(function () {}); // never resolves. page is navigating away
       }
       if (!res.ok) throw new Error('bad response ' + res.status);
       return res.json();
@@ -1129,7 +1129,7 @@
         pill.textContent = last4 ? '···' + last4 + ' signed in' : 'signed in';
       }
       // Clamp the calendar's earliest viewable month to the user's signup
-      // month — pre-signup calendar views are meaningless (no backfill yet).
+      // month. pre-signup calendar views are meaningless (no backfill yet).
       if (data && data.created_at) {
         var signup = new Date(data.created_at);
         earliestViewableMonth = new Date(signup.getFullYear(), signup.getMonth(), 1);
@@ -1185,7 +1185,7 @@
     drawerClose   = document.getElementById('drawer-close');
 
     if (prevBtn) prevBtn.addEventListener('click', function () {
-      if (atEarliestMonth()) return; // clamp — can't go back past signup month
+      if (atEarliestMonth()) return; // clamp. can't go back past signup month
       view.setMonth(view.getMonth() - 1);
       renderGrid();
       fetchMonthIfNeeded(view.getFullYear(), view.getMonth());
@@ -1200,7 +1200,7 @@
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') {
         // If the reimbursements panel has an open inline confirm, ESC dismisses
-        // just that — the panel itself stays open so the user can keep working.
+        // just that. the panel itself stays open so the user can keep working.
         if (dismissOpenReimbConfirms()) return;
         // Same idea for the to-do panel: an inline delete-confirm gets
         // dismissed first before ESC bubbles up to closing the whole panel.
@@ -1220,7 +1220,7 @@
   }
 
   // ── Schedule-spend popup + form ──────────────────
-  // Cards are fetched once on first open and reused — backend is read-mostly
+  // Cards are fetched once on first open and reused. backend is read-mostly
   // here and the user doesn't add cards mid-session through this UI.
   function fetchCardsOnce() {
     if (cardsCache) return Promise.resolve(cardsCache);
@@ -1239,7 +1239,7 @@
     }).catch(function (err) {
       cardsFetchInflight = null;
       try { console.warn('[home] cards fetch error:', err); } catch (_) {}
-      // Don't bake the failure into cache — let the next open retry.
+      // Don't bake the failure into cache. let the next open retry.
       return [];
     });
     return cardsFetchInflight;
@@ -1352,7 +1352,7 @@
     schedPop.setAttribute('aria-hidden', 'true');
     // If this schedule popover was launched from a recurring-stream row,
     // pop the recurring panel back open so the user lands where they
-    // started — the stream list with the (now-edited) row visible. The
+    // started. the stream list with the (now-edited) row visible. The
     // flag is one-shot: cleared the moment we honour it. Without this the
     // user would close the schedule and find themselves on the bare
     // calendar, having lost their place. (Bug C.)
@@ -1407,7 +1407,7 @@
     }
 
     // For PATCH the backend accepts unchanged values, so we send the full
-    // editable set rather than diffing — simpler + robust to subtle equality
+    // editable set rather than diffing. simpler + robust to subtle equality
     // bugs (string vs number id, null vs "" note). Empty string clears.
     var body = {
       date: dateVal,
@@ -1467,7 +1467,7 @@
       refreshAfterScheduleChange();
       // If this edit originated from a recurring-stream row, mirror the
       // change onto the stream so the recurring panel + future calendar
-      // refetches stay in sync. We deliberately ignore failures here — the
+      // refetches stay in sync. We deliberately ignore failures here. the
       // calendar has already been updated by the PATCH above; a PATCH-stream
       // failure just means the stream's cached values may drift one cycle.
       if (isEdit && pendingRecurringEdit
@@ -1485,7 +1485,7 @@
         pendingRecurringEdit = null;
       }
     }).catch(function (err) {
-      if (schedError) schedError.textContent = 'network error — try again.';
+      if (schedError) schedError.textContent = 'network error. try again.';
       if (schedSubmit) {
         schedSubmit.disabled = false;
         schedSubmit.textContent = defaultText;
@@ -1526,10 +1526,10 @@
       // 404 = already gone server-side (zombie from stale cache). Treat as
       // success so the local state purges instead of error-displaying.
       if (!out.ok && out.status !== 404) {
-        // Phase 8.5B: 409 STREAM_LINKED — row is projected forward from a
+        // Phase 8.5B: 409 STREAM_LINKED. row is projected forward from a
         // recurring stream. Phase 10B: surface BOTH options inline:
-        //   1. "✓ I already paid this" — POST /acknowledge, soft-delete.
-        //   2. "stop tracking this stream" — open recurring tab.
+        //   1. "✓ I already paid this". POST /acknowledge, soft-delete.
+        //   2. "stop tracking this stream". open recurring tab.
         // Both buttons are appended to the #sched-error region so the layout
         // stays consistent with the existing error chrome. CSP-safe (no
         // inline handlers).
@@ -1583,7 +1583,7 @@
                   .catch(function (ackErr) {
                     try { console.warn('[home] acknowledge failed:', ackErr); } catch (_) {}
                     if (schedError) {
-                      schedError.textContent = 'couldn’t mark paid — try again.';
+                      schedError.textContent = 'couldn’t mark paid. try again.';
                     }
                   });
               });
@@ -1620,7 +1620,7 @@
       // Success (or 404 zombie purge): drop the row locally so it doesn't
       // linger, then refetch the visible month for canonical state.
       PRECOMMITS = PRECOMMITS.filter(function (e) { return e.id !== id; });
-      // No localStorage write — fresh on every load.
+      // No localStorage write. fresh on every load.
       // Reset confirm UI before closing so the next open starts in the
       // neutral "delete" link state.
       if (schedDeleteYes) {
@@ -1631,7 +1631,7 @@
       closeSchedule();
       refreshAfterScheduleChange();
     }).catch(function (err) {
-      if (schedError) schedError.textContent = 'network error — try again.';
+      if (schedError) schedError.textContent = 'network error. try again.';
       if (schedDeleteYes) {
         schedDeleteYes.disabled = false;
         schedDeleteYes.textContent = 'yes';
@@ -1661,7 +1661,7 @@
     schedDeleteYes     = document.getElementById('schedule-delete-yes');
     schedDeleteCancel  = document.getElementById('schedule-delete-cancel');
 
-    // Bare chip click opens create mode — wrap so we don't leak the click
+    // Bare chip click opens create mode. wrap so we don't leak the click
     // event into openSchedule's optional-txn parameter.
     if (schedBtn)     schedBtn.addEventListener('click', function () { openSchedule(); });
     if (schedClose)   schedClose.addEventListener('click', closeSchedule);
@@ -1682,7 +1682,7 @@
 
   // ── Balances popup ───────────────────────────────
   // Fetches /api/balances once on first open and caches the result for the
-  // page lifetime. Subsequent opens reuse the cache — no refetch on reopen.
+  // page lifetime. Subsequent opens reuse the cache. no refetch on reopen.
   function fetchBalancesOnce() {
     if (balancesCache) return Promise.resolve(balancesCache);
     if (balancesFetchInflight) return balancesFetchInflight;
@@ -1698,14 +1698,14 @@
         accounts: (data && Array.isArray(data.accounts)) ? data.accounts : [],
         summary: (data && data.summary) ? data.summary : null
       };
-      // No localStorage write — balances are fresh on every load. The
+      // No localStorage write. balances are fresh on every load. The
       // in-memory balancesCache still serves repeat opens within a session.
       balancesFetchInflight = null;
       return balancesCache;
     }).catch(function (err) {
       balancesFetchInflight = null;
       try { console.warn('[home] balances fetch error:', err); } catch (_) {}
-      // Don't bake the failure — re-throw so the caller can show an error state
+      // Don't bake the failure. re-throw so the caller can show an error state
       // and the next open retries cleanly.
       throw err;
     });
@@ -1731,7 +1731,7 @@
     if (diffMin < 2)  return 'a min ago';
     if (diffMin < 60) return diffMin + ' min ago';
     if (diffHr  < 2)  return 'an hour ago';
-    // Same calendar day, more than ~2 hours back — keep it warm/loose.
+    // Same calendar day, more than ~2 hours back. keep it warm/loose.
     var sameDay = then.getFullYear() === now.getFullYear() &&
                   then.getMonth()    === now.getMonth() &&
                   then.getDate()     === now.getDate();
@@ -1740,7 +1740,7 @@
     var diffDay = Math.floor(diffHr / 24);
     if (diffDay === 1) return 'yesterday';
     if (diffDay < 7)  return diffDay + ' days ago';
-    // Older than a week — fall back to a short month-day stamp in lowercase.
+    // Older than a week. fall back to a short month-day stamp in lowercase.
     return MONTHS[then.getMonth()].slice(0, 3) + ' ' + then.getDate();
   }
 
@@ -1782,7 +1782,7 @@
     amt.className = 'balance-row__amt';
     var bal = balanceForRow(acct);
     if (bal === null) {
-      amt.textContent = '—';
+      amt.textContent = '-';
     } else {
       // Plaid convention: positive credit balance = amount owed. The "cards"
       // group heading already conveys "this is what you owe", so strip a
@@ -1806,11 +1806,11 @@
     var rbBlock  = document.getElementById('running-balance');
     var rbAmt    = document.getElementById('running-balance-amount');
 
-    // Empty state — surface the brand-voice prompt and skip group/list render.
+    // Empty state. surface the brand-voice prompt and skip group/list render.
     if (!accounts.length) {
       if (rbBlock) rbBlock.hidden = true;
       balSummary.classList.add('is-muted-italic');
-      balSummary.textContent = 'nothing connected yet — add an account';
+      balSummary.textContent = 'nothing connected yet. add an account';
       return;
     }
     balSummary.classList.remove('is-muted-italic');
@@ -1820,7 +1820,7 @@
     // user-tracked card balances (from /api/wallet). When the wallet payload
     // is loaded, we use summary.running_balance_usd as the canonical base
     // (backend computes: depository − cc_owed − tracked). When it's not
-    // loaded we fall back to a frontend depository−credit computation —
+    // loaded we fall back to a frontend depository−credit computation.
     // tracked totals are then absent until the prefetch lands.
     // In both paths, we layer in scheduled (planned) outflow/income deltas
     // since those live on the frontend (calendar) only.
@@ -1838,10 +1838,10 @@
       // Backend already nets depository − cc_owed − tracked. Layer scheduled.
       running = walletSummary.running_balance_usd - schedOut + schedIn;
     } else {
-      // Wallet not yet loaded — fall back to plaid-only depository − credit.
+      // Wallet not yet loaded. fall back to plaid-only depository − credit.
       // Uses balanceForRow() so the per-row visible number matches what gets
       // summed in. balanceForRow prefers balance_available for depository
-      // (subtracts pending holds — the most honest "available now" figure)
+      // (subtracts pending holds. the most honest "available now" figure)
       // and balance_current for credit (Plaid convention: positive = owed).
       var depTotal = 0;
       var ccTotal  = 0;
@@ -1924,7 +1924,7 @@
     balPop.setAttribute('aria-hidden', 'false');
 
     if (balancesCache) {
-      // Cache hit — just render and show.
+      // Cache hit. just render and show.
       setBalancesStatus('');
       renderBalances(balancesCache);
       return;
@@ -1943,7 +1943,7 @@
       setBalancesStatus('');
       renderBalances(payload);
     }).catch(function () {
-      setBalancesStatus('couldn\u2019t load — refresh and try again.');
+      setBalancesStatus('couldn\u2019t load. refresh and try again.');
     });
   }
 
@@ -1985,7 +1985,7 @@
     { key: 'received',  heading: 'received' }
   ];
   // Cycle map: clicking the right-side text advances to the next status.
-  // 'received' is terminal — button is rendered greyed out / non-interactive.
+  // 'received' is terminal. button is rendered greyed out / non-interactive.
   var REIMB_NEXT_STATUS = {
     open: 'submitted',
     submitted: 'received'
@@ -2155,7 +2155,7 @@
     desc.textContent = item.description || '';
     row.appendChild(desc);
 
-    // Trash glyph — leftmost on hover, same SVG pattern as the day popover.
+    // Trash glyph. leftmost on hover, same SVG pattern as the day popover.
     var trash = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     trash.setAttribute('class', 'reimb-item__trash');
     trash.setAttribute('viewBox', '0 0 16 16');
@@ -2174,7 +2174,7 @@
 
     var status = item.status || 'open';
 
-    // Back-arrow button — only on rows that have already advanced. Sits LEFT
+    // Back-arrow button. only on rows that have already advanced. Sits LEFT
     // of the cycle button, fades in on hover/focus-within (same pattern as
     // the trash glyph) so it stays out of the way at rest.
     var back = null;
@@ -2204,7 +2204,7 @@
     // Show the inline confirm row in place of the right-side controls. The
     // controls (trash, back, cycle) are hidden and restored by `restore()`.
     // `kind` is one of 'delete' | 'advance' | 'back' so we can wire the
-    // correct yes-handler. Returns nothing — callers don't need the node.
+    // correct yes-handler. Returns nothing. callers don't need the node.
     var openInlineConfirm = function (kind) {
       // Bail if a confirm is already open in this row.
       if (row.querySelector('.reimb-item__confirm')) return;
@@ -2256,7 +2256,7 @@
           });
           return;
         }
-        // Forward + back share the same code path — both PATCH the row to a
+        // Forward + back share the same code path. both PATCH the row to a
         // target status, optimistically update the cache, and re-render.
         // changeStatus rolls back on failure and surfaces the error in the
         // panel-level error slot, so we just let the row re-render naturally.
@@ -2266,11 +2266,11 @@
         if (!target) { restore(); return; }
         changeStatus(item, target);
         // changeStatus calls renderReimbursements() synchronously, which
-        // rebuilds this row from scratch — restore() is unnecessary.
+        // rebuilds this row from scratch. restore() is unnecessary.
       });
     };
 
-    // Cycle (forward) — only wire when there's a next status. Native
+    // Cycle (forward). only wire when there's a next status. Native
     // <button> clicks fire on Enter/Space already, so we don't need an
     // extra keydown handler here (unlike the SVG trash, which is not a
     // button element).
@@ -2281,7 +2281,7 @@
       });
     }
 
-    // Back-arrow — wire only when present (submitted + received rows).
+    // Back-arrow. wire only when present (submitted + received rows).
     // Same story: native <button> handles keyboard activation natively.
     if (back) {
       back.addEventListener('click', function (ev) {
@@ -2408,7 +2408,7 @@
         setReimbError(msg);
         return;
       }
-      // Server may return a fuller item (e.g. updated_at) — overlay onto local.
+      // Server may return a fuller item (e.g. updated_at). overlay onto local.
       if (out.data && out.data.item) {
         Object.assign(item, out.data.item);
         persistReimbursementsCache();
@@ -2537,7 +2537,7 @@
   //   [{ id: string, text: string, done: boolean, created_at: number }]
   // Open tasks render first, completed at the bottom (greyed + struck through).
   // First open ever seeds an example task so the panel doesn't feel empty.
-  // Once the user deletes everything, we DON'T re-seed — they meant to clear.
+  // Once the user deletes everything, we DON'T re-seed. they meant to clear.
   var TODO_EXAMPLE_TEXT = 'call insurance about copay refund';
 
   function persistTodos() {
@@ -2545,7 +2545,7 @@
   }
 
   // Lazy-init the cache + seed the example. Called by openTodo() so the seed
-  // happens on first open rather than on boot — keeps the work off the
+  // happens on first open rather than on boot. keeps the work off the
   // critical path. Returns the current array (never null after this runs).
   function ensureTodosLoaded() {
     if (!Array.isArray(todosCache)) {
@@ -2571,7 +2571,7 @@
     if (todoError) todoError.textContent = text || '';
   }
 
-  // Stable ID — Date.now()+random suffix is plenty for a localStorage mockup
+  // Stable ID. Date.now()+random suffix is plenty for a localStorage mockup
   // and avoids needing crypto.randomUUID for older browsers.
   function newTodoId() {
     return 't_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
@@ -2647,7 +2647,7 @@
     row.setAttribute('data-id', item.id);
     if (item.done) row.classList.add('is-done');
 
-    // Custom round checkbox — visual button, real toggle role via aria.
+    // Custom round checkbox. visual button, real toggle role via aria.
     var box = document.createElement('button');
     box.type = 'button';
     box.className = 'todo-checkbox';
@@ -2662,7 +2662,7 @@
     text.textContent = item.text || '';
     row.appendChild(text);
 
-    // Trash glyph — same SVG approach as the reimb item, fades in on hover.
+    // Trash glyph. same SVG approach as the reimb item, fades in on hover.
     var trash = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     trash.setAttribute('class', 'todo-item__trash');
     trash.setAttribute('viewBox', '0 0 16 16');
@@ -2835,7 +2835,7 @@
     }
     // Initialize the badge on boot so the count is right before first open.
     // ensureTodosLoaded() seeds the example on the very first render path,
-    // but we only render the chip badge once todos are loaded — which we
+    // but we only render the chip badge once todos are loaded. which we
     // defer until the panel opens. Read the cache directly here so the badge
     // shows for returning users without forcing a seed on boot.
     var cached = cacheRead('todos');
@@ -2949,7 +2949,7 @@
 
   // Format an ISO yyyy-mm-dd as "may 14" (lowercase short month).
   function formatRecurringDate(iso) {
-    if (!iso || typeof iso !== 'string') return '—';
+    if (!iso || typeof iso !== 'string') return '-';
     var parts = iso.slice(0, 10).split('-');
     if (parts.length !== 3) return iso;
     var months = ['jan','feb','mar','apr','may','jun',
@@ -3216,7 +3216,7 @@
     var actions = document.createElement('div');
     actions.className = 'recurring-stream__actions';
 
-    // Pencil — opens the schedule popover in edit mode for the linked txn.
+    // Pencil. opens the schedule popover in edit mode for the linked txn.
     var edit = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     edit.setAttribute('class', 'recurring-stream__edit');
     edit.setAttribute('viewBox', '0 0 16 16');
@@ -3233,7 +3233,7 @@
     edit.appendChild(editPath);
     actions.appendChild(edit);
 
-    // Trash — inline confirm row → DELETE /streams/:merchant.
+    // Trash. inline confirm row → DELETE /streams/:merchant.
     var trash = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     trash.setAttribute('class', 'recurring-stream__trash');
     trash.setAttribute('viewBox', '0 0 16 16');
@@ -3254,8 +3254,8 @@
     // Phase 8C: open the new dedicated #recurring-edit-pop modal. The old
     // flow opened the schedule popover (which was originally for one-off
     // scheduled txns) and then mirrored saves back onto the stream. The
-    // new modal owns the recurring concept end-to-end — including
-    // frequency + end_date — so the mental models stay clean. Stream-row
+    // new modal owns the recurring concept end-to-end. including
+    // frequency + end_date. so the mental models stay clean. Stream-row
     // edits no longer touch /api/transactions/schedule.
     var openEditFlow = function (ev) {
       if (ev) ev.stopPropagation();
@@ -3425,7 +3425,7 @@
   // both lists so the cached _fresh marker is honest and the calendar's
   // visible-month cache is invalidated so a `sub` row appears immediately.
   // `extraDates` is an optional array of ISO date strings (next_due_date
-  // before/after) — months derived from those are also evicted, so a stream
+  // before/after). months derived from those are also evicted, so a stream
   // whose next_due_date sits in a different month than the visible one still
   // refreshes its calendar pills without a hard reload. Pass both old and new
   // dates on PATCHes that move a stream across months.
@@ -3527,7 +3527,7 @@
 
   function patchRecurringStream(merchant, edits) {
     var url = API_BASE + '/api/recurring/streams/' + encodeURIComponent(merchant);
-    // Capture the prior next_due_date BEFORE the request — we need both old
+    // Capture the prior next_due_date BEFORE the request. we need both old
     // and new dates so the calendar cache is invalidated for both months
     // when a PATCH moves the stream across a month boundary.
     var priorDate = streamNextDueIso(merchant);
@@ -3728,7 +3728,7 @@
       if (!res.ok) {
         return res.json().catch(function () { return {}; }).then(function (data) {
           var err = new Error('add failed ' + res.status);
-          err.userMessage = (data && data.error) || 'couldn’t add — try again.';
+          err.userMessage = (data && data.error) || 'couldn’t add. try again.';
           throw err;
         });
       }
@@ -3779,7 +3779,7 @@
         recurringAddSubmit.disabled = false;
         recurringAddSubmit.textContent = 'add it';
       }
-      setRecurringAddError((e && e.userMessage) || 'couldn’t add — try again.');
+      setRecurringAddError((e && e.userMessage) || 'couldn’t add. try again.');
     });
   }
 
@@ -3803,7 +3803,7 @@
   }
 
   // ── Recurring edit modal (Phase 8C) ─────────────
-  // Dedicated stream editor — replaces the old "open schedule popover from
+  // Dedicated stream editor. replaces the old "open schedule popover from
   // a stream row" flow. Owns name/amount/next_due_date/frequency/end_date
   // + a "stop tracking this" delete affordance with inline confirm.
   function setRecurringEditError(text) {
@@ -3904,7 +3904,7 @@
     }
 
     // PATCH semantics: undefined means "don't change". For end_date the
-    // user clearing the field means "clear it server-side" — we send null.
+    // user clearing the field means "clear it server-side". we send null.
     // Always send the four other editable fields so the cache stays
     // canonical even if the user only changed one.
     var body = {
@@ -3927,7 +3927,7 @@
         recurringEditSubmit.disabled = false;
         recurringEditSubmit.textContent = 'save changes';
       }
-      setRecurringEditError((e && e.userMessage) || 'couldn’t save — try again.');
+      setRecurringEditError((e && e.userMessage) || 'couldn’t save. try again.');
     });
   }
 
@@ -3956,7 +3956,7 @@
         recurringEditDeleteYes.disabled = false;
         recurringEditDeleteYes.textContent = 'yes';
       }
-      setRecurringEditError((e && e.userMessage) || 'couldn’t remove — try again.');
+      setRecurringEditError((e && e.userMessage) || 'couldn’t remove. try again.');
     });
   }
 
@@ -4037,7 +4037,7 @@
       credentials: 'include'
     }).then(function (res) {
       if (res.status === 401) {
-        // gateAuth handles redirect — return an empty shell so callers can
+        // gateAuth handles redirect. return an empty shell so callers can
         // render an empty-state without crashing.
         return { plaid_accounts: [], tracked_accounts: [], summary: null };
       }
@@ -4073,7 +4073,7 @@
   // Render the small "running balance: $X" line at the top of the wallet
   // panel. Source-of-truth for this number is summary.running_balance_usd
   // from /api/wallet. Backend computes: depository - cc_owed - tracked +
-  // scheduled deltas. We don't recompute on the frontend — keeps wallet's
+  // scheduled deltas. We don't recompute on the frontend. keeps wallet's
   // top line and the balances hero math aligned with each other.
   function renderWalletRunning() {
     if (!walletRunning) return;
@@ -4405,7 +4405,7 @@
       walletCache._fresh = false;
       fetchWalletOnce({ force: true }).then(function () {
         renderWallet();
-        // Wallet's tracked totals affect the balances running-balance hero —
+        // Wallet's tracked totals affect the balances running-balance hero.
         // repaint balances if it has data so the hero reflects the new card.
         if (balancesCache) renderBalances(balancesCache);
       }).catch(function () { /* keep optimistic state */ });
@@ -4472,7 +4472,7 @@
     }
   }
 
-  // Dismiss any open inline-confirm rows in the wallet panel — wired into
+  // Dismiss any open inline-confirm rows in the wallet panel. wired into
   // the global ESC handler so the user can always back out.
   function dismissOpenWalletConfirms() {
     if (!walletTrackedList) return false;
@@ -4571,7 +4571,7 @@
   }
 
   // ── Snapshot popup ──────────────────────────────
-  // Copy-pasteable Markdown brief — the user opens the modal, the text
+  // Copy-pasteable Markdown brief. the user opens the modal, the text
   // auto-fills from /api/snapshot, they hit "copy", paste into ChatGPT /
   // Claude / Gemini, and ask a money question. Replaces the SMS bot.
   // The textarea is re-fetched on every open (the data is point-in-time
@@ -4618,7 +4618,7 @@
       setSnapshotStatus('');
       if (snapshotCopy) snapshotCopy.disabled = !md;
     }).catch(function () {
-      setSnapshotStatus('couldn’t load — refresh and try again.');
+      setSnapshotStatus('couldn’t load. refresh and try again.');
       if (snapshotCopy) snapshotCopy.disabled = true;
     });
   }
@@ -4647,7 +4647,7 @@
       }, 1800);
     }
 
-    // Modern Async Clipboard API — only available on https / localhost.
+    // Modern Async Clipboard API. only available on https / localhost.
     // Fall back to the textarea-select trick if clipboard isn't writable.
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(flashCopied).catch(function () {
@@ -4687,7 +4687,7 @@
     if (snapshotClose)   snapshotClose.addEventListener('click', closeSnapshot);
     if (snapshotOverlay) snapshotOverlay.addEventListener('click', closeSnapshot);
     if (snapshotCopy)    snapshotCopy.addEventListener('click', copySnapshotToClipboard);
-    // The 3 LLM links are <a target="_blank"> — no JS needed; the browser
+    // The 3 LLM links are <a target="_blank">. no JS needed; the browser
     // opens each chat home in a new tab and the user pastes after copy.
   }
 
@@ -4717,7 +4717,7 @@
     wireRecurringEditModal();
     wireWalletBtn();
     wireSnapshotBtn();
-    // Reimbursements + wallet are SWR — hydrate their in-memory caches from
+    // Reimbursements + wallet are SWR. hydrate their in-memory caches from
     // localStorage so the panels paint instantly when opened. Calendar +
     // balances are NOT hydrated; they wait for the live fetches below.
     hydrateFromCache();
@@ -4725,7 +4725,7 @@
     // /api/calendar fetch runs. The page-loader bar communicates the wait.
     renderGrid();
     // Gate the page on /api/me. If the user isn't signed in we'll have
-    // already redirected to "/" — the empty calendar visible during boot is
+    // already redirected to "/". the empty calendar visible during boot is
     // acceptable. The page-loader bar shows progress for all three boot
     // fetches; settle() ensures error paths don't leave the bar stuck.
     startLoading();
@@ -4736,7 +4736,7 @@
       // Prefetch recurring suggestions in the background so the chip badge
       // shows the right "review N" count before the user opens the panel.
       try { fetchRecurringSuggestionsOnce({ force: true }).catch(function () {}); } catch (_) {}
-      // Fetch the calendar window first — its handler triggers a debounced
+      // Fetch the calendar window first. its handler triggers a debounced
       // Plaid sync server-side that may update account balances. Once that
       // promise resolves the sync has either completed or hit its 8s timeout,
       // and the cache-evict in fetchCalendarRange() ensures the balances
@@ -4755,22 +4755,22 @@
           var walletP = fetchWalletOnce({ force: true }).then(function () {
             // If the wallet panel is already open (unlikely on boot) repaint it.
             if (walletPop && walletPop.classList.contains('open')) renderWallet();
-          }).catch(function () { /* silent — balances hero just falls back to plaid-only */ });
+          }).catch(function () { /* silent. balances hero just falls back to plaid-only */ });
           var balancesP = fetchBalancesOnce().then(function (payload) {
             // Wait on the wallet prefetch so renderBalances picks up tracked
             // totals on the very first paint. Race resolved by Promise.all
-            // resolving once both settle (or one rejects — wallet rejection
+            // resolving once both settle (or one rejects. wallet rejection
             // already swallowed above so this Promise.all only rejects on
             // balances).
             return Promise.all([walletP]).then(function () {
               if (payload) renderBalances(payload);
             });
-          }).catch(function () { /* silent — projection just stays hidden */ });
+          }).catch(function () { /* silent. projection just stays hidden */ });
           settle(balancesP, endLoading);
         }
       });
     }).catch(function () {
-      // Network hiccup or 5xx — leave the page visible; user can retry by
+      // Network hiccup or 5xx. leave the page visible; user can retry by
       // reloading. We deliberately don't hard-redirect so a transient error
       // doesn't kick a signed-in user out.
     }), endLoading);

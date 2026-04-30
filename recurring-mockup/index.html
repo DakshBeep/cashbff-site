@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>recurring · llm brain mockup · cash bff</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
+
+  <style>
+    @font-face {
+      font-family: 'Greed Condensed';
+      src: url('../fonts/GreedCondensed-Bold.woff2') format('woff2');
+      font-weight: 700; font-display: swap;
+    }
+    @font-face {
+      font-family: 'Greed Condensed';
+      src: url('../fonts/GreedCondensed-Medium.woff2') format('woff2');
+      font-weight: 500; font-display: swap;
+    }
+    :root {
+      --cash-green: #014751;
+      --electric-green: #D3FFB4;
+      --periwinkle: #C5B6F1;
+      --sage: #DFEDE0;
+      --off-black: #1A1717;
+      --vanilla: #FCFAF2;
+      --font-display: 'Greed Condensed', 'Archivo Narrow', 'Arial Narrow', Impact, sans-serif;
+      --font-body: 'Instrument Sans', system-ui, -apple-system, sans-serif;
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: var(--font-body);
+      background: var(--vanilla);
+      color: var(--off-black);
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.5;
+      min-height: 100dvh;
+    }
+    button { font-family: inherit; cursor: pointer; border: none; background: none; }
+
+    .review-strip {
+      text-align: center;
+      font-size: 0.7rem;
+      color: var(--off-black);
+      opacity: 0.45;
+      padding: 0.7rem 1rem;
+      letter-spacing: 0.04em;
+      font-weight: 500;
+      border-bottom: 1px dashed rgba(1,71,81,0.18);
+    }
+    .review-strip b { color: var(--cash-green); opacity: 1; font-weight: 700; }
+
+    .bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1.25rem 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-weight: 700; font-size: 1.5rem;
+      letter-spacing: -0.02em;
+      color: var(--cash-green);
+    }
+    .nav-tag {
+      font-size: 0.68rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      opacity: 0.5;
+      font-weight: 600;
+      color: var(--cash-green);
+    }
+
+    main {
+      max-width: 60rem;
+      margin: 0 auto;
+      padding: 1rem 2rem 6rem;
+    }
+
+    .lede {
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: 2.4rem;
+      color: var(--cash-green);
+      letter-spacing: -0.01em;
+      line-height: 1;
+      margin-bottom: 0.4rem;
+    }
+    .sublede {
+      font-size: 0.92rem;
+      opacity: 0.7;
+      margin-bottom: 2.2rem;
+      max-width: 38rem;
+    }
+    .sublede em { color: var(--cash-green); font-style: italic; }
+
+    /* ── Stage tabs ─────────────────────────────────── */
+    .stage-tabs {
+      display: flex;
+      gap: 0.4rem;
+      margin-bottom: 1.4rem;
+      flex-wrap: wrap;
+    }
+    .stage-tab {
+      font-size: 0.72rem;
+      padding: 0.45rem 0.9rem;
+      border-radius: 999px;
+      border: 1px solid rgba(1,71,81,0.18);
+      background: transparent;
+      color: var(--cash-green);
+      letter-spacing: 0.02em;
+      font-weight: 500;
+      transition: all 0.15s ease;
+    }
+    .stage-tab.is-active {
+      background: var(--cash-green);
+      color: var(--vanilla);
+      border-color: var(--cash-green);
+    }
+    .stage-tab:hover:not(.is-active) {
+      background: rgba(1,71,81,0.06);
+    }
+
+    /* ── Stage container ────────────────────────────── */
+    .stage {
+      display: none;
+      animation: fadeUp 0.4s ease-out;
+    }
+    .stage.is-active { display: block; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Phone frame ────────────────────────────────── */
+    .phone {
+      max-width: 26rem;
+      margin: 0 auto;
+      background: var(--vanilla);
+      border-radius: 28px;
+      box-shadow: 0 24px 60px -22px rgba(26,23,23,0.25),
+                  0 0 0 1px rgba(1,71,81,0.08);
+      overflow: hidden;
+      position: relative;
+    }
+    .phone__head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.9rem 1.2rem 0.5rem;
+    }
+    .phone__brand {
+      font-family: var(--font-display);
+      font-weight: 700; font-size: 1.05rem;
+      color: var(--cash-green);
+    }
+    .phone__time {
+      font-size: 0.7rem; opacity: 0.5;
+    }
+    .phone__body {
+      padding: 0.6rem 1.2rem 1.6rem;
+    }
+
+    /* ── Chip row (matches home.html) ──────────────── */
+    .chip-row {
+      display: flex;
+      gap: 0.35rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.72rem;
+      padding: 0.32rem 0.7rem;
+      border-radius: 999px;
+      background: rgba(1,71,81,0.06);
+      color: var(--cash-green);
+      font-weight: 500;
+    }
+    .chip.is-hot {
+      background: var(--electric-green);
+      color: var(--cash-green);
+      font-weight: 600;
+    }
+    .chip__count {
+      display: inline-flex;
+      align-items: center; justify-content: center;
+      width: 1.05rem; height: 1.05rem;
+      border-radius: 50%;
+      background: var(--cash-green);
+      color: var(--vanilla);
+      font-size: 0.65rem;
+      font-weight: 600;
+    }
+
+    /* ── Sunday card (the surface) ─────────────────── */
+    .surface {
+      background: var(--electric-green);
+      border-radius: 18px;
+      padding: 1.1rem 1.25rem;
+      margin-bottom: 1rem;
+      position: relative;
+    }
+    .surface__eyebrow {
+      font-size: 0.65rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--cash-green);
+      opacity: 0.7;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+    .surface__hed {
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: 1.55rem;
+      color: var(--cash-green);
+      line-height: 1;
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.005em;
+    }
+    .surface__sub {
+      font-size: 0.8rem;
+      color: var(--cash-green);
+      opacity: 0.85;
+      margin-bottom: 0.9rem;
+    }
+    .surface__cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: var(--cash-green);
+      color: var(--vanilla);
+      padding: 0.55rem 1rem;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 500;
+    }
+    .surface__cta::after { content: "→"; font-size: 0.85rem; }
+
+    /* ── Brain readout ─────────────────────────────── */
+    .brainline {
+      display: flex; align-items: center; gap: 0.5rem;
+      font-size: 0.7rem;
+      opacity: 0.55;
+      margin-top: 0.7rem;
+    }
+    .brainline__dot {
+      display: inline-block;
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--cash-green);
+      animation: pulse 1.6s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.5; }
+      50%      { opacity: 1; }
+    }
+
+    /* ── Review card (the whole point) ─────────────── */
+    .review {
+      background: var(--vanilla);
+      border-radius: 18px;
+      padding: 1.2rem;
+      box-shadow: 0 0 0 1px rgba(1,71,81,0.12);
+    }
+    .review__hed {
+      display: flex; justify-content: space-between; align-items: baseline;
+      margin-bottom: 0.6rem;
+    }
+    .review__merchant {
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: 1.45rem;
+      color: var(--cash-green);
+      line-height: 1;
+    }
+    .review__count {
+      font-size: 0.7rem; opacity: 0.55;
+    }
+    .review__amount {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 2rem;
+      color: var(--off-black);
+      letter-spacing: -0.01em;
+      line-height: 1;
+      margin-bottom: 0.15rem;
+    }
+    .review__cadence {
+      font-size: 0.78rem;
+      opacity: 0.7;
+      margin-bottom: 1rem;
+      font-style: italic;
+    }
+    .review__cadence em {
+      color: var(--cash-green);
+      font-style: normal;
+      font-weight: 500;
+    }
+
+    /* Mini-timeline of past charges. */
+    .timeline {
+      display: flex;
+      gap: 0.4rem;
+      margin-bottom: 0.85rem;
+      align-items: flex-end;
+    }
+    .timeline__tick {
+      flex: 1;
+      display: flex; flex-direction: column;
+      align-items: center;
+      gap: 0.3rem;
+    }
+    .timeline__bar {
+      width: 100%; min-height: 14px;
+      background: var(--periwinkle);
+      border-radius: 4px;
+      opacity: 0.85;
+    }
+    .timeline__bar.is-projected {
+      background: transparent;
+      border: 1px dashed var(--cash-green);
+      opacity: 0.65;
+    }
+    .timeline__label {
+      font-size: 0.62rem;
+      opacity: 0.55;
+    }
+
+    .reasoning {
+      background: rgba(1,71,81,0.04);
+      border-radius: 10px;
+      padding: 0.75rem 0.85rem;
+      font-size: 0.78rem;
+      line-height: 1.5;
+      color: var(--off-black);
+      opacity: 0.85;
+      margin-bottom: 1rem;
+      border-left: 2px solid var(--cash-green);
+    }
+    .reasoning::before {
+      content: "her brain says ";
+      font-size: 0.62rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      opacity: 0.6;
+      font-weight: 600;
+      display: block;
+      margin-bottom: 0.3rem;
+    }
+
+    .review__actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+    }
+    .btn {
+      padding: 0.65rem 0.9rem;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: 500;
+      transition: all 0.15s ease;
+    }
+    .btn--primary {
+      background: var(--cash-green);
+      color: var(--vanilla);
+    }
+    .btn--primary:hover {
+      background: var(--off-black);
+    }
+    .btn--secondary {
+      background: rgba(1,71,81,0.08);
+      color: var(--cash-green);
+    }
+    .btn--secondary:hover {
+      background: rgba(1,71,81,0.14);
+    }
+    .btn--text {
+      grid-column: 1 / -1;
+      background: transparent;
+      color: var(--cash-green);
+      opacity: 0.55;
+      font-size: 0.74rem;
+      font-weight: 500;
+      padding: 0.4rem;
+    }
+    .btn--text:hover { opacity: 1; }
+
+    /* ── Calendar after-state ──────────────────────── */
+    .cal {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+      font-size: 0.7rem;
+      margin-bottom: 1rem;
+    }
+    .cal__head {
+      font-size: 0.6rem;
+      opacity: 0.5;
+      text-align: center;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.3rem 0;
+    }
+    .cal__day {
+      aspect-ratio: 1;
+      border-radius: 8px;
+      background: rgba(1,71,81,0.04);
+      padding: 4px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      font-size: 0.62rem;
+    }
+    .cal__day.is-out { opacity: 0.3; }
+    .cal__day.is-today {
+      background: var(--cash-green);
+      color: var(--vanilla);
+    }
+    .cal__date {
+      font-weight: 600;
+      opacity: 0.7;
+    }
+    .cal__day.is-today .cal__date { opacity: 1; }
+    .cal__dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      align-self: flex-start;
+    }
+    .cal__dot.is-sub {
+      background: var(--periwinkle);
+    }
+    .cal__dot.is-bill {
+      background: var(--cash-green);
+    }
+    .cal__dot.is-ghost {
+      background: transparent;
+      border: 1px dashed var(--cash-green);
+    }
+
+    /* ── Empty + complete states ───────────────────── */
+    .calm {
+      text-align: center;
+      padding: 1.5rem 1rem 0;
+    }
+    .calm__big {
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: 2rem;
+      color: var(--cash-green);
+      line-height: 1;
+      margin-bottom: 0.5rem;
+    }
+    .calm__sub {
+      font-size: 0.85rem;
+      opacity: 0.7;
+      max-width: 22rem;
+      margin: 0 auto;
+    }
+
+    /* ── Notes column (right side on desktop) ──────── */
+    .desk {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 2rem;
+      align-items: start;
+    }
+    @media (min-width: 64rem) {
+      .desk { grid-template-columns: 1fr 18rem; }
+    }
+    .notes {
+      font-size: 0.85rem;
+      line-height: 1.65;
+    }
+    .notes h3 {
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: 1.15rem;
+      color: var(--cash-green);
+      margin-bottom: 0.4rem;
+      letter-spacing: -0.005em;
+    }
+    .notes p { margin-bottom: 0.85rem; opacity: 0.78; }
+    .notes p strong { color: var(--cash-green); font-weight: 600; opacity: 1; }
+    .notes .small {
+      font-size: 0.72rem; opacity: 0.55;
+      border-top: 1px dashed rgba(1,71,81,0.18);
+      padding-top: 0.7rem;
+      margin-top: 0.7rem;
+    }
+    .notes .small code {
+      background: rgba(1,71,81,0.06);
+      padding: 0.05rem 0.3rem;
+      border-radius: 4px;
+      font-size: 0.95em;
+      color: var(--cash-green);
+    }
+
+    .progress {
+      display: flex; gap: 4px;
+      margin-bottom: 0.9rem;
+    }
+    .progress__seg {
+      height: 3px;
+      flex: 1;
+      background: rgba(1,71,81,0.12);
+      border-radius: 2px;
+    }
+    .progress__seg.is-done { background: var(--cash-green); }
+    .progress__seg.is-cur  { background: var(--periwinkle); }
+  </style>
+</head>
+<body>
+  <div class="review-strip">
+    <b>internal mockup</b> · the recurring transactions feature, as the LLM brain wants to ship it
+  </div>
+
+  <header class="bar">
+    <div class="wordmark">cash bff</div>
+    <div class="nav-tag">recurring · v0</div>
+  </header>
+
+  <main>
+    <h1 class="lede">once a week, your money explains itself.</h1>
+    <p class="sublede">
+      sunday morning, an LLM reads your last 90 days of charges. it surfaces only the
+      patterns it's <em>certain</em> about. you confirm. they land on your calendar.
+      no rules. no false positives. just the future, drawn in.
+    </p>
+
+    <div class="stage-tabs" id="stageTabs">
+      <button class="stage-tab is-active" data-go="0">1 · sunday surface</button>
+      <button class="stage-tab" data-go="1">2 · review (high confidence)</button>
+      <button class="stage-tab" data-go="2">3 · review (uncertain — skip)</button>
+      <button class="stage-tab" data-go="3">4 · all done</button>
+      <button class="stage-tab" data-go="4">5 · the calendar after</button>
+    </div>
+
+    <div class="desk">
+      <div>
+
+        <!-- ── stage 0: sunday surface ─────────────────────── -->
+        <section class="stage is-active" data-stage="0">
+          <div class="phone">
+            <div class="phone__head">
+              <span class="phone__brand">cash bff</span>
+              <span class="phone__time">9:14</span>
+            </div>
+            <div class="phone__body">
+              <div class="chip-row">
+                <span class="chip">+ schedule</span>
+                <span class="chip is-hot">to-do <span class="chip__count">4</span></span>
+                <span class="chip">balances</span>
+                <span class="chip">reimbursements</span>
+                <span class="chip">recurring</span>
+                <span class="chip">👛</span>
+              </div>
+
+              <div class="surface" id="surfaceSeed" style="cursor:pointer">
+                <div class="surface__eyebrow">sunday · brain just ran</div>
+                <div class="surface__hed">i see 4 things that come back every month.</div>
+                <div class="surface__sub">90 seconds to confirm. once you do, they're on your calendar — six months out.</div>
+                <span class="surface__cta">walk me through them</span>
+                <div class="brainline">
+                  <span class="brainline__dot"></span>
+                  read 165 charges across 90 days · grouped 30 merchants · flagged 4 with high confidence
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ── stage 1: review HIGH confidence (Spotify) ─────── -->
+        <section class="stage" data-stage="1">
+          <div class="phone">
+            <div class="phone__head">
+              <span class="phone__brand">cash bff</span>
+              <span class="phone__time">9:15</span>
+            </div>
+            <div class="phone__body">
+              <div class="progress">
+                <div class="progress__seg is-cur"></div>
+                <div class="progress__seg"></div>
+                <div class="progress__seg"></div>
+                <div class="progress__seg"></div>
+              </div>
+
+              <div class="review">
+                <div class="review__hed">
+                  <span class="review__merchant">Spotify</span>
+                  <span class="review__count">1 of 4</span>
+                </div>
+                <div class="review__amount">$5.99</div>
+                <div class="review__cadence">every <em>5th of the month</em> · last 4 months in a row</div>
+
+                <div class="timeline" aria-label="charge history">
+                  <div class="timeline__tick"><div class="timeline__bar" style="height:24px"></div><div class="timeline__label">jul 5</div></div>
+                  <div class="timeline__tick"><div class="timeline__bar" style="height:24px"></div><div class="timeline__label">aug 5</div></div>
+                  <div class="timeline__tick"><div class="timeline__bar" style="height:24px"></div><div class="timeline__label">sep 5</div></div>
+                  <div class="timeline__tick"><div class="timeline__bar" style="height:24px"></div><div class="timeline__label">oct 5</div></div>
+                  <div class="timeline__tick"><div class="timeline__bar is-projected" style="height:24px"></div><div class="timeline__label">nov 5</div></div>
+                  <div class="timeline__tick"><div class="timeline__bar is-projected" style="height:24px"></div><div class="timeline__label">dec 5</div></div>
+                </div>
+
+                <div class="reasoning">
+                  hits on the 5th every month at exactly $5.99. classic subscription — and you also have
+                  Spotify in your active subs list. drawing this forward to may.
+                </div>
+
+                <div class="review__actions">
+                  <button class="btn btn--primary" data-next>yes, draw it forward</button>
+                  <button class="btn btn--secondary" data-next>not this one</button>
+                  <button class="btn btn--text" data-next>edit amount or day →</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ── stage 2: review UNCERTAIN (Apple) ─────────────── -->
+        <section class="stage" data-stage="2">
+          <div class="phone">
+            <div class="phone__head">
+              <span class="phone__brand">cash bff</span>
+              <span class="phone__time">9:16</span>
+            </div>
+            <div class="phone__body">
+              <div class="progress">
+                <div class="progress__seg is-done"></div>
+                <div class="progress__seg is-done"></div>
+                <div class="progress__seg is-cur"></div>
+                <div class="progress__seg"></div>
+              </div>
+
+              <div class="review">
+                <div class="review__hed">
+                  <span class="review__merchant">Apple</span>
+                  <span class="review__count">3 of 4</span>
+                </div>
+                <div class="review__amount">$2.99 – $14.99</div>
+                <div class="review__cadence">amounts vary · could be subs, could be one-offs</div>
+
+                <div class="timeline">
+                  <div class="timeline__tick"><div class="timeline__bar" style="height:14px"></div><div class="timeline__label">jul 9</div></div>
+                  <div class="timeline__tick"><div class="timeline__bar" style="height:30px"></div><div class="timeline__label">aug 2</div></div>
+                  <div class="timeline__tick"><div class="timeline__bar" style="height:18px"></div><div class="timeline__label">aug 22</div></div>
+                  <div class="timeline__tick"><div class="timeline__bar" style="height:24px"></div><div class="timeline__label">sep 14</div></div>
+                  <div class="timeline__tick"><div class="timeline__bar" style="height:12px"></div><div class="timeline__label">oct 4</div></div>
+                </div>
+
+                <div class="reasoning">
+                  apple bills land at irregular dates and the amount jumps around. could be iCloud +
+                  occasional app charges. i don't want to put a number on your calendar i'm not sure
+                  about. <strong>safest to skip — but worth a 5 sec look at apple.com/account if you're curious.</strong>
+                </div>
+
+                <div class="review__actions">
+                  <button class="btn btn--primary" data-next>skip — i'll check apple</button>
+                  <button class="btn btn--secondary" data-next>add the average ($8/mo) anyway</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ── stage 3: complete state ──────────────────────── -->
+        <section class="stage" data-stage="3">
+          <div class="phone">
+            <div class="phone__head">
+              <span class="phone__brand">cash bff</span>
+              <span class="phone__time">9:18</span>
+            </div>
+            <div class="phone__body">
+              <div class="progress">
+                <div class="progress__seg is-done"></div>
+                <div class="progress__seg is-done"></div>
+                <div class="progress__seg is-done"></div>
+                <div class="progress__seg is-done"></div>
+              </div>
+
+              <div class="calm">
+                <div class="calm__big">3 added · 1 skipped</div>
+                <div class="calm__sub">
+                  <strong>spotify · t-mobile · todoist</strong> are now drawn forward six months on your
+                  calendar. apple's still a question mark — that's fine.
+                </div>
+              </div>
+
+              <div style="margin-top: 1.6rem; text-align:center;">
+                <button class="btn btn--primary" data-go="4" style="padding: 0.7rem 1.4rem;">show me the calendar →</button>
+              </div>
+
+              <div style="margin-top: 1.6rem; font-size: 0.72rem; opacity: 0.55; text-align: center;">
+                next sweep: <strong style="color:var(--cash-green)">sunday, may 3</strong> · feel free to go faster: <span style="text-decoration: underline; cursor:pointer;">run again now</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ── stage 4: calendar after ──────────────────────── -->
+        <section class="stage" data-stage="4">
+          <div class="phone">
+            <div class="phone__head">
+              <span class="phone__brand">cash bff</span>
+              <span class="phone__time">9:20</span>
+            </div>
+            <div class="phone__body">
+              <div style="font-size: 0.78rem; opacity: 0.55; margin-bottom: 0.5rem;">may 2026</div>
+              <div class="cal">
+                <div class="cal__head">s</div>
+                <div class="cal__head">m</div>
+                <div class="cal__head">t</div>
+                <div class="cal__head">w</div>
+                <div class="cal__head">t</div>
+                <div class="cal__head">f</div>
+                <div class="cal__head">s</div>
+
+                <div class="cal__day is-out"><span class="cal__date">26</span></div>
+                <div class="cal__day is-out"><span class="cal__date">27</span></div>
+                <div class="cal__day is-out"><span class="cal__date">28</span></div>
+                <div class="cal__day is-out"><span class="cal__date">29</span></div>
+                <div class="cal__day is-out"><span class="cal__date">30</span></div>
+                <div class="cal__day"><span class="cal__date">1</span><span class="cal__dot is-bill"></span></div>
+                <div class="cal__day"><span class="cal__date">2</span></div>
+
+                <div class="cal__day"><span class="cal__date">3</span></div>
+                <div class="cal__day"><span class="cal__date">4</span></div>
+                <div class="cal__day"><span class="cal__date">5</span><span class="cal__dot is-sub"></span></div>
+                <div class="cal__day"><span class="cal__date">6</span></div>
+                <div class="cal__day"><span class="cal__date">7</span></div>
+                <div class="cal__day"><span class="cal__date">8</span></div>
+                <div class="cal__day"><span class="cal__date">9</span></div>
+
+                <div class="cal__day"><span class="cal__date">10</span><span class="cal__dot is-sub"></span></div>
+                <div class="cal__day"><span class="cal__date">11</span></div>
+                <div class="cal__day"><span class="cal__date">12</span></div>
+                <div class="cal__day is-today"><span class="cal__date">13</span></div>
+                <div class="cal__day"><span class="cal__date">14</span></div>
+                <div class="cal__day"><span class="cal__date">15</span><span class="cal__dot is-bill"></span></div>
+                <div class="cal__day"><span class="cal__date">16</span></div>
+
+                <div class="cal__day"><span class="cal__date">17</span></div>
+                <div class="cal__day"><span class="cal__date">18</span></div>
+                <div class="cal__day"><span class="cal__date">19</span></div>
+                <div class="cal__day"><span class="cal__date">20</span></div>
+                <div class="cal__day"><span class="cal__date">21</span></div>
+                <div class="cal__day"><span class="cal__date">22</span></div>
+                <div class="cal__day"><span class="cal__date">23</span></div>
+
+                <div class="cal__day"><span class="cal__date">24</span></div>
+                <div class="cal__day"><span class="cal__date">25</span></div>
+                <div class="cal__day"><span class="cal__date">26</span></div>
+                <div class="cal__day"><span class="cal__date">27</span></div>
+                <div class="cal__day"><span class="cal__date">28</span></div>
+                <div class="cal__day"><span class="cal__date">29</span></div>
+                <div class="cal__day"><span class="cal__date">30</span></div>
+              </div>
+
+              <div style="font-size: 0.7rem; opacity: 0.6; display: flex; gap: 1rem; margin-bottom: 0.8rem;">
+                <span style="display:inline-flex; align-items:center; gap:0.3rem;"><span class="cal__dot is-sub" style="display:inline-block"></span> subscription</span>
+                <span style="display:inline-flex; align-items:center; gap:0.3rem;"><span class="cal__dot is-bill" style="display:inline-block"></span> bill</span>
+              </div>
+
+              <div style="background: rgba(1,71,81,0.04); padding: 0.75rem 0.85rem; border-radius: 10px; font-size: 0.78rem; line-height: 1.5; opacity: 0.85;">
+                <strong style="color: var(--cash-green); font-weight: 600;">may 13 · running balance:</strong>
+                $1,131 · after your plans this month: <strong style="color: var(--cash-green); font-weight: 600;">$842</strong>
+                <br>
+                <span style="opacity: 0.7;">→ the LLM-confirmed recurring rows are doing the math now. no more guessing.</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- ── notes column ─────────────────────────────── -->
+      <aside class="notes">
+        <h3>why this shape</h3>
+
+        <p>
+          <strong>not a feature page.</strong> the LLM brain runs once a week
+          on the back end. she only sees a single soft surface on home —
+          the green card on stage 1.
+        </p>
+
+        <p>
+          <strong>review one at a time.</strong> ASD-respecting. one
+          merchant per screen. confidence + reasoning visible. yes / no /
+          edit. nothing else to think about.
+        </p>
+
+        <p>
+          <strong>uncertain ≠ shown to user.</strong> the high-confidence
+          bucket is the only one that triggers a to-do. <code>recurring_likely</code> stays
+          internal — surfaced quietly in the recurring tab if she ever
+          opens it, but never as a prompt.
+        </p>
+
+        <p>
+          <strong>she stays in charge.</strong> approved patterns become real
+          <code>scheduled_txns</code> rows — same shape as anything she added
+          by hand. trash + edit work. running balance updates the second
+          she taps yes.
+        </p>
+
+        <div class="small">
+          <strong>under the hood (per the prototype):</strong><br>
+          last 90 days · grouped by <code>normalized_merchant</code> · ≥2 charges · one Sonnet 4.6 call
+          with <code>cache_control: ephemeral</code> · cost <strong>$0.015–0.04 / sweep</strong> ·
+          weekly = ~<strong>$0.06 / user / month</strong>.
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <script>
+    // wire stage tabs + advance buttons
+    const tabs = document.querySelectorAll('.stage-tab');
+    const stages = document.querySelectorAll('.stage');
+
+    function go(i) {
+      const idx = Math.max(0, Math.min(stages.length - 1, Number(i)));
+      stages.forEach((s, j) => s.classList.toggle('is-active', j === idx));
+      tabs.forEach((t, j) => t.classList.toggle('is-active', j === idx));
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    tabs.forEach((t) => t.addEventListener('click', () => go(t.dataset.go)));
+    document.getElementById('surfaceSeed')?.addEventListener('click', () => go(1));
+
+    // any [data-next] button advances the stage; [data-go] jumps directly
+    document.addEventListener('click', (e) => {
+      const next = e.target.closest('[data-next]');
+      const jump = e.target.closest('[data-go]');
+      if (jump && jump.dataset.go) { go(jump.dataset.go); return; }
+      if (next) {
+        const cur = Array.from(stages).findIndex((s) => s.classList.contains('is-active'));
+        go(cur + 1);
+      }
+    });
+  </script>
+</body>
+</html>

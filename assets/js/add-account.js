@@ -1,4 +1,4 @@
-// add-account.js — modal state machine for the "+ add account" flow.
+// add-account.js. modal state machine for the "+ add account" flow.
 //
 // Exposes window.CashBFFAddAccount.{open, close} so home.js (and keyboard
 // shortcuts) can trigger it without reaching into DOM internals.
@@ -145,7 +145,7 @@
       }
       close();
     }).catch(function () {
-      // Backend not ready (404) or network hiccup — fall back to localStorage
+      // Backend not ready (404) or network hiccup. fall back to localStorage
       // so the user still sees their card on the canvas.
       if (window.CashBFFHome && window.CashBFFHome.addLocalCard) {
         window.CashBFFHome.addLocalCard(payload);

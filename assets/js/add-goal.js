@@ -1,4 +1,4 @@
-// add-goal.js — modal state machine for the goal-tile intention-setting flow.
+// add-goal.js. modal state machine for the goal-tile intention-setting flow.
 //
 // Exposes window.CashBFFGoal.{open, close} (merging with the shell that
 // home.js sets up, which already provides .render/.save/.current).
@@ -148,7 +148,7 @@
       persistLocal(next);
       close();
     }).catch(function () {
-      // Backend not deployed or offline — keep the user moving.
+      // Backend not deployed or offline. keep the user moving.
       var next = {
         id: editingId || null,
         text: text

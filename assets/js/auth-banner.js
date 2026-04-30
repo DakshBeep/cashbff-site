@@ -1,4 +1,4 @@
-// auth-banner.js — shared "go to my home" pill for marketing + onboarding
+// auth-banner.js. shared "go to my home" pill for marketing + onboarding
 // pages. Phase 9A pivots away from the previous "if /api/me 200, hard-redirect
 // to /home.html" pattern: a logged-in user can now browse marketing pages
 // (index.html, school.html) AND the funnel pages (verify, connect, paywall,
@@ -8,7 +8,7 @@
 // Usage from a page's own JS:
 //   1. After /api/me returns 200, set window.__authedUser = data.
 //   2. Call showAuthHomeButton(). On 401 or net error, call hideAuthHomeButton()
-//      (or just don't call show). Idempotent on both sides — safe to call
+//      (or just don't call show). Idempotent on both sides. safe to call
 //      multiple times.
 //   3. For "functional flow" pages (verify, connect, paywall, plan,
 //      school-login) call hidePageInteractionForAuthed() to dim/hide the
@@ -28,7 +28,7 @@
   const SIGNED_IN_NOTE_ID = 'cbff-signed-in-note';
   const HIDE_CLASS = 'cbff-authed-hide';
 
-  // Brand-token CSS — cash-green pill with vanilla text. Designed to land in
+  // Brand-token CSS. cash-green pill with vanilla text. Designed to land in
   // the top-right corner of the viewport without overlapping any of the
   // existing page chrome (wordmark sits top-left). At 375px we shrink the
   // padding so the pill stays clear of the existing top bar.
@@ -136,7 +136,7 @@
 
   // Hide a list of selectors (the page's primary CTA / form). Used by the
   // "functional flow" pages (verify, connect, paywall, plan, school-login)
-  // when the visitor is already authed — we don't want them re-triggering
+  // when the visitor is already authed. we don't want them re-triggering
   // OTP, Plaid, Stripe, or otherwise re-entering a flow they've completed.
   // `noteOpts` lets each page customise the friendly inline message that
   // replaces the form. Pass `mountSelector` as the element AFTER which the
@@ -150,17 +150,17 @@
           document.querySelectorAll(sel).forEach(function (el) {
             el.classList.add(HIDE_CLASS);
           });
-        } catch (_) { /* bad selector — skip */ }
+        } catch (_) { /* bad selector. skip */ }
       });
     }
     if (noteOpts && !document.getElementById(SIGNED_IN_NOTE_ID)) {
       const note = document.createElement('div');
       note.id = SIGNED_IN_NOTE_ID;
       note.setAttribute('role', 'status');
-      // Keep the message minimal — the pill is the call to action.
+      // Keep the message minimal. the pill is the call to action.
       const heading = (noteOpts.heading || "you're already signed in.").toString();
       const body    = (noteOpts.body    || 'jump back to your home whenever.').toString();
-      // textContent everywhere — never set innerHTML from caller-controlled
+      // textContent everywhere. never set innerHTML from caller-controlled
       // strings, since the message could conceivably embed a username.
       const h = document.createElement('strong');
       h.textContent = heading;

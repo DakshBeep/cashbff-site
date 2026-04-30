@@ -1,4 +1,4 @@
-// home-bloom-v2.js — scatter / seedbed. Asymmetric absolute layout, breeze-bob.
+// home-bloom-v2.js. scatter / seedbed. Asymmetric absolute layout, breeze-bob.
 (function () {
   const MOCK_CARDS = [
     { institution: "Capital One",     mask: "4471", balance: 847.22,  limit: 2500 },

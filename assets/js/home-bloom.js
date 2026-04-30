@@ -1,4 +1,4 @@
-// home-bloom.js — dummy review page. Size varies inversely with balance.
+// home-bloom.js. dummy review page. Size varies inversely with balance.
 (function () {
   const MOCK_CARDS = [
     { institution: "Capital One",     mask: "4471", balance: 847.22,  limit: 2500 },
@@ -31,7 +31,7 @@
     return String(raw || '').toLowerCase().trim().replace(/[<>&"]/g, '');
   }
 
-  // Sort ascending by balance — smallest first (biggest on screen).
+  // Sort ascending by balance. smallest first (biggest on screen).
   const sorted = MOCK_CARDS.slice().sort((a, b) => a.balance - b.balance);
 
   const container = document.getElementById('bloom');

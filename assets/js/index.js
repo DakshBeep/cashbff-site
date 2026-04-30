@@ -1,4 +1,4 @@
-// index.js — Plaid-first onboarding funnel for cashbff.com.
+// index.js. Plaid-first onboarding funnel for cashbff.com.
 //
 // State machine (one section visible at a time):
 //   STATE_CONNECT          → big "connect your bank" CTA + sign-in link.
@@ -6,12 +6,12 @@
 //                            "connecting…" backdrop in case the modal flickers.
 //   STATE_PHONE            → after exchange. Heading shows the institution.
 //   STATE_OTP              → after send-otp. Single 6-digit field.
-//   STATE_RETURNING_PHONE  → "already have an account" entry — talks to the
+//   STATE_RETURNING_PHONE  → "already have an account" entry. talks to the
 //                            existing /api/otp/* endpoints, NOT /signup/*.
 //   STATE_RETURNING_OTP    → 6-digit code for returning users.
 //
 // Phase 9A: this is a marketing page. If the user is already authed we no
-// longer auto-redirect to /home.html — instead we let the funnel render and
+// longer auto-redirect to /home.html. instead we let the funnel render and
 // paint a small "my home →" pill via showAuthHomeButton() so they can jump
 // back whenever. The funnel itself stays interactive in case they want to
 // poke at it (e.g. exploring the demo flow).
@@ -87,7 +87,7 @@
     hideBanner();
     // Compact the tilted credit-card hero once we leave STATE_CONNECT so
     // the form panel below it gets vertical room. The card stays mounted
-    // (visual continuity) — it just shrinks via .is-compact + a CSS
+    // (visual continuity). it just shrinks via .is-compact + a CSS
     // transform.
     if (cardStage) {
       if (name === STATE_CONNECT) cardStage.classList.remove('is-compact');
@@ -128,7 +128,7 @@
     return '+1 (' + last.slice(0, 3) + ') ' + last.slice(3, 6) + '-' + last.slice(6);
   }
 
-  // Phone formatter — pretty-print as the user types (display only; we
+  // Phone formatter. pretty-print as the user types (display only; we
   // re-extract digits on submit so paste / partial entries still work).
   function formatPhoneDisplay(input) {
     const d = String(input.value || '').replace(/\D/g, '').slice(0, 10);
@@ -185,7 +185,7 @@
   // Hit /api/me at boot to detect whether the visitor already has a session.
   // If so we paint the "my home →" pill and stash the user so other helpers
   // can read it; we no longer hard-redirect away from this marketing page.
-  // 401 / network errors fall through silently — the funnel renders normally.
+  // 401 / network errors fall through silently. the funnel renders normally.
   async function probeAuthAndPaintBanner() {
     try {
       const res = await fetch(API_BASE + '/api/me', {
@@ -201,7 +201,7 @@
         }
         return true;
       }
-    } catch (_) { /* offline / DNS — render the funnel anyway */ }
+    } catch (_) { /* offline / DNS. render the funnel anyway */ }
     return false;
   }
 
@@ -224,7 +224,7 @@
     });
   }
 
-  // ── Signup flow — Plaid Link ────────────────────
+  // ── Signup flow. Plaid Link ────────────────────
   async function startSignupFlow() {
     if (inFlight) return;
     inFlight = true;
@@ -240,7 +240,7 @@
       }
       linkToken = r.data.link_token;
     } catch (_) {
-      showBanner("we couldn't reach the bank service — give it a sec and try again.", 'error');
+      showBanner("we couldn't reach the bank service. give it a sec and try again.", 'error');
       inFlight = false;
       if (connectBtn) connectBtn.disabled = false;
       return;
@@ -249,7 +249,7 @@
     // 2. Make sure the Plaid SDK is loaded (handles slow CDN / iOS).
     const plaidReady = await waitForPlaid(4000);
     if (!plaidReady) {
-      showBanner("plaid didn't load — check your connection and try again.", 'error');
+      showBanner("plaid didn't load. check your connection and try again.", 'error');
       inFlight = false;
       if (connectBtn) connectBtn.disabled = false;
       return;
@@ -266,7 +266,7 @@
       handler.open();
     } catch (_) {
       showState(STATE_CONNECT);
-      showBanner("we couldn't open the bank picker — try again.", 'error');
+      showBanner("we couldn't open the bank picker. try again.", 'error');
       inFlight = false;
       if (connectBtn) connectBtn.disabled = false;
     }
@@ -292,7 +292,7 @@
       showState(STATE_PHONE);
     } catch (_) {
       showState(STATE_CONNECT);
-      showBanner("we connected but couldn't save it — one more try?", 'error');
+      showBanner("we connected but couldn't save it. one more try?", 'error');
       inFlight = false;
       if (connectBtn) connectBtn.disabled = false;
     }
@@ -309,17 +309,17 @@
     // we transition back to the connect state.
     showState(STATE_CONNECT);
     if (err) {
-      showBanner("plaid closed before we finished — try again whenever.", 'error');
+      showBanner("plaid closed before we finished. try again whenever.", 'error');
     } else {
-      showBanner("no worries — try again whenever.", 'info');
+      showBanner("no worries. try again whenever.", 'info');
     }
   }
 
-  // ── Signup flow — phone + OTP ───────────────────
+  // ── Signup flow. phone + OTP ───────────────────
   async function sendSignupOtp(phoneE164) {
     const r = await api('POST', '/api/signup/send-otp', { phone: phoneE164 });
     if (r.status === 429) {
-      showBanner('slow down — too many codes. try again in a bit.', 'error');
+      showBanner('slow down. too many codes. try again in a bit.', 'error');
       return false;
     }
     if (!r.ok || !r.data || r.data.ok !== true) {
@@ -334,7 +334,7 @@
     const raw = phoneInput ? phoneInput.value : '';
     const phone = e164(raw);
     if (!phone) {
-      showBanner("that number doesn't look right — give it another try?", 'error');
+      showBanner("that number doesn't look right. give it another try?", 'error');
       return;
     }
     sendOtpBtn.disabled = true;
@@ -361,7 +361,7 @@
     }
     if (!signupPhoneE164) {
       // Edge case: the user reloaded the page mid-flow. Send them back.
-      showBanner('your phone got cleared — start again.', 'error');
+      showBanner('your phone got cleared. start again.', 'error');
       showState(STATE_PHONE);
       return;
     }
@@ -374,7 +374,7 @@
         phone: signupPhoneE164, code: code,
       });
       if (!r.ok || !r.data || r.data.ok !== true) {
-        showBanner("that code didn't match — try again?", 'error');
+        showBanner("that code didn't match. try again?", 'error');
         if (otpInput) { otpInput.value = ''; otpInput.focus(); }
         verifyOtpBtn.disabled = false;
         verifyOtpBtn.textContent = orig;
@@ -384,7 +384,7 @@
       const dest = (r.data && r.data.redirect) || '/home.html';
       location.href = dest;
     } catch (_) {
-      showBanner('network hiccup — try again in a sec.', 'error');
+      showBanner('network hiccup. try again in a sec.', 'error');
       verifyOtpBtn.disabled = false;
       verifyOtpBtn.textContent = orig;
     }
@@ -431,7 +431,7 @@
   async function sendReturningOtp(phoneE164Local) {
     const r = await api('POST', '/api/otp/send', { phone: phoneE164Local });
     if (r.status === 429) {
-      showBanner('slow down — too many codes. try again in a bit.', 'error');
+      showBanner('slow down. too many codes. try again in a bit.', 'error');
       return false;
     }
     if (!r.ok) {
@@ -446,7 +446,7 @@
     const raw = returningPhoneInput ? returningPhoneInput.value : '';
     const phone = e164(raw);
     if (!phone) {
-      showBanner("that number doesn't look right — give it another try?", 'error');
+      showBanner("that number doesn't look right. give it another try?", 'error');
       return;
     }
     returningSendBtn.disabled = true;
@@ -471,7 +471,7 @@
       return;
     }
     if (!returningPhoneE164) {
-      showBanner('your phone got cleared — start again.', 'error');
+      showBanner('your phone got cleared. start again.', 'error');
       showState(STATE_RETURNING_PHONE);
       return;
     }
@@ -484,16 +484,16 @@
         phone: returningPhoneE164, code: code,
       });
       if (!r.ok || !r.data || r.data.ok !== true) {
-        showBanner("that code didn't match — try again?", 'error');
+        showBanner("that code didn't match. try again?", 'error');
         if (returningOtpInput) { returningOtpInput.value = ''; returningOtpInput.focus(); }
         returningVerifyBtn.disabled = false;
         returningVerifyBtn.textContent = orig;
         return;
       }
-      // Returning users always go home — their session is set.
+      // Returning users always go home. their session is set.
       location.href = '/home.html';
     } catch (_) {
-      showBanner('network hiccup — try again in a sec.', 'error');
+      showBanner('network hiccup. try again in a sec.', 'error');
       returningVerifyBtn.disabled = false;
       returningVerifyBtn.textContent = orig;
     }
@@ -534,7 +534,7 @@
     if (connectBtn) connectBtn.addEventListener('click', startSignupFlow);
     if (returningLink) returningLink.addEventListener('click', handleReturningStart);
 
-    // Phone formatters — pretty-print as user types.
+    // Phone formatters. pretty-print as user types.
     if (phoneInput) {
       phoneInput.addEventListener('input', () => formatPhoneDisplay(phoneInput));
       // Pressing Enter inside the form submits the send-otp action.
@@ -549,7 +549,7 @@
       });
     }
 
-    // OTP fields — strip non-digits + auto-submit on 6.
+    // OTP fields. strip non-digits + auto-submit on 6.
     if (otpInput) {
       otpInput.addEventListener('input', () => {
         const cleaned = otpInput.value.replace(/\D/g, '').slice(0, 6);
@@ -592,7 +592,7 @@
     probeAuthAndPaintBanner().catch(() => {});
   })();
 
-  // Test hook — only exposed in non-prod-like environments. Some Playwright
+  // Test hook. only exposed in non-prod-like environments. Some Playwright
   // mocks need to skip the auto-redirect or peek at the state machine. We
   // gate this behind a query param so prod users never see it.
   try {

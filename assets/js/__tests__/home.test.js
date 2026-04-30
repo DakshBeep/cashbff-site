@@ -2,7 +2,7 @@
 //
 // Bug 1: clicking a day in the calendar showed "running balance: $25.00" /
 // "after your plans this day: $0.00" when the user actually had $1000+ cash.
-// The prior code used the day's own outflow as the "running balance" line —
+// The prior code used the day's own outflow as the "running balance" line.
 // not the carry-forward projection the label promises.
 //
 // home.js is an IIFE that auto-runs on import. It mounts pure-math helpers
@@ -135,7 +135,7 @@ describe('computeDayProjection', () => {
       summary: { running_balance_usd: 1000 },
     });
     math.__setPrecommitsForTest([
-      // This one is ON the clicked day — must be excluded from running.
+      // This one is ON the clicked day. must be excluded from running.
       { date: '2026-04-29', amount: 200, type: 'sub', source: 'scheduled' },
     ]);
     const out = math.computeDayProjection(new Date(2026, 3, 29));
@@ -143,7 +143,7 @@ describe('computeDayProjection', () => {
   });
 
   it('does NOT include today\'s own scheduled txns (already reflected in base)', () => {
-    // Today=Apr 27, click Apr 29. Scheduled $40 on Apr 27 (today) — wallet
+    // Today=Apr 27, click Apr 29. Scheduled $40 on Apr 27 (today). wallet
     // already reflects today's settled spend; we don't double-count.
     math.__setWalletCacheForTest({
       summary: { running_balance_usd: 1000 },
@@ -184,7 +184,7 @@ describe('computeDayProjection', () => {
       summary: { running_balance_usd: 750 },
     });
     math.__setPrecommitsForTest([
-      // Future scheduled — irrelevant when clicking today.
+      // Future scheduled. irrelevant when clicking today.
       { date: '2026-04-29', amount: 25, type: 'sub', source: 'scheduled' },
     ]);
     const out = math.computeDayProjection(new Date(2026, 3, 27));
@@ -207,16 +207,16 @@ describe('computeDayProjection', () => {
   // The user's habit when a recurring expense charges early is to delete the
   // future calendar projection. With acknowledge soft-delete, the row stays
   // visible greyed-out as a paid reminder, but it does NOT contribute to
-  // the projected running balance — the actual charge will appear in
+  // the projected running balance. the actual charge will appear in
   // raw_transactions and reduce the balance there.
   it('skips acknowledged scheduled rows in the projection (Phase 10B)', () => {
     math.__setWalletCacheForTest({
       summary: { running_balance_usd: 1000 },
     });
     math.__setPrecommitsForTest([
-      // Active future scheduled — DOES count toward projection.
+      // Active future scheduled. DOES count toward projection.
       { date: '2026-04-28', amount: 50, type: 'sub', source: 'scheduled' },
-      // Acknowledged ("paid") future scheduled — DOES NOT count.
+      // Acknowledged ("paid") future scheduled. DOES NOT count.
       {
         date: '2026-04-28',
         amount: 200,

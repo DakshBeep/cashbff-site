@@ -10,7 +10,7 @@
   ></script>
   <script src="/assets/js/sentry-init.js"></script>
   <title>cashbff for students</title>
-  <meta name="description" content="cashbff for students — free until you turn 18, no bank connection needed. just a calendar and your scheduled expenses.">
+  <meta name="description" content="cashbff for students. free until you turn 18, no bank connection needed. just a calendar and your scheduled expenses.">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -591,7 +591,7 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── Success — share URL row ─────────────────── */
+    /* ── Success. share URL row ─────────────────── */
     .share-row {
       display: flex;
       gap: 0.5rem;
@@ -636,7 +636,7 @@
     }
 
     /* ── Footer ───────────────────────────────────── */
-    /* `flex-wrap` keeps the row from breaking words at 375px — see
+    /* `flex-wrap` keeps the row from breaking words at 375px. see
        index.html for the full reasoning. */
     .page-foot {
       flex-shrink: 0;
@@ -757,7 +757,7 @@
         then a year more<span class="period">.</span>
       </h1>
       <p class="sub">
-        the version of cashbff that's free until you're 18 — no bank connection, no SMS, just the calendar.
+        no bank needed. just the calendar.
       </p>
     </section>
 
@@ -765,18 +765,11 @@
     <main class="funnel" id="funnel">
       <div class="banner" id="banner" role="status" aria-live="polite" hidden></div>
 
-      <!-- ── State 1 — form ─────────────────────────── -->
+      <!-- ── State 1. form ─────────────────────────── -->
       <section class="state is-active" id="state-form" data-state="form" aria-label="sign up form">
         <div class="panel">
           <div class="panel__step">step 1 of 1</div>
           <h2 class="panel__title">we just need a parent to sign you up</h2>
-          <p class="panel__sub">
-            you're under 18, so the law says a parent has to say it's ok. they only need to do this once — fill it in, hit submit, and we'll set you up.
-          </p>
-
-          <div class="why-parent">
-            <strong>quick heads up:</strong> your parent's submission counts as legal consent for you to use cashbff for free until you turn 18 (plus a free year after that). after that, it's the regular plaid version.
-          </div>
 
           <form id="school-form" novalidate autocomplete="on">
             <!-- Parent block -->
@@ -853,7 +846,7 @@
             <label class="consent" for="consent">
               <input type="checkbox" id="consent" name="consent_given" required>
               <span class="consent__text">
-                i am <strong id="consent-name-slot">[student's name]</strong>'s parent or legal guardian. i consent to them using cashbff for free until they're 18, and i agree to the <a href="terms.html">terms</a> on their behalf.
+                as <strong id="consent-name-slot">[student's name]</strong>'s parent, i agree to the <a href="terms.html">terms</a>.
               </span>
             </label>
 
@@ -864,26 +857,26 @@
         </div>
       </section>
 
-      <!-- ── State 2 — verifying (waiting for /api/school/start) ─── -->
+      <!-- ── State 2. verifying (waiting for /api/school/start) ─── -->
       <section class="state" id="state-verifying" data-state="verifying" aria-label="verifying details">
         <div class="panel">
           <div class="panel__step">step 2 of 3</div>
           <h2 class="panel__title">checking your details<span class="period" style="color:var(--cash-green)">.</span></h2>
-          <p class="panel__sub">one sec — we're getting your card screen ready.</p>
+          <p class="panel__sub">one sec. we're getting your card screen ready.</p>
           <div class="spinner" aria-hidden="true"></div>
         </div>
       </section>
 
-      <!-- ── State 3 — Stripe card verification ──────────────────── -->
+      <!-- ── State 3. Stripe card verification ──────────────────── -->
       <section class="state" id="state-stripe-card" data-state="stripe-card" aria-label="verify card">
         <div class="panel">
           <div class="panel__step">step 2 of 3</div>
           <h2 class="panel__title">we just need to confirm you're a parent<span class="period" style="color:var(--cash-green)">.</span></h2>
           <p class="panel__sub">
-            we save your card to keep underage signups honest — <strong>we don't charge it</strong>. cashbff for students is free until they turn 18.
+            we save your card to keep underage signups honest. <strong>we don't charge it</strong>. cashbff for students is free until they turn 18.
           </p>
           <div class="stripe-fallback" id="stripe-fallback" hidden>
-            card verification isn't configured yet — please email <a href="mailto:daksh@cashbff.com" style="text-decoration:underline;color:var(--cash-green)">daksh@cashbff.com</a> and we'll get you set up.
+            card verification isn't configured yet. please email <a href="mailto:daksh@cashbff.com" style="text-decoration:underline;color:var(--cash-green)">daksh@cashbff.com</a> and we'll get you set up.
           </div>
           <div id="stripe-card-mount" aria-label="card details"></div>
           <button class="cta-btn" type="button" id="verify-card-btn">
@@ -893,7 +886,7 @@
         </div>
       </section>
 
-      <!-- ── State 4 — finalizing (waiting for /api/school/finalize) -->
+      <!-- ── State 4. finalizing (waiting for /api/school/finalize) -->
       <section class="state" id="state-finalizing" data-state="finalizing" aria-label="finishing up">
         <div class="panel">
           <div class="panel__step">step 3 of 3</div>
@@ -903,30 +896,30 @@
         </div>
       </section>
 
-      <!-- ── State 5 — success (kid login URL) ───────────────────── -->
+      <!-- ── State 5. success (kid login URL) ───────────────────── -->
       <section class="state" id="state-success" data-state="success" aria-label="all set">
         <div class="panel">
           <div class="success__big"><span id="success-student-name">your kid</span> is in<span style="color:var(--off-black)">.</span></div>
           <p class="success__body">
-            send them this URL — it has their login code baked in, so all they have to do is open it.
+            send them this URL. it has their login code baked in, so all they have to do is open it.
           </p>
           <div class="share-row">
             <input id="kid-login-url" type="text" readonly aria-label="kid login URL">
             <button class="copy-btn" type="button" id="copy-url-btn">copy</button>
           </div>
           <p class="share-tip">
-            or share via SMS / WhatsApp — long-press the box above to grab it on mobile.
+            or share via SMS / WhatsApp. long-press the box above to grab it on mobile.
           </p>
           <a href="/school" class="success__refresh">need to add another kid? hit refresh.</a>
         </div>
       </section>
 
-      <!-- ── State 6 — age-out ──────────────────────────────────── -->
+      <!-- ── State 6. age-out ──────────────────────────────────── -->
       <section class="state" id="state-ageout" data-state="ageout" aria-label="too old for the school plan">
         <div class="panel">
           <div class="success__big">you're 18+<span style="color:var(--off-black)">.</span></div>
           <p class="ageout__body">
-            looks like you're already 18+ — head to <strong>cashbff.com</strong> for the full version, you don't need this one.
+            looks like you're already 18+. head to <strong>cashbff.com</strong> for the full version, you don't need this one.
           </p>
           <a href="/" class="ageout__cta">take me to cashbff.com</a>
           <a href="#" class="ageout__back" id="ageout-back">wrong birthday? go back</a>

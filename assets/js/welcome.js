@@ -46,11 +46,11 @@ try {
     if (accts > 0 || txns > 0 || since) {
       document.getElementById('stat-accts').textContent = accts.toLocaleString();
       document.getElementById('stat-txns').textContent  = txns.toLocaleString();
-      document.getElementById('stat-since').textContent = since || '—';
+      document.getElementById('stat-since').textContent = since || '-';
       document.getElementById('stats').hidden = false;
     }
   }
-} catch (_) { /* no stats — show the empty shell */ }
+} catch (_) { /* no stats. show the empty shell */ }
 
 // ── Form submit ──────────────────────────────────
 const form = document.getElementById('profile-form');
@@ -68,7 +68,7 @@ form.addEventListener('submit', async (e) => {
     dob:        document.getElementById('dob').value,
   };
 
-  // At least one field must have changed — keep it friendly, don't block.
+  // At least one field must have changed. keep it friendly, don't block.
   if (!body.first_name && !body.last_name && !body.email && !body.dob) {
     location.href = nextUrl;
     return;

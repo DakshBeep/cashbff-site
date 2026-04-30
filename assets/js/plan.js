@@ -1,4 +1,4 @@
-// ── Auth probe (Phase 9A — replaces Phase 7D redirect) ────
+// ── Auth probe (Phase 9A. replaces Phase 7D redirect) ────
 // plan.html is the cold-start "tell me about your cards" calculator. Pre-9A
 // we hard-redirected an authed visitor to /home.html so they wouldn't fill
 // in fake numbers; 9A still hides the calculator from authed users (so they
@@ -26,7 +26,7 @@
       }
     }
   } catch (_) {
-    // Cold-start network blip — let the page render and behave like a
+    // Cold-start network blip. let the page render and behave like a
     // public marketing calculator.
   }
 })();
@@ -129,8 +129,8 @@ stratBtns.forEach(btn => {
     btn.classList.add('active');
     state.strategy = btn.dataset.strat;
     stratHint.textContent = state.strategy === 'avalanche'
-      ? 'saves the most money — attacks highest rate first.'
-      : 'fastest wins — attacks smallest balance first.';
+      ? 'saves the most money. attacks highest rate first.'
+      : 'fastest wins. attacks smallest balance first.';
   });
 });
 
@@ -141,7 +141,7 @@ function updateMonthlyHint() {
   const totalMin = state.cards.reduce((s, c) => s + (Number(c.min) || 0), 0);
   const monthly = Number(monthlyInput.value) || 0;
   if (totalMin <= 0) {
-    monthlyHint.textContent = "we'll set a sensible default — adjust up if you can.";
+    monthlyHint.textContent = "we'll set a sensible default. adjust up if you can.";
     return;
   }
   if (monthly < totalMin) {
@@ -228,7 +228,7 @@ calcBtn.addEventListener('click', () => {
     return;
   }
   if (parsed.some(c => !isFinite(c.apr) || c.apr < 0 || c.apr > 100)) {
-    calcErr.textContent = 'APR looks off — check those rates.';
+    calcErr.textContent = 'APR looks off. check those rates.';
     calcErr.classList.add('show');
     return;
   }
@@ -250,7 +250,7 @@ calcBtn.addEventListener('click', () => {
   const minsOnly = simulate(parsed, state.strategy, totalMin);
 
   if (yourPlan.maxedOut) {
-    calcErr.textContent = "math doesn't converge — try a higher monthly payment.";
+    calcErr.textContent = "math doesn't converge. try a higher monthly payment.";
     calcErr.classList.add('show');
     return;
   }

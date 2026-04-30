@@ -1,4 +1,4 @@
-// calendar-runway.js — horizontal cash-line forecast.
+// calendar-runway.js. horizontal cash-line forecast.
 // Visual model: one clean cash line running left to right.
 // Expenses drop FROM the line as short vertical bars with amount underneath.
 // Paydays bump the line up with a small green circle + label above.
@@ -109,7 +109,7 @@
     '<strong>' + money(START_BALANCE) + '</strong> on hand · ' +
     '<strong>' + money(endBal) + '</strong> after may 28 · ' + extra;
 
-  // ── 1. Tight bands (below threshold) — drawn first, behind everything
+  // ── 1. Tight bands (below threshold). drawn first, behind everything
   days.forEach(function (day, i) {
     if (day.endBalance < TIGHT_THRESHOLD) {
       svg.appendChild(svgEl('rect', {
@@ -154,7 +154,7 @@
     opacity: 0.7
   }));
 
-  // ── 4. Cash line — stepped cleanly, plus soft area fill
+  // ── 4. Cash line. stepped cleanly, plus soft area fill
   // each day: start at startBalance for full day-width, then drop/rise to endBalance at the day's end
   var baselineY = PAD_TOP + CHART_H;
   var pathD = '';

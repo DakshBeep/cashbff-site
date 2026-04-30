@@ -1,4 +1,4 @@
-// home-wallet.js — dummy review page. Click a card → it slides forward, others recede.
+// home-wallet.js. dummy review page. Click a card → it slides forward, others recede.
 (function () {
   const MOCK_CARDS = [
     { institution: "Capital One",     mask: "4471", balance: 847.22,  limit: 2500 },

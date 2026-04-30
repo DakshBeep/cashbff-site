@@ -1,4 +1,4 @@
-// connect.js — Plaid Link integration for the web onboarding flow.
+// connect.js. Plaid Link integration for the web onboarding flow.
 //
 // Lifecycle:
 //   1. Page loads → confirm session via GET /api/me. 401 → redirect to verify.html.
@@ -7,7 +7,7 @@
 //   4. onSuccess(public_token, metadata) → POST /api/plaid/exchange → home.html.
 //   5. onExit (user closed modal) → re-enable the button, hide loading state.
 //
-// All script lives in this file (no inline scripts — CSP).
+// All script lives in this file (no inline scripts. CSP).
 
 const API_BASE = 'https://api.cashbff.com';
 
@@ -19,7 +19,7 @@ const phonePill    = document.getElementById('phone-pill');
 
 // Guard against re-entrant clicks while a Link handler is already in flight
 // (the Plaid SDK is happy to open multiple modals on top of each other if
-// asked — that flickers and confuses users on slow networks).
+// asked. that flickers and confuses users on slow networks).
 let linkHandler = null;
 let inFlight    = false;
 
@@ -44,7 +44,7 @@ function showSuccess(institution) {
   const name = institution ? escapeHtml(institution) : 'your bank';
   statusContent.innerHTML = `
     <div class="status-tick">✓ linked</div>
-    <div class="status-sub">${name} connected — taking you home…</div>
+    <div class="status-sub">${name} connected. taking you home…</div>
   `;
 }
 
@@ -79,7 +79,7 @@ function renderPhonePill(phone) {
   phonePill.textContent = last4 ? `···${last4} signed in` : 'signed in';
 }
 
-// ── Auth probe (Phase 9A — replaces Phase 7D redirect) ────
+// ── Auth probe (Phase 9A. replaces Phase 7D redirect) ────
 // connect.html is a "functional flow" page. Pre-9A we hard-redirected an
 // authed visitor to /home.html so they couldn't re-trigger Plaid. 9A keeps
 // that no-Plaid-for-authed-users guarantee while letting the page render:
@@ -94,7 +94,7 @@ async function gateAuth() {
   try {
     res = await fetch(API_BASE + '/api/me', { credentials: 'include' });
   } catch (_) {
-    showError("we couldn't reach the server — check your connection.");
+    showError("we couldn't reach the server. check your connection.");
     connectBtn.disabled = true;
     return null;
   }
@@ -108,12 +108,12 @@ async function gateAuth() {
     if (typeof window.hidePageInteractionForAuthed === 'function') {
       window.hidePageInteractionForAuthed(['#connect-btn', '.cta-fine', '.cta-wrap', '.trust', '#status', '.bar__right'], {
         heading: "you're already signed in.",
-        body: 'your bank is connected — head back to your home whenever you\'re ready.',
+        body: 'your bank is connected. head back to your home whenever you\'re ready.',
         mountSelector: '.intro',
       });
     }
     renderPhonePill((data && data.phone) || '');
-    // Pending — connectBtn never gets re-enabled, so even if the hide CSS
+    // Pending. connectBtn never gets re-enabled, so even if the hide CSS
     // is bypassed Plaid still won't fire.
     return new Promise(() => {});
   }
@@ -124,7 +124,7 @@ async function gateAuth() {
     return new Promise(() => {});
   }
   if (!res.ok) {
-    showError("something's off on our end — try again in a moment.");
+    showError("something's off on our end. try again in a moment.");
     connectBtn.disabled = true;
     return null;
   }
@@ -158,13 +158,13 @@ async function startPlaidFlow() {
     linkToken = data.link_token;
     if (!linkToken) throw new Error('no link_token returned');
   } catch (_) {
-    showError("couldn't reach the bank service — give it a moment.");
+    showError("couldn't reach the bank service. give it a moment.");
     return;
   }
 
   // 2. SDK loaded?
   if (!window.Plaid || typeof window.Plaid.create !== 'function') {
-    showError("plaid didn't load — check your connection.");
+    showError("plaid didn't load. check your connection.");
     return;
   }
 
@@ -178,10 +178,10 @@ async function startPlaidFlow() {
       onEvent:   handlePlaidEvent,
     });
     linkHandler.open();
-    // Hide the loading status once Plaid's modal is up — Plaid owns the UI.
+    // Hide the loading status once Plaid's modal is up. Plaid owns the UI.
     clearStatus();
   } catch (_) {
-    showError("we couldn't open the bank picker — try again.");
+    showError("we couldn't open the bank picker. try again.");
   }
 }
 
@@ -204,7 +204,7 @@ async function handlePlaidSuccess(public_token, metadata) {
     // Give the success state a beat to land before navigating.
     setTimeout(() => { location.href = 'home.html'; }, 1500);
   } catch (_) {
-    showError("we connected but couldn't save it — one more try?");
+    showError("we connected but couldn't save it. one more try?");
   }
 }
 
@@ -215,7 +215,7 @@ function handlePlaidExit(err, metadata) {
   //   b) err is null    → user closed the modal voluntarily (no bank picked
   //      yet). Quietly reset the page so they can try again whenever.
   if (err) {
-    showError("plaid closed before we finished — try again whenever.");
+    showError("plaid closed before we finished. try again whenever.");
     return;
   }
   clearStatus();
@@ -224,7 +224,7 @@ function handlePlaidExit(err, metadata) {
 }
 
 function handlePlaidEvent(eventName /*, metadata */) {
-  // OPEN means the modal mounted successfully — at that point our local
+  // OPEN means the modal mounted successfully. at that point our local
   // loading copy is redundant. (We already hide it after .open() resolves
   // synchronously; this is a belt-and-braces in case of race conditions
   // on slow devices.)

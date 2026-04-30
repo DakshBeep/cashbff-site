@@ -1,4 +1,4 @@
-// school.js — parent-led signup funnel for the under-18 school plan.
+// school.js: parent-led signup funnel for the under-18 school plan.
 //
 // Flow (states match the data-state attributes in school.html):
 //   form        → user fills 5 fields + consent.
@@ -9,12 +9,12 @@
 //   success     → render shareable URL with email + code prefilled.
 //   ageout      → user is 18+, bounce them to the regular plan.
 //
-// All script lives in this file (no inline scripts — CSP).
+// All script lives in this file (no inline scripts. CSP).
 // All API calls go to api.cashbff.com with credentials: 'include'.
 
 const API_BASE = 'https://api.cashbff.com';
 
-// Stripe publishable key — public by design, safe to commit (test mode).
+// Stripe publishable key: public by design, safe to commit (test mode).
 // Swap for pk_live_… when going to production.
 const STRIPE_PUBLISHABLE_KEY = 'pk_test_51TBOZ3IftBEJjqbcJZW3YtyDbLMNmkFqk80tYv0HbqAUw0apDvt8JtraxVEAWbbmisz0iceKbSItKpSRN5CqPyWH00w6lJITsa';
 
@@ -33,7 +33,7 @@ const states = {
 const banner          = $('banner');
 const form            = $('school-form');
 const submitBtn       = $('submit-btn');
-// Hero card + copy (Phase 11 — V4-original visual revival). The card stays
+// Hero card + copy (Phase 11. V4-original visual revival). The card stays
 // mounted across all states; we shrink it via .is-compact once the user
 // posts the form so the Stripe / success panel gets vertical room. Hero
 // copy hides on non-form states for the same reason.
@@ -74,7 +74,7 @@ function showState(name) {
     if (name === 'form') cardStage.classList.remove('is-compact');
     else                  cardStage.classList.add('is-compact');
   }
-  // Hide the headline copy block on non-form states — the panel title
+  // Hide the headline copy block on non-form states. the panel title
   // takes over there. Toggling .hidden keeps the layout clean (no blank
   // gap) and screen readers skip it.
   if (heroCopy) {
@@ -124,12 +124,12 @@ function validateForm(values) {
   const age = ageFrom(values.student_dob);
   if (age === null) return 'pick your date of birth.';
   if (age >= 18) return 'AGE_OUT';
-  if (age < 5)   return 'that birthday looks off — double-check it?';
+  if (age < 5)   return 'that birthday looks off. double-check it?';
   if (!consentBox.checked) return 'your parent has to tick the consent box.';
   return null;
 }
 
-// Mirror the kid's first name into the consent label as they type — and
+// Mirror the kid's first name into the consent label as they type. and
 // into the credit-card hero's name slot, so the card visually personalises
 // to "their" card the moment they identify themselves.
 studentFirstName.addEventListener('input', () => {
@@ -213,7 +213,7 @@ form.addEventListener('submit', async (e) => {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.ok || !data.client_secret) {
-      const msg = (data && data.error) || 'we couldn\'t start verification — try again in a sec.';
+      const msg = (data && data.error) || 'we couldn\'t start verification. try again in a sec.';
       // Drop the user back to the form with the error visible.
       showState('form');
       showBanner(msg, 'error');
@@ -227,7 +227,7 @@ form.addEventListener('submit', async (e) => {
     mountStripeIfReady(cachedClientSecret);
   } catch (_) {
     showState('form');
-    showBanner('network hiccup — try again?', 'error');
+    showBanner('network hiccup. try again?', 'error');
     submitBtn.disabled = false;
     submitBtn.textContent = originalLabel;
     submittingForm = false;
@@ -246,7 +246,7 @@ if (verifyCardBtn) {
   verifyCardBtn.addEventListener('click', async () => {
     if (verifyingCard) return; // double-click guard
     if (!stripe || !stripeElements) {
-      showBanner('card verification isn\'t configured yet — email daksh@cashbff.com.', 'error');
+      showBanner('card verification isn\'t configured yet. email daksh@cashbff.com.', 'error');
       return;
     }
     verifyingCard = true;
@@ -261,7 +261,7 @@ if (verifyCardBtn) {
         redirect: 'if_required',
       });
       if (result.error) {
-        showBanner(result.error.message || 'that card didn\'t verify — give it another go.', 'error');
+        showBanner(result.error.message || 'that card didn\'t verify. give it another go.', 'error');
         verifyCardBtn.disabled = false;
         verifyCardBtn.textContent = originalLabel;
         verifyingCard = false;
@@ -269,18 +269,18 @@ if (verifyCardBtn) {
       }
       const si = result.setupIntent;
       if (!si || si.status !== 'succeeded') {
-        showBanner('card verification didn\'t finish — try once more.', 'error');
+        showBanner('card verification didn\'t finish. try once more.', 'error');
         verifyCardBtn.disabled = false;
         verifyCardBtn.textContent = originalLabel;
         verifyingCard = false;
         return;
       }
-      // Setup succeeded — move on to finalize.
+      // Setup succeeded. move on to finalize.
       verifyCardBtn.textContent = originalLabel;
       verifyingCard = false;
       await runFinalize();
     } catch (_) {
-      showBanner('network hiccup — try the card again.', 'error');
+      showBanner('network hiccup. try the card again.', 'error');
       verifyCardBtn.disabled = false;
       verifyCardBtn.textContent = originalLabel;
       verifyingCard = false;
@@ -308,7 +308,7 @@ async function runFinalize() {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.ok || !data.kid_login_code || !data.student_email) {
-      const msg = (data && data.error) || 'we couldn\'t finish setup — try the card step again.';
+      const msg = (data && data.error) || 'we couldn\'t finish setup. try the card step again.';
       showState('stripeCard');
       showBanner(msg, 'error');
       return;
@@ -317,7 +317,7 @@ async function runFinalize() {
     showState('success');
   } catch (_) {
     showState('stripeCard');
-    showBanner('network hiccup — give the card step one more go.', 'error');
+    showBanner('network hiccup. give the card step one more go.', 'error');
   }
 }
 
@@ -335,7 +335,7 @@ function renderSuccess(data) {
   }
 }
 
-// Copy URL button — clipboard write with a tiny visual ack.
+// Copy URL button: clipboard write with a tiny visual ack.
 let copyInFlight = false;
 if (copyUrlBtn) {
   copyUrlBtn.addEventListener('click', async () => {
@@ -377,7 +377,7 @@ if (ageoutBack) {
 }
 
 // ── Auth probe (Phase 9A) ─────────────────────────
-// school.html is a marketing page — we want logged-in visitors to be able to
+// school.html is a marketing page. we want logged-in visitors to be able to
 // browse it. If /api/me 200s we paint the floating "my home →" pill via
 // auth-banner.js and stash the user; we no longer hard-redirect.
 async function probeAuth() {
@@ -385,7 +385,7 @@ async function probeAuth() {
   try {
     res = await fetch(API_BASE + '/api/me', { credentials: 'include' });
   } catch (_) {
-    // Network blip — let the form render and they can try anyway.
+    // Network blip. let the form render and they can try anyway.
     return;
   }
   if (res.status === 200) {

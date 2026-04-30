@@ -1,6 +1,6 @@
-// ── Auth probe (Phase 9A — replaces Phase 7D redirect) ────
+// ── Auth probe (Phase 9A. replaces Phase 7D redirect) ────
 // paywall.html is a pre-bank-connect step in the funnel. Phase 9A no longer
-// hard-redirects an authed visitor to /home.html — instead we render the
+// hard-redirects an authed visitor to /home.html. instead we render the
 // page, hide the "start trial" CTA so they can't accidentally re-enter the
 // flow, and paint the floating "my home →" pill via auth-banner.js. 401 /
 // network blip lets the page render normally so the public trial flow
@@ -18,13 +18,13 @@
       if (typeof window.hidePageInteractionForAuthed === 'function') {
         window.hidePageInteractionForAuthed(['#start-btn', '.cta-wrap', '.cta-micro', '.bar__right'], {
           heading: "you're already signed in.",
-          body: 'no need to start a new trial — head back to your home.',
+          body: 'no need to start a new trial. head back to your home.',
           mountSelector: '.pcard',
         });
       }
     }
   } catch (_) {
-    // Network blip — let the page render. The downstream connect step
+    // Network blip. let the page render. The downstream connect step
     // re-checks auth before any sensitive call.
   }
 })();
@@ -44,13 +44,13 @@ function withPhone(path) {
   return rawPhone ? `${path}?phone=${encodeURIComponent(rawPhone)}` : path;
 }
 
-// Back to plan — preserve phone
+// Back to plan. preserve phone
 document.getElementById('back-link').addEventListener('click', (e) => {
   e.preventDefault();
   location.href = withPhone('plan.html');
 });
 
-// Start trial — for this proto, straight to connect.
+// Start trial. for this proto, straight to connect.
 // TODO: wire Stripe checkout (create SetupIntent / Checkout Session,
 // on success redirect to connect.html?phone=...).
 document.getElementById('start-btn').addEventListener('click', (e) => {

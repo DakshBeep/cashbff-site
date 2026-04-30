@@ -1,4 +1,4 @@
-// home-drift.js — dummy review page. No auth, no fetch. Hardcoded mock cards.
+// home-drift.js. dummy review page. No auth, no fetch. Hardcoded mock cards.
 (function () {
   const MOCK_CARDS = [
     { institution: "Capital One",     mask: "4471", balance: 847.22,  limit: 2500 },

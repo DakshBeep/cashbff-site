@@ -1,4 +1,4 @@
-// calendar-month.js — dummy month-grid view of pre-committed expenses.
+// calendar-month.js. dummy month-grid view of pre-committed expenses.
 (function () {
   'use strict';
 
@@ -6,18 +6,18 @@
     { date: '2026-04-24', amount: 14.99,   name: 'Netflix',               type: 'sub',     confidence: 1.0 },
     { date: '2026-04-25', amount: 9.99,    name: 'Spotify',               type: 'sub',     confidence: 1.0 },
     { date: '2026-04-28', amount: 380.00,  name: 'Car payment',           type: 'bill',    confidence: 1.0 },
-    { date: '2026-04-30', amount: 62.00,   name: 'Concert — Philip pays back?', type: 'planned', confidence: 0.6 },
+    { date: '2026-04-30', amount: 62.00,   name: 'Concert. Philip pays back?', type: 'planned', confidence: 0.6 },
     { date: '2026-05-01', amount: 1450.00, name: 'Rent',                  type: 'bill',    confidence: 1.0 },
     { date: '2026-05-05', amount: 75.00,   name: 'Phone bill',            type: 'bill',    confidence: 1.0 },
     { date: '2026-05-12', amount: 42.00,   name: 'Vet (Pepper checkup)',  type: 'planned', confidence: 0.7 },
-    { date: '2026-05-15', amount: 120.00,  name: 'Credit One — min due',  type: 'cc',      confidence: 1.0 },
-    { date: '2026-05-15', amount: 45.00,   name: 'Capital One — min due', type: 'cc',      confidence: 1.0 },
+    { date: '2026-05-15', amount: 120.00,  name: 'Credit One. min due',  type: 'cc',      confidence: 1.0 },
+    { date: '2026-05-15', amount: 45.00,   name: 'Capital One. min due', type: 'cc',      confidence: 1.0 },
     { date: '2026-05-22', amount: 14.99,   name: 'Netflix',               type: 'sub',     confidence: 1.0 },
     { date: '2026-05-28', amount: 380.00,  name: 'Car payment',           type: 'bill',    confidence: 1.0 }
   ];
 
   var MONTHS = ['january','february','march','april','may','june','july','august','september','october','november','december'];
-  var today = new Date(2026, 3, 23); // frozen "today" — Apr 23 2026, matches session date
+  var today = new Date(2026, 3, 23); // frozen "today". Apr 23 2026, matches session date
   var view = new Date(today.getFullYear(), today.getMonth(), 1);
 
   var grid = document.getElementById('grid');
@@ -102,7 +102,7 @@
 
       grid.appendChild(cell);
     }
-    // break out once all "real" week rows are shown — hide last trailing empty row if fully off-month
+    // break out once all "real" week rows are shown. hide last trailing empty row if fully off-month
     var lastRowStart = new Date(startOfGrid); lastRowStart.setDate(startOfGrid.getDate() + 35);
     if (lastRowStart.getMonth() !== month) {
       var cells = grid.querySelectorAll('.cell');
@@ -121,7 +121,7 @@
     if (!exps.length) {
       var em = document.createElement('div');
       em.className = 'drawer-empty';
-      em.textContent = 'nothing scheduled — a free day.';
+      em.textContent = 'nothing scheduled. a free day.';
       drawerList.appendChild(em);
     } else {
       exps.forEach(function (e) {

@@ -1,4 +1,4 @@
-// home-bloom-v3.js — orbit / gravity. Hero at center, satellites circling.
+// home-bloom-v3.js. orbit / gravity. Hero at center, satellites circling.
 (function () {
   const MOCK_CARDS = [
     { institution: "Capital One",     mask: "4471", balance: 847.22,  limit: 2500 },

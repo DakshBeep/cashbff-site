@@ -1,4 +1,4 @@
-// school-login.js — companion login page for kids on the school plan.
+// school-login.js. companion login page for kids on the school plan.
 //
 // Flow:
 //   1. Page loads → check /api/me. If already authed:
@@ -7,7 +7,7 @@
 //      If 401 → render the form, prefill email + code from URL params.
 //   2. User submits → POST /api/school/login → on 200, follow redirect.
 //
-// All script lives in this file (no inline scripts — CSP).
+// All script lives in this file (no inline scripts. CSP).
 
 const API_BASE = 'https://api.cashbff.com';
 
@@ -45,7 +45,7 @@ function hideBanner() {
     if (qEmail && emailEl && !emailEl.value) emailEl.value = qEmail;
     if (qCode  && codeEl  && !codeEl.value)  codeEl.value  = qCode.toUpperCase();
   } catch (_) {
-    // Ignore — params just won't get prefilled.
+    // Ignore. params just won't get prefilled.
   }
 })();
 
@@ -58,7 +58,7 @@ if (codeEl) {
 }
 
 // ── Auth probe (Phase 9A) ─────────────────────────
-// school-login is a "functional flow" page — it lets a kid trade an
+// school-login is a "functional flow" page. it lets a kid trade an
 // email + code for a session. If they're already authed we no longer
 // hard-redirect; we let the page render but disable the login form
 // (so they can't accidentally re-trigger /api/school/login) and surface
@@ -68,7 +68,7 @@ async function probeAuth() {
   try {
     res = await fetch(API_BASE + '/api/me', { credentials: 'include' });
   } catch (_) {
-    // Network blip — let the form render so they can try anyway.
+    // Network blip. let the form render so they can try anyway.
     return;
   }
   if (res.status === 200) {
@@ -96,10 +96,10 @@ async function probeAuth() {
       }
       return;
     }
-    // 200 but not a school account — phone-account user landed on the wrong
+    // 200 but not a school account. phone-account user landed on the wrong
     // page. Don't bounce them; show a friendly message instead.
     showBanner(
-      'you\'re signed in to a phone account already — head to cashbff.com instead.',
+      'you\'re signed in to a phone account already. head to cashbff.com instead.',
       'info'
     );
     if (loginBtn) loginBtn.disabled = true;
@@ -120,11 +120,11 @@ form.addEventListener('submit', async (e) => {
   const code  = (codeEl.value  || '').trim().toUpperCase();
 
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    showBanner('that email doesn\'t look right — double-check it?', 'error');
+    showBanner('that email doesn\'t look right. double-check it?', 'error');
     return;
   }
   if (!code || code.length < 6) {
-    showBanner('your code is 8 characters — double-check it?', 'error');
+    showBanner('your code is 8 characters. double-check it?', 'error');
     return;
   }
 
@@ -144,9 +144,9 @@ form.addEventListener('submit', async (e) => {
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.ok) {
       const msg = (data && data.error)
-        || (res.status === 429 ? 'too many tries — wait a moment and try again.'
-        :  res.status === 401 ? 'that email and code didn\'t match — try once more.'
-        :  'we couldn\'t log you in — try again in a sec.');
+        || (res.status === 429 ? 'too many tries. wait a moment and try again.'
+        :  res.status === 401 ? 'that email and code didn\'t match. try once more.'
+        :  'we couldn\'t log you in. try again in a sec.');
       showBanner(msg, 'error');
       loginBtn.disabled = false;
       loginBtn.textContent = originalLabel;
@@ -156,7 +156,7 @@ form.addEventListener('submit', async (e) => {
     const dest = data.redirect || '/home.html';
     location.href = dest;
   } catch (_) {
-    showBanner('network hiccup — try again.', 'error');
+    showBanner('network hiccup. try again.', 'error');
     loginBtn.disabled = false;
     loginBtn.textContent = originalLabel;
     submitting = false;

@@ -92,8 +92,8 @@ describe('formatNumber', () => {
     expect(api.formatNumber(1234.567)).toMatch(/1,234\.57/);
   });
   it('returns em-dash for null/undefined', () => {
-    expect(api.formatNumber(null)).toBe('—');
-    expect(api.formatNumber(undefined)).toBe('—');
+    expect(api.formatNumber(null)).toBe('-');
+    expect(api.formatNumber(undefined)).toBe('-');
   });
   it('coerces strings through String()', () => {
     expect(api.formatNumber('hi')).toBe('hi');

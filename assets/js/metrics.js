@@ -1,11 +1,11 @@
-// Admin metrics dashboard — Phase 9C.
+// Admin metrics dashboard. Phase 9C.
 //
 // Fetches the five /api/metrics/* endpoints in parallel, renders cards +
 // tables, auto-refreshes every 30 seconds. On 403 (non-admin), shows the
 // access-denied panel instead of the dashboard.
 //
 // Auth model: the page is gated server-side. We don't try to detect admin
-// status before fetching — we just attempt all five requests; if any of
+// status before fetching. we just attempt all five requests; if any of
 // them returns 403, we flip to the denied state. credentials: 'include'
 // is required so the cbff_session cookie ships with the cross-origin
 // request to api.cashbff.com.
@@ -23,7 +23,7 @@
     ? 'http://localhost:3000'
     : 'https://api.cashbff.com';
 
-  // 30 seconds matches the user's spec — fast enough that the dashboard
+  // 30 seconds matches the user's spec. fast enough that the dashboard
   // feels live but not so fast it strains the DB on every tick.
   var REFRESH_MS = 30_000;
 
@@ -81,7 +81,7 @@
         return { __denied: true, __status: 403 };
       }
       if (res.status === 401) {
-        // Not signed in at all — also treat as denied so the user gets
+        // Not signed in at all. also treat as denied so the user gets
         // a clear path back to /home.html. (They can sign in there.)
         return { __denied: true, __status: 401 };
       }
@@ -107,7 +107,7 @@
       fetchJson(ENDPOINTS.recurring),
       fetchJson(ENDPOINTS.signups),
     ]).then(function (results) {
-      // If ANY endpoint returned 403/401, flip to the denied state — the
+      // If ANY endpoint returned 403/401, flip to the denied state. the
       // dashboard is all-or-nothing (no point showing partial data the
       // user shouldn't see).
       var denied = results.find(function (r) { return r && r.__denied; });
@@ -226,7 +226,7 @@
       $merchantList.innerHTML = '<div class="error">failed to load merchants</div>';
       return;
     }
-    var avg = typeof data.avg_streams_per_user === 'number' ? data.avg_streams_per_user.toFixed(2) : '—';
+    var avg = typeof data.avg_streams_per_user === 'number' ? data.avg_streams_per_user.toFixed(2) : '-';
     var cards = [
       { label: 'confirmed', value: data.confirmed_streams },
       { label: 'dismissed', value: data.dismissed_streams },
@@ -286,7 +286,7 @@
 
   // ── Formatters ───────────────────────────────────
   function formatNumber(v) {
-    if (v == null) return '—';
+    if (v == null) return '-';
     if (typeof v === 'number' && Number.isFinite(v)) {
       // No decimals for integers; locale-formatted otherwise.
       if (Number.isInteger(v)) return v.toLocaleString();
@@ -325,7 +325,7 @@
     if (diffH < 24) return diffH + 'h ago';
     var diffD = Math.floor(diffH / 24);
     if (diffD < 7) return diffD + 'd ago';
-    // Older — fall back to a calendar date.
+    // Older. fall back to a calendar date.
     return d.toISOString().slice(0, 10);
   }
 
@@ -376,7 +376,7 @@
   // ── Auto-init when DOM is ready ──────────────────
   // Only auto-init when running in a real browser (we have a body and the
   // metrics.html scaffold). The vitest jsdom env imports this module to
-  // exercise pure helpers — it shouldn't kick off a setInterval.
+  // exercise pure helpers. it shouldn't kick off a setInterval.
   var inBrowser = typeof document !== 'undefined' &&
     document.getElementById &&
     document.getElementById('metrics-main') !== null;
