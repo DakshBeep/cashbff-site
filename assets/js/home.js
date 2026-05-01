@@ -1128,6 +1128,15 @@
         var last4 = phone.replace(/\D/g, '').slice(-4);
         pill.textContent = last4 ? '···' + last4 + ' signed in' : 'signed in';
       }
+      // Phase 13A: school accounts (kid mode). Detect by user_id prefix and
+      // stash on window so panels / boot can read it. /api/me returns user_id
+      // on every authed call so this is the canonical signal — frontend never
+      // has to inspect cookies. Backend already 403s school users from every
+      // Plaid endpoint (link-token, exchange, signup/start), so hiding the UI
+      // here is purely UX — the server is the source of truth.
+      var uid = data && typeof data.user_id === 'string' ? data.user_id : '';
+      window.__isSchoolAccount = uid.indexOf('school_') === 0;
+      if (window.__isSchoolAccount) applySchoolModeUI();
       // Clamp the calendar's earliest viewable month to the user's signup
       // month. pre-signup calendar views are meaningless (no backfill yet).
       if (data && data.created_at) {
@@ -1137,6 +1146,30 @@
       }
       return data;
     });
+  }
+
+  // Phase 13A: hide every Plaid-touching UI element when a school account is
+  // logged in. They billed through Stripe (parent's card), have no Plaid
+  // tokens, and surfacing "+ add account" / "balances" would be a dead end.
+  // Idempotent — re-callable without side effects (querySelector + display).
+  // Kept simple: no class toggles, just inline display:none. The DOM ids
+  // referenced here all live in home.html. If any element is missing we
+  // silently skip (keeps the function safe across html refactors).
+  function applySchoolModeUI() {
+    if (typeof document === 'undefined') return;
+    // Floating "+ add account" button (Plaid + manual). Manual cards are
+    // still addable via the wallet panel's inline "add tracked card" form,
+    // so school users keep that path even with the chip hidden.
+    var addBtn = document.getElementById('add-account-btn');
+    if (addBtn) addBtn.style.display = 'none';
+    // Header "balances" chip + the popover it opens. School users have no
+    // Plaid balances to show; surfacing an empty panel just confuses them.
+    var balancesBtn = document.getElementById('balances-btn');
+    if (balancesBtn) balancesBtn.style.display = 'none';
+    var balancesPop = document.getElementById('balances-pop');
+    if (balancesPop) balancesPop.style.display = 'none';
+    var balancesOverlay = document.getElementById('balances-overlay');
+    if (balancesOverlay) balancesOverlay.style.display = 'none';
   }
 
   function atEarliestMonth() {
@@ -4799,6 +4832,12 @@
           today.setHours(0, 0, 0, 0);
         }
       }
+    };
+    // Phase 13A: expose the school-mode UI hider for jsdom tests so they
+    // can verify the right elements get hidden when /api/me returns a
+    // school_<uuid> user_id without booting the full network stack.
+    window.__homeSchoolMode = {
+      applySchoolModeUI: applySchoolModeUI
     };
   }
 

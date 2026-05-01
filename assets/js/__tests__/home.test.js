@@ -274,3 +274,78 @@ describe('formatSignedMoney', () => {
     expect(math.formatSignedMoney(0)).toBe('$0.00');
   });
 });
+
+// ── Phase 13A: school-account UI gating ───────────────────────────
+// home.js exposes window.__homeSchoolMode.applySchoolModeUI so tests can
+// verify the right Plaid-touching elements get hidden without driving the
+// full /api/me round-trip. We mount the relevant home.html ids into jsdom
+// once, call the helper, then assert each element is hidden.
+describe('school account: applySchoolModeUI', () => {
+  let school;
+
+  beforeAll(() => {
+    school = window.__homeSchoolMode;
+    if (!school) throw new Error('home.js did not expose __homeSchoolMode');
+  });
+
+  beforeEach(() => {
+    // Reset the DOM between tests. mount the same element ids that
+    // home.html declares so the helper has something to find.
+    document.body.innerHTML = '' +
+      '<button id="add-account-btn">+ add account</button>' +
+      '<button id="balances-btn">balances</button>' +
+      '<aside id="balances-pop"></aside>' +
+      '<div id="balances-overlay"></div>' +
+      '<button id="snapshot-btn">snapshot</button>' +
+      '<button id="schedule-btn">+ schedule</button>' +
+      '<button id="todo-btn">to-do</button>' +
+      '<button id="recurring-btn">recurring</button>' +
+      '<button id="reimbursements-btn">reimbursements</button>' +
+      '<button id="wallet-btn">wallet</button>';
+  });
+
+  it('hides the "+ add account" floating button', () => {
+    school.applySchoolModeUI();
+    const btn = document.getElementById('add-account-btn');
+    expect(btn.style.display).toBe('none');
+  });
+
+  it('hides the "balances" header chip + popover + overlay', () => {
+    school.applySchoolModeUI();
+    expect(document.getElementById('balances-btn').style.display).toBe('none');
+    expect(document.getElementById('balances-pop').style.display).toBe('none');
+    expect(document.getElementById('balances-overlay').style.display).toBe('none');
+  });
+
+  it('does NOT hide schedule, to-do, recurring, reimbursements, wallet, or snapshot', () => {
+    // These are the kid-mode-friendly features that must keep working —
+    // verify the helper leaves them alone (i.e. their inline display is
+    // unset, falsy, or the empty string).
+    school.applySchoolModeUI();
+    const stillVisible = [
+      'schedule-btn',
+      'todo-btn',
+      'recurring-btn',
+      'reimbursements-btn',
+      'wallet-btn',
+      'snapshot-btn',
+    ];
+    for (const id of stillVisible) {
+      const el = document.getElementById(id);
+      // We never set display on these. style.display should still be ''.
+      expect(el.style.display).toBe('');
+    }
+  });
+
+  it('is idempotent — calling twice is safe', () => {
+    school.applySchoolModeUI();
+    school.applySchoolModeUI();
+    expect(document.getElementById('add-account-btn').style.display).toBe('none');
+    expect(document.getElementById('balances-btn').style.display).toBe('none');
+  });
+
+  it('silently no-ops when the elements are missing (defensive against html refactors)', () => {
+    document.body.innerHTML = '';
+    expect(() => school.applySchoolModeUI()).not.toThrow();
+  });
+});

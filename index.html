@@ -495,6 +495,14 @@
       margin-top: 1.25rem;
     }
     .connect-actions .inline-link-wrap { text-align: left; }
+    /* Phase 13A: the under-18 row sits closer to the existing sign-in row
+       and is one notch smaller — visible but clearly secondary so it
+       doesn't compete with the main "already have an account?" link. */
+    .inline-link-wrap--under18 { margin-top: 0.4rem; }
+    .inline-link-wrap--under18 .inline-link {
+      font-size: 0.82rem;
+      opacity: 0.55;
+    }
     .inline-link {
       font-size: 0.88rem;
       opacity: 0.65;
@@ -840,6 +848,15 @@
             <button class="inline-link" id="returning-link" type="button">
               already have an account? sign in →
             </button>
+          </div>
+          <!-- Phase 13A: under-18 sign-in path. Most kids returning to the
+               site already have a kid login code, so we point at the login
+               page (signups go through the school onboarding from /school).
+               Kept small + subtle so it doesn't compete with the main funnel. -->
+          <div class="inline-link-wrap inline-link-wrap--under18">
+            <a class="inline-link" id="under18-link" href="/school/login">
+              under 18? sign in here →
+            </a>
           </div>
         </div>
       </section>
