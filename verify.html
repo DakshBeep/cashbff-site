@@ -15,6 +15,19 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
 
+  <!-- PostHog product analytics. Hybrid mode: backend tracks business events,
+       browser handles autocapture + pageviews. CSP-safe (no eval). -->
+  <script src="/assets/js/posthog-init.js" defer></script>
+
+  <!-- Vercel Analytics + Speed Insights — cookieless edge-collected pageviews +
+       Web Vitals (CLS, FID, LCP, TTFB) per route. Stub queues are extracted to
+       same-origin .js files because our CSP forbids inline scripts. The real
+       scripts at /_vercel/insights/* are served by Vercel's edge automatically. -->
+  <script src="/assets/js/vercel-analytics-init.js" defer></script>
+  <script defer src="/_vercel/insights/script.js"></script>
+  <script src="/assets/js/vercel-speed-insights-init.js" defer></script>
+  <script defer src="/_vercel/speed-insights/script.js"></script>
+
   <style>
     @font-face {
       font-family: 'Greed Condensed';
@@ -235,12 +248,12 @@
       <p class="sub">we sent a 6-digit code to <strong id="phone-display">your number</strong>.</p>
 
       <form class="otp" id="otp-form" autocomplete="off">
-        <input type="text" inputmode="numeric" maxlength="1" pattern="\d*" aria-label="digit 1">
-        <input type="text" inputmode="numeric" maxlength="1" pattern="\d*" aria-label="digit 2">
-        <input type="text" inputmode="numeric" maxlength="1" pattern="\d*" aria-label="digit 3">
-        <input type="text" inputmode="numeric" maxlength="1" pattern="\d*" aria-label="digit 4">
-        <input type="text" inputmode="numeric" maxlength="1" pattern="\d*" aria-label="digit 5">
-        <input type="text" inputmode="numeric" maxlength="1" pattern="\d*" aria-label="digit 6">
+        <input type="text" inputmode="numeric" maxlength="1" pattern="\d*" aria-label="digit 1" data-ph-no-capture="1">
+        <input type="text" inputmode="numeric" maxlength="1" pattern="\d*" aria-label="digit 2" data-ph-no-capture="1">
+        <input type="text" inputmode="numeric" maxlength="1" pattern="\d*" aria-label="digit 3" data-ph-no-capture="1">
+        <input type="text" inputmode="numeric" maxlength="1" pattern="\d*" aria-label="digit 4" data-ph-no-capture="1">
+        <input type="text" inputmode="numeric" maxlength="1" pattern="\d*" aria-label="digit 5" data-ph-no-capture="1">
+        <input type="text" inputmode="numeric" maxlength="1" pattern="\d*" aria-label="digit 6" data-ph-no-capture="1">
       </form>
 
       <button class="verify-btn" id="verify-btn" disabled>verify &amp; continue →</button>

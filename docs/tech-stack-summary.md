@@ -1,12 +1,12 @@
 # CashBFF — full tech stack & how it works
 
-_Last updated: May 2026. Living document — update when architecture shifts._
+_Last updated: May 3, 2026. Living document — update when architecture shifts._
 
 ---
 
 ## TL;DR
 
-CashBFF is a **money-on-a-calendar** product for credit-card-carrying adults plus a free under-18 (school) variant. It's three repos talking to one shared Supabase database, with five external integrations (Plaid, Stripe, Twilio, Anthropic, Sentry).
+CashBFF is a **money-on-a-calendar** product for credit-card-carrying adults plus a free under-18 (school) variant. It's three repos talking to one shared Supabase database, with **seven** external integrations (Plaid, Stripe, Twilio, Anthropic, Sentry, PostHog, Vercel).
 
 ```
 cashbff.com (Vercel)     ← static HTML/JS, no state, no DB access
@@ -16,7 +16,7 @@ api.cashbff.com (Render) ← Express + TypeScript, all business logic
 Supabase (Postgres)      ← every authoritative row
 ```
 
-External: Plaid (bank connections), Stripe (parent-age + future paywall), Twilio (SMS OTP + bot), Anthropic Claude (recurring detection LLM brain + SMS bot replies), Sentry (error tracking).
+External: Plaid (bank connections), Stripe (parent-age + future paywall), Twilio (SMS OTP + bot), Anthropic Claude (recurring detection LLM brain + SMS bot replies), Sentry (error tracking), PostHog (product analytics — funnels, retention, cohorts), Vercel (frontend hosting + cookieless analytics + web-vitals).
 
 ---
 
@@ -272,6 +272,23 @@ Project ID: `gfpdubnhpdoalhyrvnmd`. Connection via `src/db/supabase.ts` using th
 - SDK: `@sentry/node` (backend) + browser CDN (frontend).
 - Breadcrumbs added on every `raw_transactions` INSERT (Phase 6 data-leak prevention).
 - `captureException` on integrity-check violations and Stripe / Plaid call failures.
+
+### PostHog (US Cloud, free tier)
+
+- Env: `POSTHOG_API_KEY` (project API key, public-by-design like a Stripe pk_test_).
+- SDKs: `posthog-node` (backend) + `posthog-js` via CDN (frontend).
+- Mode: hybrid. Backend tracks 13 business events (signup, plaid_connected, school_*, recurring_stream_confirmed, etc.). Frontend autocaptures pageviews + clicks; identifies authed users via `/api/me`.
+- Cookies: one first-party `ph_phc_<keyhash>` for de-duplication. Session recordings OFF.
+- PII guard: sensitive form inputs marked with `data-ph-no-capture`; backend track() never sends raw email/phone/name. Verified by `e2e/posthog-pii.spec.ts`.
+
+### Vercel Analytics + Speed Insights (free hobby tier)
+
+- Env: none — auto-enabled per Vercel project.
+- SDKs: none (static-site approach uses Vercel's edge-served `script.js` files at `/_vercel/insights/*` and `/_vercel/speed-insights/*`).
+- Tracks: pageviews + Web Vitals (CLS, FID, LCP, TTFB) per route. Cookieless — uses anonymized request fingerprint at the edge.
+- Mode: passive. We don't emit custom events here; PostHog handles those. Vercel's value is **performance ground truth** on real user devices and ad-blocker-resistant pageview counts.
+- Privacy posture: **stronger than PostHog** because no cookie is set. The privacy.html third-parties list mentions both honestly.
+- CSP note: our CSP forbids inline scripts, so the official Vercel inline `window.va = ...` / `window.si = ...` stub queues are extracted to `assets/js/vercel-analytics-init.js` + `assets/js/vercel-speed-insights-init.js` (same-origin `'self'` is allowed). All 12 HTML pages reference both stub initializers + the deferred Vercel edge scripts.
 
 ---
 

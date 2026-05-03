@@ -15,6 +15,19 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
 
+  <!-- PostHog product analytics. Hybrid mode: backend tracks business events,
+       browser handles autocapture + pageviews. CSP-safe (no eval). -->
+  <script src="/assets/js/posthog-init.js" defer></script>
+
+  <!-- Vercel Analytics + Speed Insights — cookieless edge-collected pageviews +
+       Web Vitals (CLS, FID, LCP, TTFB) per route. Stub queues are extracted to
+       same-origin .js files because our CSP forbids inline scripts. The real
+       scripts at /_vercel/insights/* are served by Vercel's edge automatically. -->
+  <script src="/assets/js/vercel-analytics-init.js" defer></script>
+  <script defer src="/_vercel/insights/script.js"></script>
+  <script src="/assets/js/vercel-speed-insights-init.js" defer></script>
+  <script defer src="/_vercel/speed-insights/script.js"></script>
+
   <!-- Plaid Link. stable v2 -->
   <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
 

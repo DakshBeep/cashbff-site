@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <!-- Sentry browser SDK: forwards JS errors + unhandled rejections to our Sentry project. -->
+  <script
+    src="https://js.sentry-cdn.com/2d45e7a7cdc726451c61d775aa22fbf2.min.js"
+    crossorigin="anonymous"
+  ></script>
+  <script src="/assets/js/sentry-init.js"></script>
+  <title>pricing — cash bff</title>
+  <meta name="description" content="cash bff pricing. $7.49 a month, 7 days free first. cancel anytime.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
+
+  <!-- PostHog product analytics. Hybrid mode: backend tracks business events,
+       browser handles autocapture + pageviews. CSP-safe (no eval). -->
+  <script src="/assets/js/posthog-init.js" defer></script>
+
+  <style>
+    @font-face {
+      font-family: 'Greed Condensed';
+      src: url('fonts/GreedCondensed-Bold.woff2') format('woff2');
+      font-weight: 700;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Greed Condensed';
+      src: url('fonts/GreedCondensed-Medium.woff2') format('woff2');
+      font-weight: 500;
+      font-display: swap;
+    }
+
+    :root {
+      --cash-green: #014751;
+      --electric-green: #D3FFB4;
+      --periwinkle: #C5B6F1;
+      --off-black: #1A1717;
+      --vanilla: #FCFAF2;
+      --error: #7a1f2a;
+
+      --font-display: 'Greed Condensed', 'Archivo Narrow', 'Arial Narrow', Impact, sans-serif;
+      --font-body: 'Instrument Sans', system-ui, -apple-system, sans-serif;
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font-body);
+      background: var(--vanilla);
+      color: var(--off-black);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      line-height: 1.5;
+      min-height: 100dvh;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { font-family: inherit; cursor: pointer; border: none; background: none; }
+
+    /* ── Stage ─────────────────────────────────────── */
+    .stage {
+      min-height: 100dvh;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 1.5rem 2rem 1.5rem;
+      max-width: 1080px;
+      margin: 0 auto;
+      width: 100%;
+      position: relative;
+    }
+    .bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.5rem;
+      letter-spacing: -0.02em;
+      color: var(--cash-green);
+    }
+    .bar__right {
+      font-size: 0.72rem;
+      opacity: 0.45;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    /* ── Hero card (tilted, on-brand) ─────────────── */
+    .card-stage {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.75rem 0 0.75rem;
+      flex-shrink: 0;
+    }
+    .card-wrap {
+      perspective: 1400px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .card {
+      width: min(20rem, 84vw);
+      aspect-ratio: 1.586 / 1;
+      background: var(--cash-green);
+      border-radius: 1.25rem;
+      padding: 1.4rem 1.3rem 1.15rem;
+      position: relative;
+      color: var(--vanilla);
+      transform: rotate(-7deg) translateZ(0);
+      box-shadow:
+        0 30px 60px -20px rgba(26, 23, 23, 0.32),
+        0 12px 24px -10px rgba(1, 71, 81, 0.32),
+        inset 0 0 0 1px rgba(213, 255, 180, 0.08);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow: hidden;
+      opacity: 0;
+      animation: float 6.5s ease-in-out infinite, cardEnter 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.1s forwards;
+    }
+    @keyframes float {
+      0%, 100% { transform: rotate(-7deg) translateY(0); }
+      50%      { transform: rotate(-7deg) translateY(-6px); }
+    }
+    @keyframes cardEnter {
+      from { opacity: 0; transform: rotate(-2deg) translateY(20px) scale(0.92); }
+      to   { opacity: 1; transform: rotate(-7deg) translateY(0) scale(1); }
+    }
+    .card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: radial-gradient(120% 80% at 10% 0%, rgba(213, 255, 180, 0.08), transparent 60%);
+      pointer-events: none;
+    }
+    .card__top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      position: relative;
+      z-index: 1;
+    }
+    .chip {
+      width: 2.4rem;
+      height: 1.8rem;
+      background: var(--periwinkle);
+      border-radius: 0.35rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .chip::before {
+      content: "";
+      position: absolute;
+      left: 10%; right: 10%;
+      height: 1px;
+      background: var(--cash-green);
+      opacity: 0.55;
+      top: 32%;
+      box-shadow: 0 6px 0 rgba(1,71,81,0.55), 0 12px 0 rgba(1,71,81,0.55);
+    }
+    .card__brand {
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: 0.85rem;
+      letter-spacing: -0.01em;
+      opacity: 0.85;
+    }
+    .numbers {
+      display: flex;
+      gap: 0.85rem;
+      flex-wrap: wrap;
+      position: relative;
+      z-index: 1;
+      mask-image: linear-gradient(90deg, transparent 0%, #000 4%, #000 96%, transparent 100%);
+      -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 4%, #000 96%, transparent 100%);
+    }
+    .group { display: flex; gap: 0.08em; }
+    .digit {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: clamp(1.15rem, 4vw, 1.65rem);
+      letter-spacing: 0.04em;
+      color: var(--electric-green);
+      display: inline-block;
+      animation: redact 4.2s cubic-bezier(0.65, 0.05, 0.36, 1) infinite;
+      animation-delay: calc(var(--i) * 180ms);
+      will-change: opacity, filter;
+    }
+    @keyframes redact {
+      0%, 100% { opacity: 1;    filter: blur(0);   }
+      38%      { opacity: 0.18; filter: blur(6px); }
+      62%      { opacity: 0.18; filter: blur(6px); }
+    }
+    .card__bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      position: relative;
+      z-index: 1;
+      font-size: 0.62rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      opacity: 0.55;
+    }
+    .card__bottom .name {
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: 0.78rem;
+      letter-spacing: 0;
+      text-transform: lowercase;
+      opacity: 1;
+    }
+    .card__meta {
+      display: flex;
+      gap: 0.9rem;
+      font-family: var(--font-body);
+      font-weight: 500;
+    }
+    .card__meta .dot {
+      display: inline-block;
+      width: 0.45rem; height: 0.45rem;
+      border-radius: 50%;
+      background: var(--electric-green);
+      margin-right: 0.35rem;
+      vertical-align: middle;
+      animation: pulse 2.4s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1;    transform: scale(1);   }
+      50%      { opacity: 0.35; transform: scale(0.8); }
+    }
+
+    /* ── Hero copy ─────────────────────────── */
+    .hero-copy {
+      text-align: center;
+      max-width: 36rem;
+      margin: 0 auto;
+      padding: 0.5rem 0.5rem 1.5rem;
+      opacity: 0;
+      animation: copyEnter 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.45s forwards;
+    }
+    @keyframes copyEnter {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .headline {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: clamp(2.2rem, 6.5vw, 3.75rem);
+      line-height: 0.92;
+      letter-spacing: -0.015em;
+      text-transform: uppercase;
+      color: var(--off-black);
+      margin-bottom: 0.7rem;
+    }
+    .headline .period { color: var(--cash-green); }
+    .sub {
+      font-size: clamp(0.95rem, 1.6vw, 1.05rem);
+      max-width: 30rem;
+      margin: 0 auto;
+      opacity: 0.72;
+      line-height: 1.55;
+    }
+
+    /* ── Tier grid ─────────────────────────────── */
+    .tiers {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.4rem;
+      max-width: 60rem;
+      margin: 0 auto 2rem;
+      width: 100%;
+    }
+    @media (max-width: 760px) {
+      .tiers { grid-template-columns: 1fr; gap: 1.1rem; }
+    }
+
+    .tier {
+      background: rgba(1, 71, 81, 0.04);
+      border: 1px solid rgba(1, 71, 81, 0.08);
+      border-radius: 22px;
+      padding: 2rem 1.75rem 1.85rem;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .tier--paid { background: rgba(211, 255, 180, 0.18); border-color: rgba(1, 71, 81, 0.18); }
+    .tier--soon {
+      background: rgba(197, 182, 241, 0.16);
+      border: 1.5px dashed rgba(197, 182, 241, 0.85);
+    }
+
+    .tier__badge {
+      display: inline-block;
+      align-self: flex-start;
+      font-size: 0.7rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      font-weight: 700;
+      padding: 0.32rem 0.7rem;
+      border-radius: 999px;
+      margin-bottom: 1.1rem;
+    }
+    .tier--paid .tier__badge {
+      background: var(--cash-green);
+      color: var(--vanilla);
+    }
+    .tier--soon .tier__badge {
+      background: var(--periwinkle);
+      color: var(--cash-green);
+    }
+
+    .tier__price {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: clamp(2.4rem, 6vw, 3.4rem);
+      letter-spacing: -0.02em;
+      line-height: 1;
+      color: var(--off-black);
+      margin-bottom: 0.4rem;
+    }
+    .tier__price .per {
+      font-family: var(--font-body);
+      font-weight: 500;
+      font-size: 0.95rem;
+      letter-spacing: 0;
+      color: var(--off-black);
+      opacity: 0.55;
+      margin-left: 0.35rem;
+    }
+    .tier__sub {
+      font-size: 0.95rem;
+      opacity: 0.72;
+      line-height: 1.5;
+      margin-bottom: 1.3rem;
+    }
+    .tier__sub strong { color: var(--cash-green); font-weight: 600; }
+
+    .tier__heading {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: clamp(1.55rem, 4vw, 1.95rem);
+      letter-spacing: -0.015em;
+      line-height: 1.05;
+      text-transform: uppercase;
+      color: var(--off-black);
+      margin-bottom: 0.7rem;
+    }
+    .tier__tagline {
+      font-size: 0.95rem;
+      opacity: 0.78;
+      line-height: 1.55;
+      margin-bottom: 1.4rem;
+    }
+
+    .tier__list {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 1.6rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+    .tier__list li {
+      font-size: 0.95rem;
+      line-height: 1.45;
+      padding-left: 1.6rem;
+      position: relative;
+      color: var(--off-black);
+    }
+    .tier__list li::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0.55em;
+      width: 0.85rem;
+      height: 0.85rem;
+      border-radius: 999px;
+      background: var(--cash-green);
+      box-shadow: 0 0 0 4px rgba(213, 255, 180, 0.55);
+    }
+
+    /* CTA */
+    .cta-btn {
+      display: block;
+      width: 100%;
+      background: var(--cash-green);
+      color: var(--vanilla);
+      padding: 1.05rem 1.5rem;
+      font-weight: 700;
+      font-size: 1rem;
+      border-radius: 100px;
+      text-align: center;
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+                  box-shadow 0.25s ease,
+                  opacity 0.2s ease;
+      margin-top: auto;
+    }
+    .cta-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 40px rgba(1, 71, 81, 0.22);
+    }
+    .cta-btn:disabled {
+      opacity: 0.55;
+      cursor: progress;
+      transform: none;
+      box-shadow: none;
+    }
+    .cta-btn--soft {
+      background: var(--periwinkle);
+      color: var(--cash-green);
+    }
+    .cta-btn--soft:hover:not(:disabled) {
+      box-shadow: 0 16px 40px rgba(197, 182, 241, 0.45);
+    }
+
+    /* ── Beta waitlist form ─────────────────────── */
+    /* Class-level rules beat the user-agent [hidden] rule by specificity,
+       so re-assert the hidden attribute wins for both the form and the
+       success card. Same trick used by .waitlist-error[hidden]. */
+    .waitlist-form { display: flex; flex-direction: column; gap: 0.65rem; margin-bottom: 1.1rem; }
+    .waitlist-form[hidden] { display: none; }
+    .field { display: flex; flex-direction: column; }
+    .field__label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      opacity: 0.7;
+      margin-bottom: 0.3rem;
+    }
+    .field__input,
+    .field__textarea {
+      width: 100%;
+      padding: 0.85rem 1.05rem;
+      border: 1px solid rgba(26, 23, 23, 0.18);
+      border-radius: 14px;
+      background: rgba(252, 250, 242, 0.95);
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: var(--off-black);
+      outline: none;
+      transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    .field__textarea {
+      resize: vertical;
+      min-height: 4.5rem;
+      font-size: 0.92rem;
+      line-height: 1.45;
+    }
+    .field__input::placeholder,
+    .field__textarea::placeholder { color: rgba(26, 23, 23, 0.32); }
+    .field__input:focus,
+    .field__textarea:focus {
+      border-color: var(--cash-green);
+      background: #fff;
+      box-shadow: 0 4px 14px rgba(1, 71, 81, 0.10);
+    }
+    .field__input[aria-invalid="true"],
+    .field__textarea[aria-invalid="true"] { border-color: var(--error); }
+
+    .waitlist-error {
+      background: rgba(122, 31, 42, 0.08);
+      color: var(--error);
+      border: 1px solid rgba(122, 31, 42, 0.18);
+      padding: 0.6rem 0.85rem;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      line-height: 1.4;
+      margin-top: 0.4rem;
+    }
+    .waitlist-error[hidden] { display: none; }
+
+    .waitlist-success {
+      background: rgba(211, 255, 180, 0.55);
+      border: 1px solid rgba(1, 71, 81, 0.16);
+      border-radius: 16px;
+      padding: 1.1rem 1.2rem;
+      color: var(--cash-green);
+      font-size: 1rem;
+      line-height: 1.5;
+      margin-bottom: 1.1rem;
+    }
+    .waitlist-success strong { font-weight: 700; }
+    .waitlist-success .quiet {
+      display: block;
+      font-size: 0.82rem;
+      color: var(--off-black);
+      opacity: 0.6;
+      margin-top: 0.45rem;
+      font-weight: 500;
+    }
+    .waitlist-success[hidden] { display: none; }
+
+    /* ── Promise footer below the tiers ─────────────── */
+    .promise {
+      max-width: 38rem;
+      margin: 0 auto 2.5rem;
+      text-align: center;
+      font-size: 1rem;
+      line-height: 1.55;
+      opacity: 0.82;
+      color: var(--off-black);
+      padding: 0 1rem;
+    }
+    .promise strong { color: var(--cash-green); font-weight: 600; }
+
+    /* ── Footer ───────────────────────────────────── */
+    .page-foot {
+      flex-shrink: 0;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.4rem 1.1rem;
+      font-size: 0.72rem;
+      opacity: 0.4;
+      padding-top: 1rem;
+      text-align: center;
+      margin-top: auto;
+    }
+    .page-foot a:hover { opacity: 1; color: var(--cash-green); }
+
+    /* ── Mobile (≤ 640px) ─────────────────────────── */
+    @media (max-width: 640px) {
+      .stage { padding: 1.25rem 1.25rem 1.25rem; }
+      .card { transform: rotate(-5deg); }
+      @keyframes float {
+        0%, 100% { transform: rotate(-5deg) translateY(0); }
+        50%      { transform: rotate(-5deg) translateY(-4px); }
+      }
+      @keyframes cardEnter {
+        from { opacity: 0; transform: rotate(-1deg) translateY(16px) scale(0.92); }
+        to   { opacity: 1; transform: rotate(-5deg) translateY(0) scale(1); }
+      }
+      .digit { font-size: clamp(1.05rem, 5vw, 1.45rem); }
+      .headline { font-size: clamp(2rem, 9vw, 2.6rem); }
+      .card-stage { padding: 1rem 0 0.5rem; }
+      .tier { padding: 1.55rem 1.3rem 1.45rem; }
+    }
+    @media (max-width: 380px) {
+      .card { width: min(17rem, 86vw); padding: 1rem 0.95rem 0.85rem; }
+      .numbers { gap: 0.5rem; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+      .card { opacity: 1; transform: rotate(-7deg); animation: none; }
+      .digit { opacity: 0.3; filter: blur(2px); animation: none; }
+      .card__meta .dot { animation: none; }
+      .hero-copy { opacity: 1; transform: none; animation: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <!-- ── Top bar ────────────────────────────────── -->
+    <header class="bar">
+      <a href="/" class="wordmark" aria-label="cash bff home">cash bff</a>
+      <div class="bar__right">pricing</div>
+    </header>
+
+    <!-- ── Tilted credit card hero ────────────────── -->
+    <div class="card-stage" id="card-stage">
+      <div class="card-wrap">
+        <div class="card" role="img" aria-label="a credit card whose numbers are fading out">
+          <div class="card__top">
+            <div class="chip" aria-hidden="true"></div>
+            <div class="card__brand">cash bff</div>
+          </div>
+
+          <div class="numbers" aria-hidden="true">
+            <div class="group">
+              <span class="digit" style="--i: 0;">7</span>
+              <span class="digit" style="--i: 1;">4</span>
+              <span class="digit" style="--i: 2;">9</span>
+              <span class="digit" style="--i: 3;">0</span>
+            </div>
+            <div class="group">
+              <span class="digit" style="--i: 4;">2</span>
+              <span class="digit" style="--i: 5;">0</span>
+              <span class="digit" style="--i: 6;">2</span>
+              <span class="digit" style="--i: 7;">6</span>
+            </div>
+            <div class="group">
+              <span class="digit" style="--i: 8;">5</span>
+              <span class="digit" style="--i: 9;">5</span>
+              <span class="digit" style="--i: 10;">5</span>
+              <span class="digit" style="--i: 11;">5</span>
+            </div>
+            <div class="group">
+              <span class="digit" style="--i: 12;">8</span>
+              <span class="digit" style="--i: 13;">0</span>
+              <span class="digit" style="--i: 14;">8</span>
+              <span class="digit" style="--i: 15;">8</span>
+            </div>
+          </div>
+
+          <div class="card__bottom">
+            <span class="name">$7.49 / month</span>
+            <span class="card__meta">
+              <span><span class="dot" aria-hidden="true"></span>7 days free</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Hero copy ──────────────────────────────── -->
+    <section class="hero-copy" aria-label="pricing intro">
+      <h1 class="headline">
+        pay once a month<span class="period">.</span><br>
+        forget about it<span class="period">.</span>
+      </h1>
+      <p class="sub">
+        7 days free. cancel anytime. no surprises, no upsells.
+      </p>
+    </section>
+
+    <!-- ── Tier grid ──────────────────────────────── -->
+    <section class="tiers" aria-label="pricing tiers">
+      <!-- Tier 1: $7.49/mo (the real product) -->
+      <article class="tier tier--paid">
+        <span class="tier__badge">monthly</span>
+        <div class="tier__price" data-test="price">
+          $7.49<span class="per">/ month</span>
+        </div>
+        <p class="tier__sub"><strong>7 days free</strong> first.</p>
+        <ul class="tier__list">
+          <li>the calendar that knows what's coming.</li>
+          <li>up to 5 banks via plaid.</li>
+          <li>unlimited manual cards.</li>
+          <li>recurring streams that auto-project 3 months ahead.</li>
+          <li>snapshot for any AI you want.</li>
+          <li>cancel anytime.</li>
+        </ul>
+        <a href="/" class="cta-btn" data-test="paid-cta">start your 7 days →</a>
+      </article>
+
+      <!-- Tier 2: SMS agent beta — coming soon -->
+      <article class="tier tier--soon" id="sms-tier">
+        <span class="tier__badge">coming soon</span>
+        <h2 class="tier__heading">SMS agent · coming soon</h2>
+        <p class="tier__tagline">
+          text your money questions. get answers back. like a quiet accountability partner that lives in your pocket.
+        </p>
+
+        <!-- Form (visible until success swap) -->
+        <form class="waitlist-form" id="waitlist-form" novalidate aria-label="sms agent beta waitlist">
+          <div class="field">
+            <label class="field__label" for="waitlist-email">your email</label>
+            <input
+              class="field__input"
+              type="email"
+              id="waitlist-email"
+              name="email"
+              placeholder="you@email.com"
+              autocomplete="email"
+              inputmode="email"
+              required
+              data-ph-no-capture="1"
+            >
+          </div>
+          <div class="field">
+            <label class="field__label" for="waitlist-note">tell us why you'd use this (optional)</label>
+            <textarea
+              class="field__textarea"
+              id="waitlist-note"
+              name="note"
+              maxlength="280"
+              placeholder="what would you ask?"
+              data-ph-no-capture="1"
+            ></textarea>
+          </div>
+          <div class="waitlist-error" id="waitlist-error" role="alert" hidden></div>
+          <button class="cta-btn cta-btn--soft" type="submit" id="waitlist-submit" data-test="waitlist-submit">
+            get on the early-access list →
+          </button>
+        </form>
+
+        <!-- Success state (revealed by pricing.js after 200) -->
+        <div class="waitlist-success" id="waitlist-success" role="status" hidden>
+          <strong>you're in. we'll text you first.</strong>
+          <span class="quiet">we won't spam — only when we have something real.</span>
+        </div>
+      </article>
+    </section>
+
+    <!-- ── Promise to early users ─────────────────── -->
+    <p class="promise">
+      <strong>early users get permanent perks.</strong>
+      we'll be loud about that when we have the room.
+    </p>
+
+    <!-- ── Page footer ───────────────────────────── -->
+    <footer class="page-foot">
+      <span>&copy; 2026 cash bff</span>
+      <span>·</span>
+      <a href="privacy.html">privacy</a>
+      <span>·</span>
+      <a href="terms.html">terms</a>
+      <span>·</span>
+      <a href="mailto:daksh@cashbff.com">daksh@cashbff.com</a>
+    </footer>
+  </div>
+
+  <script src="/assets/js/auth-banner.js" defer></script>
+  <script src="/assets/js/pricing.js" defer></script>
+</body>
+</html>

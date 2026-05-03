@@ -120,7 +120,7 @@ test.describe('privacy.html', () => {
     }
 
     // "Last updated" footer line.
-    await expect(page.locator('.updated')).toContainText('Last updated: April 29, 2026');
+    await expect(page.locator('.updated')).toContainText('Last updated: May 3, 2026');
 
     // Page footer with both legal links + email.
     const foot = page.locator('footer.page-foot');

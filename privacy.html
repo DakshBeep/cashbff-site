@@ -13,6 +13,19 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
 
+  <!-- PostHog product analytics. Hybrid mode: backend tracks business events,
+       browser handles autocapture + pageviews. CSP-safe (no eval). -->
+  <script src="/assets/js/posthog-init.js" defer></script>
+
+  <!-- Vercel Analytics + Speed Insights — cookieless edge-collected pageviews +
+       Web Vitals (CLS, FID, LCP, TTFB) per route. Stub queues are extracted to
+       same-origin .js files because our CSP forbids inline scripts. The real
+       scripts at /_vercel/insights/* are served by Vercel's edge automatically. -->
+  <script src="/assets/js/vercel-analytics-init.js" defer></script>
+  <script defer src="/_vercel/insights/script.js"></script>
+  <script src="/assets/js/vercel-speed-insights-init.js" defer></script>
+  <script defer src="/_vercel/speed-insights/script.js"></script>
+
   <style>
     @font-face {
       font-family: 'Greed Condensed';
@@ -225,6 +238,8 @@
       <li><strong>twilio</strong>. sends our sms one-time codes. they have their own privacy policy and only see your phone number and the code we send you.</li>
       <li><strong>stripe</strong>. processes payments and (for /school) handles age verification. they have their own privacy policy and only see what's needed to charge you and verify identity.</li>
       <li><strong>anthropic</strong>. the ai that powers our recurring detection and forecasting features. they have their own privacy policy and only see the prompts we send them, never your raw account or identifying info.</li>
+      <li><strong>posthog</strong> — anonymized product analytics. we send them event names + your opaque user id (no email, no phone, no transaction details). they have their own privacy policy. session recordings are off.</li>
+      <li><strong>vercel</strong> — they host the website + collect cookieless, edge-anonymized pageview counts + web-vitals (page load speed) so we know how the site performs on real devices. they don't see who you are.</li>
     </ul>
 
     <h2>your rights</h2>
@@ -236,9 +251,7 @@
     </p>
 
     <h2>cookies</h2>
-    <p>
-      only what we need to keep you logged in. specifically: <strong>cbff_session</strong> (your auth cookie) and <strong>cbff_signup</strong> / <strong>cbff_school</strong> (temporary signup-state cookies). no analytics cookies. no ad trackers. no third-party trackers of any kind.
-    </p>
+    <p>two categories: (1) auth state — <code>cbff_session</code>, <code>cbff_signup</code>, <code>cbff_school</code> — first-party, httponly. (2) analytics — <code>ph_*</code> cookies set by posthog for de-duplicating events across page loads. no advertising cookies.</p>
 
     <h2>under 18</h2>
     <p>
@@ -255,7 +268,7 @@
       questions, deletion requests, or anything else: <a href="mailto:daksh@cashbff.com">daksh@cashbff.com</a>.
     </p>
 
-    <span class="updated">Last updated: April 29, 2026.</span>
+    <span class="updated">Last updated: May 3, 2026.</span>
   </main>
 
   <footer class="page-foot">
