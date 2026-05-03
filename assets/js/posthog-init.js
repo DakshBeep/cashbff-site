@@ -4,7 +4,7 @@
 // Project API key is public by design (like a Stripe pk_test_), safe to commit.
 // Swap for the real `phc_…` once the user drops it.
 
-const POSTHOG_KEY = 'phc_REPLACE_ME';
+const POSTHOG_KEY = 'phc_ypCG5psqoak33xbk3YuHLRSuqkr3WNY8KxE6aCrHR4bn';
 
 // Skip init entirely if the placeholder is still in place. The page renders
 // fine; tracking just doesn't happen until the real key lands.
