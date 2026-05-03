@@ -23,6 +23,11 @@ if (typeof POSTHOG_KEY !== 'string' || POSTHOG_KEY.endsWith('REPLACE_ME')) {
     autocapture: true,
     capture_pageview: true,
     capture_pageleave: true,
+    // Capture for anonymous visitors too — without this, browser pageviews
+    // from cold visitors get queued forever and never flushed (PostHog's
+    // "identified_only" default behavior). The "person profile" for an
+    // anon visitor is just a UUID — no PII tied to it.
+    person_profiles: 'always',
     persistence: 'cookie',
     cross_subdomain_cookie: true,
     disable_session_recording: true,    // off forever — privacy
