@@ -229,6 +229,23 @@
       <strong>we never sell your data. we never share it with third parties for their own use.</strong> not for ads, not for analytics, not for anything.
     </p>
 
+    <h2>ai assistants you connect</h2>
+    <p>
+      if you connect cash bff to an ai assistant (claude, chatgpt, etc.) using our mcp connector, your assistant can read the same money data you'd see on your home page — running balance, recurring expenses, scheduled bills, recent transactions, and search results when you ask. <strong>read-only.</strong> they can't add, edit, or delete anything in cash bff. they can't see anyone else's money.
+    </p>
+    <p>
+      what we log: the tool the ai called (e.g. <code>search_my_transactions</code>), the parameters it passed (e.g. the merchant you searched for, the date range), the size of the response, a timestamp, and your opaque user id.
+    </p>
+    <p>
+      what we <strong>don't</strong> see: your natural-language conversation with the ai, the ai's reply, or anything else from that chat. all of that lives between you and the ai you chose. we only answer the specific data requests it makes on your behalf.
+    </p>
+    <p>
+      we use these tool-call logs to <strong>understand what people ask their money</strong>. if many of you keep asking for something we don't support yet, we'll add it. <strong>we never sell these logs. we never share them with third parties.</strong>
+    </p>
+    <p>
+      you can disconnect any ai assistant at any time from its connector settings (in claude.ai: settings → connectors → cash bff → disconnect). disconnecting cuts off all future access immediately.
+    </p>
+
     <h2>third parties we work with</h2>
     <p>
       a few partners power parts of the product. each gets only the data they need to do their job, and each has their own privacy policy that governs what happens on their side:
@@ -241,6 +258,9 @@
       <li><strong>posthog</strong> — anonymized product analytics. we send them event names + your opaque user id (no email, no phone, no transaction details). they have their own privacy policy. session recordings are off.</li>
       <li><strong>vercel</strong> — they host the website + collect cookieless, edge-anonymized pageview counts + web-vitals (page load speed) so we know how the site performs on real devices. they don't see who you are.</li>
     </ul>
+    <p>
+      <em>note:</em> ai assistants <strong>you choose to connect</strong> (via claude.ai, chatgpt, etc.) aren't on the list above because they're your choice, not ours. see "ai assistants you connect" above for what flows through that integration.
+    </p>
 
     <h2>your rights</h2>
     <p>
