@@ -159,13 +159,10 @@
       notice.appendChild(msg);
 
       const link = document.createElement("a");
-      // TODO: signup.js doesn't yet honor a `next=` query param after signup
-      // verify (it follows server-provided `redirect` or falls back to
-      // /home.html). For v0 we send users to "/signup" and accept the
-      // rougher UX of them having to click "start free trial" again after
-      // logging in. When signup.js learns to read next=/?action=start-trial,
-      // swap this href to that path so we round-trip cleanly.
-      link.href = "/signup?next=/";
+      // signup.js now honors ?next=… on auth verify (both new + returning
+      // paths). Send the user back to / with action=start-trial so the
+      // homepage's onTrialClick handler can re-fire automatically.
+      link.href = "/signup?next=/%3Faction%3Dstart-trial";
       link.textContent = "sign in";
       link.style.textDecoration = "underline";
       notice.appendChild(link);
@@ -231,6 +228,35 @@
       });
   }
 
+  /** On page load with ?action=start-trial, programmatically fire the
+   *  trial click flow. Used for the post-signup round-trip: a logged-out
+   *  user clicks "start free trial" → gets redirected to /signup?next=
+   *  /?action=start-trial → completes phone-OTP signup → signup.js routes
+   *  back here → this handler resumes the trial flow they were trying to
+   *  start. Strips the param from the URL after firing so refreshes don't
+   *  re-trigger Stripe. */
+  function maybeAutoFireStartTrial() {
+    let params;
+    try { params = new URLSearchParams(window.location.search); }
+    catch (e) { return; }
+    if (params.get("action") !== "start-trial") return;
+
+    // Strip the action param from the visible URL.
+    try {
+      params.delete("action");
+      const remaining = params.toString();
+      const cleanUrl = window.location.pathname + (remaining ? "?" + remaining : "") + window.location.hash;
+      window.history.replaceState(null, "", cleanUrl);
+    } catch (e) {
+      // Some old browsers don't support replaceState; fine to skip.
+    }
+
+    track("talk_trial_started", { source: "post_signup_autofire", auth_state: "anon" });
+    // Defer slightly so /api/me has a moment to settle if cookies were
+    // just set on a different subdomain transition.
+    setTimeout(function () { onTrialClick({}); }, 200);
+  }
+
   /** On page load with ?subscribed=1, show a success toast nudging the user
    *  toward the next step (connecting Claude). PostHog event is deduped via
    *  sessionStorage so refreshes don't double-count. */
@@ -262,6 +288,8 @@
     if (copyBtn) copyBtn.addEventListener("click", onInlineCopy);
     const trialBtn = $("trial-btn");
     if (trialBtn) trialBtn.addEventListener("click", onTrialClick);
+    // Auto-fire trial click if URL has ?action=start-trial (post-signup return).
+    maybeAutoFireStartTrial();
     // Fires only when the URL has ?subscribed=1 (Stripe success redirect).
     maybeHandleSubscribedSuccess();
   });

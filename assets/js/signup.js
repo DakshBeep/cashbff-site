@@ -380,8 +380,17 @@
         verifyOtpBtn.textContent = orig;
         return;
       }
-      // Backend tells us where to go (e.g. /home.html). Default if missing.
-      const dest = (r.data && r.data.redirect) || '/home.html';
+      // Routing priority:
+      //   1. ?next=… query param (e.g. /signup?next=/?action=start-trial)
+      //      — set by the homepage's "first sign in" link so users land
+      //      back on the action they were trying to take.
+      //   2. backend-provided redirect (e.g. /home.html for completed onboarding)
+      //   3. /home.html as the catch-all default
+      // We only honor `next` URLs that start with `/` to prevent open-redirect.
+      const params = new URLSearchParams(window.location.search);
+      const nextRaw = params.get('next');
+      const safeNext = (typeof nextRaw === 'string' && nextRaw.startsWith('/')) ? nextRaw : null;
+      const dest = safeNext || (r.data && r.data.redirect) || '/home.html';
       location.href = dest;
     } catch (_) {
       showBanner('network hiccup. try again in a sec.', 'error');
@@ -490,8 +499,12 @@
         returningVerifyBtn.textContent = orig;
         return;
       }
-      // Returning users always go home. their session is set.
-      location.href = '/home.html';
+      // Returning users go to ?next=… if present (so they can be sent
+      // back to /?action=start-trial after sign-in), else /home.html.
+      const params = new URLSearchParams(window.location.search);
+      const nextRaw = params.get('next');
+      const safeNext = (typeof nextRaw === 'string' && nextRaw.startsWith('/')) ? nextRaw : null;
+      location.href = safeNext || '/home.html';
     } catch (_) {
       showBanner('network hiccup. try again in a sec.', 'error');
       returningVerifyBtn.disabled = false;

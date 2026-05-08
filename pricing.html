@@ -649,7 +649,7 @@
           <li>the calendar that knows what's coming.</li>
           <li>cancel anytime.</li>
         </ul>
-        <a href="https://buy.stripe.com/14A9ATdOeen7aKA8BT1sQ01" target="_blank" rel="noopener" class="cta-btn" data-test="paid-cta">start your 14 days →</a>
+        <a id="trial-btn" href="https://buy.stripe.com/14A9ATdOeen7aKA8BT1sQ01" target="_blank" rel="noopener noreferrer" class="cta-btn" data-test="paid-cta">start your 14 days →</a>
       </article>
     </section>
 
@@ -667,5 +667,12 @@
 
   <script src="/assets/js/auth-banner.js" defer></script>
   <script src="/assets/js/pricing.js" defer></script>
+  <!-- talk.js wires the trial button (id="trial-btn") to the auth-aware
+       Stripe flow: it intercepts clicks, calls /api/me to grab user_id,
+       and appends ?client_reference_id so the resulting subscription can
+       be reconciled to a cashbff account via webhook. Without this, paying
+       directly from /pricing creates orphan Stripe subscriptions with
+       nothing to link them back to. Same script used on the homepage. -->
+  <script src="/assets/js/talk.js" defer></script>
 </body>
 </html>
