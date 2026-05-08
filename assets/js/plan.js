@@ -141,7 +141,7 @@ function updateMonthlyHint() {
   const totalMin = state.cards.reduce((s, c) => s + (Number(c.min) || 0), 0);
   const monthly = Number(monthlyInput.value) || 0;
   if (totalMin <= 0) {
-    monthlyHint.textContent = "we'll set a sensible default. adjust up if you can.";
+    monthlyHint.textContent = "$300 to start. push it up if you can.";
     return;
   }
   if (monthly < totalMin) {

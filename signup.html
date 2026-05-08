@@ -11,7 +11,7 @@
   <script src="/assets/js/sentry-init.js"></script>
 
   <title>cashbff — sign in</title>
-  <meta name="description" content="your number, your trial, your bank, your claude.">
+  <meta name="description" content="your number. your trial. your bank. in claude.">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -535,11 +535,10 @@
       <!-- ── STATE_PHONE: phone entry (signup) ─────── -->
       <section class="state is-active" id="state-phone" data-state="phone" aria-label="enter your phone">
         <h1 class="headline">
-          let's start<span class="period">,</span><br>
-          with your number<span class="period">.</span>
+          your number<span class="period">.</span>
         </h1>
         <p class="sub">
-          we'll text you a code.
+          us bank accounts. takes about a minute.
         </p>
 
         <form class="action" id="phone-form" autocomplete="off" novalidate>
@@ -577,10 +576,10 @@
       <!-- ── STATE_OTP: 6-digit code (signup) ──────── -->
       <section class="state" id="state-otp" data-state="otp" aria-label="enter the code we texted you">
         <h1 class="headline">
-          check your texts<span class="period">.</span>
+          your code<span class="period">.</span>
         </h1>
         <p class="sub">
-          enter the code we just sent to <strong id="phone-display">your number</strong>.
+          sent to <strong id="phone-display">your number</strong>.
         </p>
 
         <form class="action" id="otp-form" autocomplete="off">
@@ -613,8 +612,7 @@
       <!-- ── STATE_TRIAL: subscribe via stripe ─────── -->
       <section class="state" id="state-trial" data-state="trial" aria-label="start your free trial">
         <h1 class="headline">
-          start your<br>
-          free trial<span class="period">.</span>
+          your trial<span class="period">.</span>
         </h1>
         <p class="sub">
           14 days free, then $12.99 a month, cancel anytime.
@@ -622,34 +620,29 @@
 
         <div class="action">
           <button class="btn-primary btn-block" id="trial-btn" type="button">
-            <span>start free trial</span>
+            <span>start trial</span>
             <span class="arrow" aria-hidden="true">→</span>
           </button>
-
-          <p class="micro">
-            stripe handles checkout. we never see your card.
-          </p>
         </div>
       </section>
 
       <!-- ── STATE_PLAID: connect bank via plaid ───── -->
       <section class="state" id="state-plaid" data-state="plaid" aria-label="connect your bank">
         <h1 class="headline">
-          now connect<span class="period">,</span><br>
           your bank<span class="period">.</span>
         </h1>
         <p class="sub">
-          read-only. plaid handles it. about a minute.
+          read-only. your bank stays with your bank.
         </p>
 
         <div class="action">
           <button class="btn-primary btn-block" id="connect-btn" type="button">
-            <span>connect your bank</span>
+            <span>connect</span>
             <span class="arrow" aria-hidden="true">→</span>
           </button>
 
           <p class="micro">
-            we never see your password. you can disconnect any time from <a href="/home">home</a>.
+            disconnect any time from <a href="/home">home</a>.
           </p>
         </div>
 
@@ -663,20 +656,20 @@
       <!-- ── STATE_CLAUDE: open in claude ──────────── -->
       <section class="state" id="state-claude" data-state="claude" aria-label="open in claude">
         <h1 class="headline">
-          open in claude<span class="period">.</span>
+          in claude<span class="period">.</span>
         </h1>
         <p class="sub">
-          we'll copy the url. paste it where claude asks. allow access. done.
+          last step. paste where claude asks, then allow.
         </p>
 
         <div class="action">
           <button class="btn-primary btn-block" id="claude-btn" type="button">
-            <span>open in claude</span>
+            <span>open claude</span>
             <span class="arrow" aria-hidden="true">→</span>
           </button>
 
           <p class="secondary">
-            or go to <a href="/home">your home</a>.
+            or skip to <a href="/home">your home</a>.
           </p>
         </div>
       </section>
@@ -684,11 +677,10 @@
       <!-- ── STATE_RETURNING_PHONE ─────────────────── -->
       <section class="state" id="state-returning-phone" data-state="returning-phone" aria-label="sign in with your phone">
         <h1 class="headline">
-          welcome back<span class="period">,</span><br>
-          your number<span class="period">.</span>
+          welcome back<span class="period">.</span>
         </h1>
         <p class="sub">
-          we'll text a code to sign you in.
+          your number to sign in.
         </p>
 
         <form class="action" id="returning-phone-form" autocomplete="off" novalidate>
@@ -713,7 +705,7 @@
           </button>
 
           <p class="secondary">
-            <button class="as-link" id="returning-back" type="button">new here? start at the top</button>
+            <button class="as-link" id="returning-back" type="button">new here? sign up</button>
           </p>
         </form>
       </section>
@@ -721,10 +713,10 @@
       <!-- ── STATE_RETURNING_OTP ───────────────────── -->
       <section class="state" id="state-returning-otp" data-state="returning-otp" aria-label="enter the code we texted you">
         <h1 class="headline">
-          check your texts<span class="period">.</span>
+          your code<span class="period">.</span>
         </h1>
         <p class="sub">
-          enter the code we just sent to <strong id="returning-phone-display">your number</strong>.
+          sent to <strong id="returning-phone-display">your number</strong>.
         </p>
 
         <form class="action" id="returning-otp-form" autocomplete="off">
@@ -757,7 +749,7 @@
     </div>
 
     <!-- toast for "url copied to clipboard" feedback on STATE_CLAUDE -->
-    <div class="toast" id="toast" role="status" aria-live="polite">url copied. paste it in the claude.ai dialog.</div>
+    <div class="toast" id="toast" role="status" aria-live="polite">copied. paste it in the claude dialog.</div>
 
     <!-- ── footer ─────────────────────────────────── -->
     <footer class="footer">
