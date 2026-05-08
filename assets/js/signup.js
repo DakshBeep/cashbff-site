@@ -455,8 +455,14 @@
 
     let linkToken;
     try {
-      const r = await api('POST', '/api/signup/start');
-      if (!r.ok || !r.data || !r.data.link_token) throw new Error('signup/start failed');
+      // Authed-user Plaid flow: at this point in the funnel the user has
+      // already verified their phone (cbff_session cookie set) and paid for
+      // the trial, so we use the /api/plaid/* endpoints which key writes
+      // directly to connected_accounts(user_id), NOT the legacy
+      // /api/signup/* endpoints (those bridge an anon cbff_signup → real
+      // user_id during /api/signup/verify-otp, which we're already past).
+      const r = await api('POST', '/api/plaid/link-token');
+      if (!r.ok || !r.data || !r.data.link_token) throw new Error('plaid/link-token failed');
       linkToken = r.data.link_token;
     } catch (_) {
       showBanner("we couldn't reach the bank service. give it a sec and try again.", 'error');
@@ -495,9 +501,15 @@
     }
   }
 
-  async function handlePlaidSuccess(public_token /*, metadata */) {
+  async function handlePlaidSuccess(public_token, metadata) {
     try {
-      const r = await api('POST', '/api/signup/exchange', { public_token: public_token });
+      // Authed-user exchange. Pass `metadata` through so the backend can
+      // pull metadata.institution.name for connected_accounts.institution
+      // (otherwise rows show up as "Unknown").
+      const r = await api('POST', '/api/plaid/exchange', {
+        public_token: public_token,
+        metadata: metadata || null,
+      });
       if (!r.ok || !r.data || r.data.ok !== true) throw new Error('exchange failed');
       track('signup_plaid_connected', {});
       inFlight = false;
