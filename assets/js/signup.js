@@ -1,103 +1,145 @@
-// index.js. Plaid-first onboarding funnel for cashbff.com.
+// signup.js. Lowest-friction subscribe order for cashbff.com.
 //
-// State machine (one section visible at a time):
-//   STATE_CONNECT          → big "connect your bank" CTA + sign-in link.
-//   STATE_PLAID            → Plaid modal owns the screen; we show a calm
-//                            "connecting…" backdrop in case the modal flickers.
-//   STATE_PHONE            → after exchange. Heading shows the institution.
-//   STATE_OTP              → after send-otp. Single 6-digit field.
-//   STATE_RETURNING_PHONE  → "already have an account" entry. talks to the
-//                            existing /api/otp/* endpoints, NOT /signup/*.
-//   STATE_RETURNING_OTP    → 6-digit code for returning users.
+// New state machine (the FRONT lane):
+//   STATE_PHONE   → user enters their phone. /api/otp/send → STATE_OTP
+//   STATE_OTP     → user enters 6-digit code. /api/otp/verify → cookie set
+//                   + account created → STATE_TRIAL
+//   STATE_TRIAL   → "start free trial" → fetch /api/me to grab user_id, then
+//                   navigate the SAME tab to the Stripe Payment Link with
+//                   ?client_reference_id=<uid> appended. After Stripe, it
+//                   redirects back to /signup?subscribed=1 → smart routing
+//                   puts the user in STATE_PLAID.
+//   STATE_PLAID   → "connect your bank" opens Plaid Link. Same /api/signup/start
+//                   + /api/signup/exchange flow as before. On success → STATE_CLAUDE
+//   STATE_CLAUDE  → "open in claude" copies the MCP URL to clipboard +
+//                   opens claude.ai's connector dialog in a new tab.
 //
-// Phase 9A: this is a marketing page. If the user is already authed we no
-// longer auto-redirect to /home.html. instead we let the funnel render and
-// paint a small "my home →" pill via showAuthHomeButton() so they can jump
-// back whenever. The funnel itself stays interactive in case they want to
-// poke at it (e.g. exploring the demo flow).
+// Returning lane (preserved):
+//   STATE_RETURNING_PHONE / STATE_RETURNING_OTP → straight /api/otp/* sign-in
+//   for users who already have an account. Lands them on /home or the safe ?next.
+//
+// Smart routing on page load:
+//   1. read URL params (?step=, ?subscribed=, ?next=)
+//   2. call /api/me with credentials:'include'
+//   3. branch on auth + (talk_status, has_bank) to pick the starting state
 //
 // All API calls use credentials:'include' because cbff_session and
 // cbff_signup are HttpOnly cookies on Domain=.cashbff.com.
 //
-// CSP-safe: no inline scripts, no eval. Plaid SDK and Sentry are
-// allow-listed in vercel.json.
+// CSP-safe: no inline scripts, no eval. Plaid SDK + Sentry are allow-listed
+// in vercel.json.
 
 (function () {
   'use strict';
 
   const API_BASE = 'https://api.cashbff.com';
+  const STRIPE_PAYMENT_LINK = 'https://buy.stripe.com/14A9ATdOeen7aKA8BT1sQ01';
+  const MCP_URL = 'https://api.cashbff.com/mcp';
+  const CLAUDE_CONNECTOR_URL = 'https://claude.ai/settings/connectors?modal=add-custom-connector';
 
-  const STATE_CONNECT          = 'connect';
-  const STATE_PLAID            = 'plaid';
+  // ── states ──────────────────────────────────────
   const STATE_PHONE            = 'phone';
   const STATE_OTP              = 'otp';
+  const STATE_TRIAL            = 'trial';
+  const STATE_PLAID            = 'plaid';
+  const STATE_CLAUDE           = 'claude';
   const STATE_RETURNING_PHONE  = 'returning-phone';
   const STATE_RETURNING_OTP    = 'returning-otp';
+
+  // Forward-flow order. used to drive the progress dots.
+  const FORWARD_FLOW = [STATE_PHONE, STATE_OTP, STATE_TRIAL, STATE_PLAID, STATE_CLAUDE];
+  // Map state → which progress dot index to highlight (phone+otp share dot 0).
+  const PROGRESS_INDEX = {
+    [STATE_PHONE]:  0,
+    [STATE_OTP]:    0,
+    [STATE_TRIAL]:  1,
+    [STATE_PLAID]:  2,
+    [STATE_CLAUDE]: 3,
+  };
 
   // ── DOM hooks ────────────────────────────────────
   const $ = (id) => document.getElementById(id);
 
   const banner          = $('banner');
-  const cardStage       = $('card-stage');
-  const cardName        = $('card-name');
-  const institutionName = $('institution-name');
+  const progressEl      = $('progress');
+
   const phoneInput      = $('phone-input');
   const otpInput        = $('otp-input');
   const phoneDisplay    = $('phone-display');
   const sendOtpBtn      = $('send-otp-btn');
   const verifyOtpBtn    = $('verify-otp-btn');
-  const connectBtn      = $('connect-btn');
+  const resendOtpBtn    = $('resend-otp');
+  const changePhoneBtn  = $('change-phone');
   const returningLink   = $('returning-link');
+
+  const trialBtn        = $('trial-btn');
+  const connectBtn      = $('connect-btn');
+  const plaidFlight     = $('plaid-flight');
+  const claudeBtn       = $('claude-btn');
+  const toast           = $('toast');
+
   const returningPhoneInput   = $('returning-phone-input');
   const returningOtpInput     = $('returning-otp-input');
   const returningPhoneDisplay = $('returning-phone-display');
   const returningSendBtn      = $('returning-send-btn');
   const returningVerifyBtn    = $('returning-verify-btn');
-  const returningBackLink     = $('returning-back');
-  const resendOtpBtn          = $('resend-otp');
-  const changePhoneBtn        = $('change-phone');
   const returningResendBtn    = $('returning-resend');
   const returningChangeBtn    = $('returning-change');
+  const returningBackLink     = $('returning-back');
 
-  // ── In-flight + transient state ─────────────────
-  // `inFlight` covers the whole "starting Plaid → exchange" sequence so a
-  // second click can't double-fire link-token requests. Each per-button
-  // guard below covers the local CTA only.
+  // ── transient state ─────────────────────────────
+  // `inFlight` covers Plaid Link's "starting → exchange" sequence so a
+  // double-click can't double-fire link-token requests.
   let inFlight = false;
-  // Tracks which signup phone the user submitted (E.164) so the verify
-  // call sends the right number even if they edit the field after.
   let signupPhoneE164 = null;
-  // Same for the returning-user shortcut.
   let returningPhoneE164 = null;
-  // Resend cooldown timer ids so re-renders don't leak intervals.
   let signupResendTimer = null;
   let returningResendTimer = null;
+  // Cached user_id from /api/me, used to attach client_reference_id to the
+  // Stripe Payment Link so we can stitch the checkout back to our user.
+  let cachedUserId = null;
+
+  // ── PostHog tracking helper ─────────────────────
+  function track(event, props) {
+    try {
+      if (window.posthog && typeof window.posthog.capture === 'function') {
+        window.posthog.capture(event, props || {});
+      }
+    } catch (_) { /* never let analytics break the funnel */ }
+  }
 
   // ── State machine ───────────────────────────────
   function showState(name) {
     const sections = document.querySelectorAll('.state');
     sections.forEach((s) => {
-      if (s.getAttribute('data-state') === name) {
-        s.classList.add('is-active');
-      } else {
-        s.classList.remove('is-active');
-      }
+      if (s.getAttribute('data-state') === name) s.classList.add('is-active');
+      else s.classList.remove('is-active');
     });
-    // Clear any banner left over from another state.
     hideBanner();
-    // Compact the tilted credit-card hero once we leave STATE_CONNECT so
-    // the form panel below it gets vertical room. The card stays mounted
-    // (visual continuity). it just shrinks via .is-compact + a CSS
-    // transform.
-    if (cardStage) {
-      if (name === STATE_CONNECT) cardStage.classList.remove('is-compact');
-      else                         cardStage.classList.add('is-compact');
-    }
+    paintProgress(name);
+
     // Auto-focus the relevant input on entry.
-    if (name === STATE_PHONE) setTimeout(() => phoneInput && phoneInput.focus(), 100);
-    if (name === STATE_OTP) setTimeout(() => otpInput && otpInput.focus(), 100);
-    if (name === STATE_RETURNING_PHONE) setTimeout(() => returningPhoneInput && returningPhoneInput.focus(), 100);
-    if (name === STATE_RETURNING_OTP) setTimeout(() => returningOtpInput && returningOtpInput.focus(), 100);
+    if (name === STATE_PHONE)            setTimeout(() => phoneInput && phoneInput.focus(), 100);
+    if (name === STATE_OTP)              setTimeout(() => otpInput && otpInput.focus(), 100);
+    if (name === STATE_RETURNING_PHONE)  setTimeout(() => returningPhoneInput && returningPhoneInput.focus(), 100);
+    if (name === STATE_RETURNING_OTP)    setTimeout(() => returningOtpInput && returningOtpInput.focus(), 100);
+  }
+
+  function paintProgress(stateName) {
+    if (!progressEl) return;
+    // Returning lane has no progress dots.
+    const isReturning = stateName === STATE_RETURNING_PHONE || stateName === STATE_RETURNING_OTP;
+    progressEl.hidden = isReturning;
+    if (isReturning) return;
+
+    const activeIdx = PROGRESS_INDEX[stateName];
+    if (activeIdx === undefined) { progressEl.hidden = true; return; }
+    const dots = progressEl.querySelectorAll('.progress__dot');
+    dots.forEach((dot, i) => {
+      dot.classList.remove('is-active', 'is-done');
+      if (i < activeIdx) dot.classList.add('is-done');
+      else if (i === activeIdx) dot.classList.add('is-active');
+    });
   }
 
   // ── Inline banner ───────────────────────────────
@@ -111,6 +153,13 @@
     if (!banner) return;
     banner.hidden = true;
     banner.textContent = '';
+  }
+
+  function showToast(msg) {
+    if (!toast) return;
+    if (msg) toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2400);
   }
 
   // ── Helpers ─────────────────────────────────────
@@ -127,9 +176,6 @@
     const last = d.slice(-10);
     return '+1 (' + last.slice(0, 3) + ') ' + last.slice(3, 6) + '-' + last.slice(6);
   }
-
-  // Phone formatter. pretty-print as the user types (display only; we
-  // re-extract digits on submit so paste / partial entries still work).
   function formatPhoneDisplay(input) {
     const d = String(input.value || '').replace(/\D/g, '').slice(0, 10);
     let out = d;
@@ -139,8 +185,7 @@
     input.value = out;
   }
 
-  function startResendCooldown(button, seconds, timerSlot) {
-    // Returns a token that can be used to clear the cooldown if needed.
+  function startResendCooldown(button, seconds, slot) {
     if (!button) return;
     const original = button.textContent;
     let remaining = seconds;
@@ -151,20 +196,22 @@
       if (remaining <= 0) {
         button.disabled = false;
         button.textContent = original;
-        if (timerSlot === 'signup') {
-          clearInterval(signupResendTimer);
-          signupResendTimer = null;
-        } else {
-          clearInterval(returningResendTimer);
-          returningResendTimer = null;
-        }
+        if (slot === 'signup') { clearInterval(signupResendTimer); signupResendTimer = null; }
+        else                   { clearInterval(returningResendTimer); returningResendTimer = null; }
         return;
       }
       button.textContent = 'resend in ' + remaining + 's';
     };
     const id = setInterval(tick, 1000);
-    if (timerSlot === 'signup') signupResendTimer = id;
-    else returningResendTimer = id;
+    if (slot === 'signup') signupResendTimer = id;
+    else                   returningResendTimer = id;
+  }
+
+  // Returns a `?next=…` value only if it's a same-origin path.
+  function safeNextFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const nextRaw = params.get('next');
+    return (typeof nextRaw === 'string' && nextRaw.startsWith('/')) ? nextRaw : null;
   }
 
   // ── Network helpers ─────────────────────────────
@@ -181,42 +228,27 @@
     return { ok: res.ok, status: res.status, data };
   }
 
-  // ── Auth probe (Phase 9A) ────────────────────────
-  // Hit /api/me at boot to detect whether the visitor already has a session.
-  // If so we paint the "my home →" pill and stash the user so other helpers
-  // can read it; we no longer hard-redirect away from this marketing page.
-  // 401 / network errors fall through silently. the funnel renders normally.
-  async function probeAuthAndPaintBanner() {
+  // ── /api/me probe. Returns { ok, status, data }. ─
+  async function fetchMe() {
     try {
       const res = await fetch(API_BASE + '/api/me', {
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
       });
-      if (res.ok) {
-        let data = null;
-        try { data = await res.json(); } catch (_) { data = {}; }
-        window.__authedUser = data || {};
-        if (typeof window.showAuthHomeButton === 'function') {
-          window.showAuthHomeButton();
-        }
-        return true;
-      }
-    } catch (_) { /* offline / DNS. render the funnel anyway */ }
-    return false;
+      let data = null;
+      try { data = await res.json(); } catch (_) { data = null; }
+      return { ok: res.ok, status: res.status, data: data || {} };
+    } catch (_) {
+      return { ok: false, status: 0, data: {} };
+    }
   }
 
   // ── Plaid SDK guard ─────────────────────────────
-  // The CDN script is in the HTML <head>. If it failed to load (offline,
-  // CSP misconfig) `window.Plaid` is undefined. We retry briefly so a slow
-  // mobile network gets a fair shake before bailing.
   function waitForPlaid(timeoutMs) {
     const deadline = Date.now() + (timeoutMs || 4000);
     return new Promise((resolve) => {
       const check = () => {
-        if (window.Plaid && typeof window.Plaid.create === 'function') {
-          resolve(true);
-          return;
-        }
+        if (window.Plaid && typeof window.Plaid.create === 'function') { resolve(true); return; }
         if (Date.now() >= deadline) { resolve(false); return; }
         setTimeout(check, 120);
       };
@@ -224,105 +256,17 @@
     });
   }
 
-  // ── Signup flow. Plaid Link ────────────────────
-  async function startSignupFlow() {
-    if (inFlight) return;
-    inFlight = true;
-    if (connectBtn) connectBtn.disabled = true;
-    hideBanner();
-
-    // 1. Backend mints a link_token + sets the cbff_signup cookie.
-    let linkToken;
-    try {
-      const r = await api('POST', '/api/signup/start');
-      if (!r.ok || !r.data || !r.data.link_token) {
-        throw new Error('signup/start failed');
-      }
-      linkToken = r.data.link_token;
-    } catch (_) {
-      showBanner("we couldn't reach the bank service. give it a sec and try again.", 'error');
-      inFlight = false;
-      if (connectBtn) connectBtn.disabled = false;
-      return;
-    }
-
-    // 2. Make sure the Plaid SDK is loaded (handles slow CDN / iOS).
-    const plaidReady = await waitForPlaid(4000);
-    if (!plaidReady) {
-      showBanner("plaid didn't load. check your connection and try again.", 'error');
-      inFlight = false;
-      if (connectBtn) connectBtn.disabled = false;
-      return;
-    }
-
-    // 3. Move to the in-flight state, then open Plaid.
-    showState(STATE_PLAID);
-    try {
-      const handler = window.Plaid.create({
-        token: linkToken,
-        onSuccess: handlePlaidSuccess,
-        onExit: handlePlaidExit,
-      });
-      handler.open();
-    } catch (_) {
-      showState(STATE_CONNECT);
-      showBanner("we couldn't open the bank picker. try again.", 'error');
-      inFlight = false;
-      if (connectBtn) connectBtn.disabled = false;
-    }
-  }
-
-  async function handlePlaidSuccess(public_token, metadata) {
-    // Exchange the public_token server-side. The cbff_signup cookie tells
-    // the backend which signup row this Plaid item belongs to.
-    try {
-      const r = await api('POST', '/api/signup/exchange', { public_token: public_token });
-      if (!r.ok || !r.data || r.data.ok !== true) {
-        throw new Error('exchange failed');
-      }
-      const inst = (r.data && r.data.institution)
-        || (metadata && metadata.institution && metadata.institution.name)
-        || 'bank';
-      if (institutionName) institutionName.textContent = String(inst).toLowerCase();
-      // Subtle delight: stamp the connected institution onto the card's
-      // name slot so the hero card feels like *their* card, not a demo.
-      if (cardName) cardName.textContent = String(inst).toLowerCase();
-      inFlight = false;
-      if (connectBtn) connectBtn.disabled = false;
-      showState(STATE_PHONE);
-    } catch (_) {
-      showState(STATE_CONNECT);
-      showBanner("we connected but couldn't save it. one more try?", 'error');
-      inFlight = false;
-      if (connectBtn) connectBtn.disabled = false;
-    }
-  }
-
-  function handlePlaidExit(err /*, metadata */) {
-    // Two cases:
-    //   1) err is non-null → Plaid surfaced something (institution timeout,
-    //      MFA bailed). We want to be friendly and let them retry.
-    //   2) err is null → user closed the modal voluntarily.
-    inFlight = false;
-    if (connectBtn) connectBtn.disabled = false;
-    // Order matters: showState clears the banner, so paint the banner AFTER
-    // we transition back to the connect state.
-    showState(STATE_CONNECT);
-    if (err) {
-      showBanner("plaid closed before we finished. try again whenever.", 'error');
-    } else {
-      showBanner("no worries. try again whenever.", 'info');
-    }
-  }
-
-  // ── Signup flow. phone + OTP ───────────────────
-  async function sendSignupOtp(phoneE164) {
-    const r = await api('POST', '/api/signup/send-otp', { phone: phoneE164 });
+  // ── STATE_PHONE: send signup OTP ────────────────
+  // Note: with the new flow, a signup user hits /api/otp/send (NOT
+  // /api/signup/send-otp) so the same OTP code path creates the account on
+  // verify. The legacy /api/signup/* endpoints are only used by Plaid Link.
+  async function sendOtp(phoneE164) {
+    const r = await api('POST', '/api/otp/send', { phone: phoneE164 });
     if (r.status === 429) {
       showBanner('slow down. too many codes. try again in a bit.', 'error');
       return false;
     }
-    if (!r.ok || !r.data || r.data.ok !== true) {
+    if (!r.ok) {
       showBanner("we couldn't send the code. try again?", 'error');
       return false;
     }
@@ -341,17 +285,18 @@
     const orig = sendOtpBtn.textContent;
     sendOtpBtn.textContent = 'sending…';
     hideBanner();
-    const ok = await sendSignupOtp(phone);
+    const ok = await sendOtp(phone);
     sendOtpBtn.disabled = false;
     sendOtpBtn.textContent = orig;
     if (!ok) return;
     signupPhoneE164 = phone;
     if (phoneDisplay) phoneDisplay.textContent = maskPhone(phone);
+    track('signup_phone_submitted', {});
     showState(STATE_OTP);
-    // Start the cooldown so users can't spam resend.
     startResendCooldown(resendOtpBtn, 30, 'signup');
   }
 
+  // ── STATE_OTP: verify code → STATE_TRIAL ────────
   async function handleVerifySignupOtp() {
     if (!verifyOtpBtn || verifyOtpBtn.disabled) return;
     const code = (otpInput ? otpInput.value : '').replace(/\D/g, '');
@@ -360,7 +305,6 @@
       return;
     }
     if (!signupPhoneE164) {
-      // Edge case: the user reloaded the page mid-flow. Send them back.
       showBanner('your phone got cleared. start again.', 'error');
       showState(STATE_PHONE);
       return;
@@ -370,7 +314,7 @@
     verifyOtpBtn.textContent = 'verifying…';
     hideBanner();
     try {
-      const r = await api('POST', '/api/signup/verify-otp', {
+      const r = await api('POST', '/api/otp/verify', {
         phone: signupPhoneE164, code: code,
       });
       if (!r.ok || !r.data || r.data.ok !== true) {
@@ -380,18 +324,15 @@
         verifyOtpBtn.textContent = orig;
         return;
       }
-      // Routing priority:
-      //   1. ?next=… query param (e.g. /signup?next=/?action=start-trial)
-      //      — set by the homepage's "first sign in" link so users land
-      //      back on the action they were trying to take.
-      //   2. backend-provided redirect (e.g. /home.html for completed onboarding)
-      //   3. /home.html as the catch-all default
-      // We only honor `next` URLs that start with `/` to prevent open-redirect.
-      const params = new URLSearchParams(window.location.search);
-      const nextRaw = params.get('next');
-      const safeNext = (typeof nextRaw === 'string' && nextRaw.startsWith('/')) ? nextRaw : null;
-      const dest = safeNext || (r.data && r.data.redirect) || '/home.html';
-      location.href = dest;
+      // Cookie is now set. Hand off to the trial step.
+      track('signup_otp_verified', {});
+      // Pre-fetch /api/me so the Stripe button is instant when the user clicks.
+      fetchMe().then((me) => {
+        if (me.ok && me.data && me.data.user_id) cachedUserId = me.data.user_id;
+      }).catch(() => {});
+      showState(STATE_TRIAL);
+      verifyOtpBtn.disabled = false;
+      verifyOtpBtn.textContent = orig;
     } catch (_) {
       showBanner('network hiccup. try again in a sec.', 'error');
       verifyOtpBtn.disabled = false;
@@ -401,13 +342,10 @@
 
   async function handleResendSignupOtp() {
     if (!resendOtpBtn || resendOtpBtn.disabled) return;
-    if (!signupPhoneE164) {
-      showState(STATE_PHONE);
-      return;
-    }
+    if (!signupPhoneE164) { showState(STATE_PHONE); return; }
     resendOtpBtn.disabled = true;
     hideBanner();
-    const ok = await sendSignupOtp(signupPhoneE164);
+    const ok = await sendOtp(signupPhoneE164);
     if (ok) {
       showBanner('new code sent.', 'info');
       startResendCooldown(resendOtpBtn, 30, 'signup');
@@ -417,7 +355,6 @@
   }
 
   function handleChangeSignupPhone() {
-    // Clear the OTP field but keep the phone so they can edit it.
     if (otpInput) otpInput.value = '';
     if (signupResendTimer) {
       clearInterval(signupResendTimer);
@@ -430,10 +367,137 @@
     showState(STATE_PHONE);
   }
 
-  // ── Returning-user flow ─────────────────────────
-  // Uses the existing /api/otp/* endpoints (NOT /signup/*) because those are
-  // signup-only. The verify response sets cbff_session directly.
-  async function handleReturningStart() {
+  // ── STATE_TRIAL: stripe payment link, SAME tab ──
+  async function handleStartTrial() {
+    if (!trialBtn || trialBtn.disabled) return;
+    trialBtn.disabled = true;
+    const orig = trialBtn.textContent;
+    trialBtn.textContent = 'opening…';
+    hideBanner();
+
+    // Prefer the cached user_id; fall back to /api/me if it isn't there yet.
+    let uid = cachedUserId;
+    if (!uid) {
+      const me = await fetchMe();
+      if (me.ok && me.data && me.data.user_id) uid = me.data.user_id;
+    }
+
+    track('signup_trial_started', { has_user_id: Boolean(uid) });
+
+    let url = STRIPE_PAYMENT_LINK;
+    if (uid) {
+      const sep = url.includes('?') ? '&' : '?';
+      url = url + sep + 'client_reference_id=' + encodeURIComponent(uid);
+    }
+    // SAME-tab navigation: the redirect from Stripe lands back on /signup?subscribed=1
+    // and our smart routing pushes the user into STATE_PLAID.
+    window.location.href = url;
+  }
+
+  // ── STATE_PLAID: link token + Plaid Link ────────
+  async function startPlaidFlow() {
+    if (inFlight) return;
+    inFlight = true;
+    if (connectBtn) connectBtn.disabled = true;
+    hideBanner();
+
+    let linkToken;
+    try {
+      const r = await api('POST', '/api/signup/start');
+      if (!r.ok || !r.data || !r.data.link_token) throw new Error('signup/start failed');
+      linkToken = r.data.link_token;
+    } catch (_) {
+      showBanner("we couldn't reach the bank service. give it a sec and try again.", 'error');
+      inFlight = false;
+      if (connectBtn) connectBtn.disabled = false;
+      return;
+    }
+
+    const plaidReady = await waitForPlaid(4000);
+    if (!plaidReady) {
+      showBanner("plaid didn't load. check your connection and try again.", 'error');
+      inFlight = false;
+      if (connectBtn) connectBtn.disabled = false;
+      return;
+    }
+
+    // Reveal the in-flight overlay so users see something happening even if
+    // Plaid's modal flickers on slower devices.
+    if (plaidFlight) plaidFlight.hidden = false;
+
+    try {
+      const handler = window.Plaid.create({
+        token: linkToken,
+        onSuccess: handlePlaidSuccess,
+        onExit: handlePlaidExit,
+      });
+      handler.open();
+    } catch (_) {
+      if (plaidFlight) plaidFlight.hidden = true;
+      showBanner("we couldn't open the bank picker. try again.", 'error');
+      inFlight = false;
+      if (connectBtn) connectBtn.disabled = false;
+    }
+  }
+
+  async function handlePlaidSuccess(public_token /*, metadata */) {
+    try {
+      const r = await api('POST', '/api/signup/exchange', { public_token: public_token });
+      if (!r.ok || !r.data || r.data.ok !== true) throw new Error('exchange failed');
+      track('signup_plaid_connected', {});
+      inFlight = false;
+      if (connectBtn) connectBtn.disabled = false;
+      if (plaidFlight) plaidFlight.hidden = true;
+      showState(STATE_CLAUDE);
+    } catch (_) {
+      if (plaidFlight) plaidFlight.hidden = true;
+      showBanner("we connected but couldn't save it. one more try?", 'error');
+      inFlight = false;
+      if (connectBtn) connectBtn.disabled = false;
+    }
+  }
+
+  function handlePlaidExit(err /*, metadata */) {
+    inFlight = false;
+    if (connectBtn) connectBtn.disabled = false;
+    if (plaidFlight) plaidFlight.hidden = true;
+    if (err) showBanner("plaid closed before we finished. try again whenever.", 'error');
+    else     showBanner("no worries. try again whenever.", 'info');
+  }
+
+  // ── STATE_CLAUDE: copy MCP url + open connector ─
+  async function handleOpenInClaude() {
+    if (!claudeBtn) return;
+    // Try modern Clipboard API first; fall back to legacy execCommand for
+    // older browsers. Either way we open the dialog so the user can paste.
+    let copied = false;
+    try {
+      if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        await navigator.clipboard.writeText(MCP_URL);
+        copied = true;
+      }
+    } catch (_) { /* fall through to legacy */ }
+    if (!copied) {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = MCP_URL;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'absolute';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        copied = true;
+      } catch (_) { /* clipboard blocked. open the dialog anyway. */ }
+    }
+    if (copied) showToast('url copied. paste it in the claude.ai dialog.');
+    track('signup_claude_added', { copied: copied });
+    window.open(CLAUDE_CONNECTOR_URL, '_blank', 'noopener');
+  }
+
+  // ── Returning lane ──────────────────────────────
+  function handleReturningStart() {
     showState(STATE_RETURNING_PHONE);
   }
 
@@ -499,12 +563,10 @@
         returningVerifyBtn.textContent = orig;
         return;
       }
-      // Returning users go to ?next=… if present (so they can be sent
-      // back to /?action=start-trial after sign-in), else /home.html.
-      const params = new URLSearchParams(window.location.search);
-      const nextRaw = params.get('next');
-      const safeNext = (typeof nextRaw === 'string' && nextRaw.startsWith('/')) ? nextRaw : null;
-      location.href = safeNext || '/home.html';
+      // Returning users skip the funnel entirely. Honor ?next=… (path-only)
+      // else send them to /home.
+      const nextDest = safeNextFromUrl();
+      location.href = nextDest || '/home';
     } catch (_) {
       showBanner('network hiccup. try again in a sec.', 'error');
       returningVerifyBtn.disabled = false;
@@ -514,10 +576,7 @@
 
   async function handleResendReturningOtp() {
     if (!returningResendBtn || returningResendBtn.disabled) return;
-    if (!returningPhoneE164) {
-      showState(STATE_RETURNING_PHONE);
-      return;
-    }
+    if (!returningPhoneE164) { showState(STATE_RETURNING_PHONE); return; }
     returningResendBtn.disabled = true;
     hideBanner();
     const ok = await sendReturningOtp(returningPhoneE164);
@@ -542,27 +601,77 @@
     showState(STATE_RETURNING_PHONE);
   }
 
+  // ── Smart routing on page load ──────────────────
+  // Decision tree:
+  //   /api/me 401                                    → STATE_PHONE
+  //   /api/me 200 + ?subscribed=1                    → STATE_PLAID
+  //   /api/me 200 + ?step=plaid                      → STATE_PLAID
+  //   /api/me 200 + ?step=claude                     → STATE_CLAUDE
+  //   /api/me 200 + trialing/active + has_bank       → /home (full setup)
+  //   /api/me 200 + trialing/active + no bank        → STATE_PLAID
+  //   /api/me 200 + no/none talk_status              → STATE_TRIAL
+  // /api/me failures (network etc) fall back to STATE_PHONE.
+  async function decideStartingState() {
+    const params = new URLSearchParams(window.location.search);
+    const stepParam      = params.get('step');
+    const justSubscribed = params.get('subscribed') === '1';
+
+    const me = await fetchMe();
+
+    if (me.status === 401 || !me.ok) {
+      // Anonymous (or network blip). Start at the top of the funnel.
+      showState(STATE_PHONE);
+      // Auto-paint the auth-banner pill if a session shows up later.
+      try { if (typeof window.showAuthHomeButton === 'function') window.showAuthHomeButton(); } catch (_) {}
+      return;
+    }
+
+    // We have a session. Cache user_id for the Stripe handoff.
+    if (me.data && me.data.user_id) cachedUserId = me.data.user_id;
+    window.__authedUser = me.data || {};
+    try { if (typeof window.showAuthHomeButton === 'function') window.showAuthHomeButton(); } catch (_) {}
+
+    const status  = me.data && me.data.talk_status ? String(me.data.talk_status).toLowerCase() : null;
+    const hasBank = !!(me.data && me.data.has_bank);
+    const subscribed = status === 'trialing' || status === 'active';
+
+    // Just came back from Stripe checkout.
+    if (justSubscribed) { showState(STATE_PLAID); return; }
+
+    // Explicit deep-links.
+    if (stepParam === 'plaid')  { showState(STATE_PLAID); return; }
+    if (stepParam === 'claude') { showState(STATE_CLAUDE); return; }
+
+    // Fully set up: subscribe + bank linked → bounce to home (or ?next).
+    if (subscribed && hasBank) {
+      const nextDest = safeNextFromUrl();
+      location.href = nextDest || '/home';
+      return;
+    }
+
+    // Subscribed but no bank yet → connect bank.
+    if (subscribed && !hasBank) { showState(STATE_PLAID); return; }
+
+    // Authed but no subscription → trial pitch.
+    showState(STATE_TRIAL);
+  }
+
   // ── Wire up ─────────────────────────────────────
   function wire() {
-    if (connectBtn) connectBtn.addEventListener('click', startSignupFlow);
-    if (returningLink) returningLink.addEventListener('click', handleReturningStart);
-
-    // Phone formatters. pretty-print as user types.
+    // STATE_PHONE
+    if (sendOtpBtn) sendOtpBtn.addEventListener('click', handleSendSignupOtp);
     if (phoneInput) {
       phoneInput.addEventListener('input', () => formatPhoneDisplay(phoneInput));
-      // Pressing Enter inside the form submits the send-otp action.
       phoneInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') { e.preventDefault(); handleSendSignupOtp(); }
       });
     }
-    if (returningPhoneInput) {
-      returningPhoneInput.addEventListener('input', () => formatPhoneDisplay(returningPhoneInput));
-      returningPhoneInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') { e.preventDefault(); handleSendReturningOtp(); }
-      });
-    }
+    if (returningLink) returningLink.addEventListener('click', handleReturningStart);
 
-    // OTP fields. strip non-digits + auto-submit on 6.
+    // STATE_OTP
+    if (verifyOtpBtn) verifyOtpBtn.addEventListener('click', handleVerifySignupOtp);
+    if (resendOtpBtn) resendOtpBtn.addEventListener('click', handleResendSignupOtp);
+    if (changePhoneBtn) changePhoneBtn.addEventListener('click', handleChangeSignupPhone);
     if (otpInput) {
       otpInput.addEventListener('input', () => {
         const cleaned = otpInput.value.replace(/\D/g, '').slice(0, 6);
@@ -571,6 +680,28 @@
       });
       otpInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') { e.preventDefault(); handleVerifySignupOtp(); }
+      });
+    }
+
+    // STATE_TRIAL
+    if (trialBtn) trialBtn.addEventListener('click', handleStartTrial);
+
+    // STATE_PLAID
+    if (connectBtn) connectBtn.addEventListener('click', startPlaidFlow);
+
+    // STATE_CLAUDE
+    if (claudeBtn) claudeBtn.addEventListener('click', handleOpenInClaude);
+
+    // Returning lane
+    if (returningSendBtn) returningSendBtn.addEventListener('click', handleSendReturningOtp);
+    if (returningVerifyBtn) returningVerifyBtn.addEventListener('click', handleVerifyReturningOtp);
+    if (returningResendBtn) returningResendBtn.addEventListener('click', handleResendReturningOtp);
+    if (returningChangeBtn) returningChangeBtn.addEventListener('click', handleChangeReturningPhone);
+    if (returningBackLink) returningBackLink.addEventListener('click', () => showState(STATE_PHONE));
+    if (returningPhoneInput) {
+      returningPhoneInput.addEventListener('input', () => formatPhoneDisplay(returningPhoneInput));
+      returningPhoneInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); handleSendReturningOtp(); }
       });
     }
     if (returningOtpInput) {
@@ -583,39 +714,24 @@
         if (e.key === 'Enter') { e.preventDefault(); handleVerifyReturningOtp(); }
       });
     }
-
-    if (sendOtpBtn) sendOtpBtn.addEventListener('click', handleSendSignupOtp);
-    if (verifyOtpBtn) verifyOtpBtn.addEventListener('click', handleVerifySignupOtp);
-    if (resendOtpBtn) resendOtpBtn.addEventListener('click', handleResendSignupOtp);
-    if (changePhoneBtn) changePhoneBtn.addEventListener('click', handleChangeSignupPhone);
-
-    if (returningSendBtn) returningSendBtn.addEventListener('click', handleSendReturningOtp);
-    if (returningVerifyBtn) returningVerifyBtn.addEventListener('click', handleVerifyReturningOtp);
-    if (returningResendBtn) returningResendBtn.addEventListener('click', handleResendReturningOtp);
-    if (returningChangeBtn) returningChangeBtn.addEventListener('click', handleChangeReturningPhone);
-    if (returningBackLink) returningBackLink.addEventListener('click', () => showState(STATE_CONNECT));
   }
 
   // ── Boot ────────────────────────────────────────
-  // Phase 9A: paint the funnel first so logged-in visitors can browse the
-  // marketing page freely. The auth probe runs in parallel and, when 200,
-  // adds the floating "my home →" pill via auth-banner.js.
   (async function boot() {
     wire();
-    probeAuthAndPaintBanner().catch(() => {});
+    // decideStartingState handles the /api/me call + the routing branches.
+    decideStartingState().catch(() => { showState(STATE_PHONE); });
   })();
 
-  // Test hook. only exposed in non-prod-like environments. Some Playwright
-  // mocks need to skip the auto-redirect or peek at the state machine. We
-  // gate this behind a query param so prod users never see it.
+  // Test hook. only exposed when ?__cbff_test=1 so prod users never see it.
   try {
     const params = new URLSearchParams(location.search);
     if (params.get('__cbff_test') === '1') {
-      window.__cbffIndex = {
+      window.__cbffSignup = {
         showState,
         showBanner,
         hideBanner,
-        STATE_CONNECT, STATE_PLAID, STATE_PHONE, STATE_OTP,
+        STATE_PHONE, STATE_OTP, STATE_TRIAL, STATE_PLAID, STATE_CLAUDE,
         STATE_RETURNING_PHONE, STATE_RETURNING_OTP,
       };
     }

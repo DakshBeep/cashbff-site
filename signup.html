@@ -11,7 +11,7 @@
   <script src="/assets/js/sentry-init.js"></script>
 
   <title>cashbff — sign in</title>
-  <meta name="description" content="connect your bank, confirm your number, you're in.">
+  <meta name="description" content="your number, your trial, your bank, your claude.">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -44,8 +44,8 @@
       font-display: swap;
     }
 
-    /* B&W brand. cash-green is used ONLY on .period spans + the wordmark.
-       everything else is monochrome. mirrors index.html. */
+    /* B&W brand. cash-green is used ONLY on .period spans + the wordmark
+       + the step numbers. mirrors index.html exactly. */
     :root {
       --vanilla: #FCFAF2;
       --off-black: #1A1717;
@@ -119,6 +119,24 @@
     }
     .nav a:hover { opacity: 1; }
 
+    /* ── progress dots: subtle 4-step indicator across the top of the funnel ── */
+    .progress {
+      display: flex;
+      gap: 0.45rem;
+      margin: 0 0 2rem;
+      align-items: center;
+    }
+    .progress__dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--hairline);
+      transition: background-color .25s ease, transform .25s ease;
+    }
+    .progress__dot.is-active { background: var(--off-black); }
+    .progress__dot.is-done { background: var(--cash-green); }
+    .progress[hidden] { display: none; }
+
     /* ── funnel ── only one .state visible at a time ── */
     .funnel {
       flex: 1;
@@ -182,6 +200,7 @@
       display: inline-flex;
       align-items: center;
       gap: 0.65rem;
+      min-height: 44px;
       transition: transform .12s ease, opacity .15s;
     }
     .btn-primary:hover:not(:disabled) { opacity: 0.92; transform: translateY(-1px); }
@@ -224,7 +243,7 @@
     }
     .secondary a:hover { text-decoration-color: var(--off-black); }
 
-    /* terms note under the connect CTA */
+    /* terms / micro-copy under a CTA */
     .micro {
       font-size: 0.78rem;
       opacity: 0.5;
@@ -249,6 +268,7 @@
       padding: 0.35rem 0.5rem 0.35rem 1.1rem;
       max-width: 22rem;
       width: 100%;
+      min-height: 56px;
       transition: border-color 0.18s ease;
     }
     .field:focus-within { border-color: var(--off-black); }
@@ -291,6 +311,7 @@
       text-align: center;
       letter-spacing: 0.55rem;
       outline: none;
+      min-height: 60px;
       transition: border-color 0.18s ease;
     }
     .otp-field input:focus { border-color: var(--off-black); }
@@ -367,6 +388,28 @@
       to   { background-position: -200% 0; }
     }
 
+    /* ── trial bullets — mini reassurance list under STATE_TRIAL ── */
+    .bullets {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      margin: 0 0 1.75rem;
+      max-width: 28rem;
+      font-size: 0.9rem;
+      opacity: 0.7;
+    }
+    .bullets li { list-style: none; padding-left: 1.1rem; position: relative; line-height: 1.45; }
+    .bullets li::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0.55rem;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--cash-green);
+    }
+
     /* ── banner ── shared across states ── */
     .banner {
       max-width: 32rem;
@@ -387,6 +430,26 @@
       color: var(--error);
       border: 1px solid rgba(122, 31, 42, 0.18);
     }
+
+    /* ── toast for "url copied" ── */
+    .toast {
+      position: fixed;
+      top: 1rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(-6px);
+      background: var(--off-black);
+      color: var(--vanilla);
+      padding: 0.75rem 1.1rem;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      opacity: 0;
+      transition: opacity .25s, transform .25s;
+      pointer-events: none;
+      max-width: 22rem;
+      z-index: 50;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
     /* ── footer ── */
     .footer {
@@ -424,6 +487,8 @@
     @media (max-width: 360px) {
       .headline { font-size: 2rem; }
       .btn-primary { font-size: 1rem; padding: 0.95rem 1.65rem; }
+      .field { max-width: 100%; }
+      .btn-block { max-width: 100%; }
     }
 
     /* ── reduced motion ── */
@@ -449,11 +514,17 @@
       </nav>
     </header>
 
-    <!-- signup.js calls cardStage.classList.add('is-compact') and writes the
-         institution name into card-name once Plaid succeeds. We keep both as
-         hidden stubs so those calls are no-ops without throwing. -->
+    <!-- card-stage / card-name kept as hidden stubs for any legacy hooks. -->
     <span id="card-stage" class="visually-hidden" aria-hidden="true"></span>
     <span id="card-name" class="visually-hidden" aria-hidden="true">your name here</span>
+
+    <!-- ── progress dots ── 4 forward-flow steps. hidden on returning states. -->
+    <div class="progress" id="progress" aria-hidden="true">
+      <span class="progress__dot" data-step="phone"></span>
+      <span class="progress__dot" data-step="trial"></span>
+      <span class="progress__dot" data-step="plaid"></span>
+      <span class="progress__dot" data-step="claude"></span>
+    </div>
 
     <!-- ── funnel ─────────────────────────────────── -->
     <div class="funnel" id="funnel">
@@ -461,56 +532,14 @@
       <!-- shared inline banner. signup.js toggles [hidden] and class. -->
       <div class="banner" id="banner" role="status" aria-live="polite" hidden></div>
 
-      <!-- ── state 1. connect bank ─────────────────── -->
-      <section class="state is-active" id="state-connect" data-state="connect" aria-label="connect your bank">
+      <!-- ── STATE_PHONE: phone entry (signup) ─────── -->
+      <section class="state is-active" id="state-phone" data-state="phone" aria-label="enter your phone">
         <h1 class="headline">
-          let's connect<span class="period">,</span><br>
-          your bank<span class="period">.</span>
+          let's start<span class="period">,</span><br>
+          with your number<span class="period">.</span>
         </h1>
         <p class="sub">
-          one tap, then a quick text code. that's it.
-        </p>
-
-        <div class="action">
-          <button class="btn-primary" id="connect-btn" type="button">
-            <span>connect your bank</span>
-            <span class="arrow" aria-hidden="true">→</span>
-          </button>
-
-          <p class="micro">
-            14 days free, cancel anytime. by continuing you agree to our
-            <a href="/terms">terms</a>.
-          </p>
-
-          <p class="secondary">
-            already set up?
-            <button class="as-link" id="returning-link" type="button">sign in</button>
-          </p>
-        </div>
-      </section>
-
-      <!-- ── state 2. plaid in flight ──────────────── -->
-      <section class="state" id="state-plaid" data-state="plaid" aria-label="connecting your bank">
-        <h1 class="headline">
-          one second<span class="period">.</span>
-        </h1>
-        <p class="sub">
-          handing you to your bank. finish there, we'll be right here.
-        </p>
-        <div class="plaid-flight">
-          <div class="plaid-flight__msg">connecting</div>
-          <div class="plaid-flight__pulse" aria-hidden="true"></div>
-        </div>
-      </section>
-
-      <!-- ── state 3. phone entry (signup) ─────────── -->
-      <section class="state" id="state-phone" data-state="phone" aria-label="enter your phone">
-        <h1 class="headline">
-          your <span id="institution-name">bank</span> is in<span class="period">.</span><br>
-          now your number<span class="period">.</span>
-        </h1>
-        <p class="sub">
-          we'll text one code to make sure it's you.
+          we'll text you a code.
         </p>
 
         <form class="action" id="phone-form" autocomplete="off" novalidate>
@@ -535,18 +564,23 @@
           </button>
 
           <p class="micro">
-            by entering your phone you agree to our <a href="/terms">terms</a>.
+            by continuing you agree to our <a href="/terms">terms</a>.
+          </p>
+
+          <p class="secondary">
+            already have an account?
+            <button class="as-link" id="returning-link" type="button">sign in</button>
           </p>
         </form>
       </section>
 
-      <!-- ── state 4. OTP entry (signup) ───────────── -->
+      <!-- ── STATE_OTP: 6-digit code (signup) ──────── -->
       <section class="state" id="state-otp" data-state="otp" aria-label="enter the code we texted you">
         <h1 class="headline">
-          we sent a code<span class="period">.</span>
+          check your texts<span class="period">.</span>
         </h1>
         <p class="sub">
-          to <strong id="phone-display">your number</strong>. 6 digits, just texted.
+          enter the code we just sent to <strong id="phone-display">your number</strong>.
         </p>
 
         <form class="action" id="otp-form" autocomplete="off">
@@ -576,7 +610,84 @@
         </form>
       </section>
 
-      <!-- ── state 5. returning user. phone ────────── -->
+      <!-- ── STATE_TRIAL: subscribe via stripe ─────── -->
+      <section class="state" id="state-trial" data-state="trial" aria-label="start your free trial">
+        <h1 class="headline">
+          start your<br>
+          free trial<span class="period">.</span>
+        </h1>
+        <p class="sub">
+          14 days free, then $12.99 a month, cancel anytime.
+        </p>
+
+        <ul class="bullets" aria-label="what you get">
+          <li>unlimited talks with claude about your money.</li>
+          <li>balances, runway, recurring, in plain english.</li>
+          <li>cancel in one tap, no questions.</li>
+        </ul>
+
+        <div class="action">
+          <button class="btn-primary btn-block" id="trial-btn" type="button">
+            <span>start free trial</span>
+            <span class="arrow" aria-hidden="true">→</span>
+          </button>
+
+          <p class="micro">
+            stripe handles checkout. we never see your card.
+          </p>
+        </div>
+      </section>
+
+      <!-- ── STATE_PLAID: connect bank via plaid ───── -->
+      <section class="state" id="state-plaid" data-state="plaid" aria-label="connect your bank">
+        <h1 class="headline">
+          now connect<span class="period">,</span><br>
+          your bank<span class="period">.</span>
+        </h1>
+        <p class="sub">
+          read-only. plaid handles it. about a minute.
+        </p>
+
+        <div class="action">
+          <button class="btn-primary btn-block" id="connect-btn" type="button">
+            <span>connect your bank</span>
+            <span class="arrow" aria-hidden="true">→</span>
+          </button>
+
+          <p class="micro">
+            we never see your password. you can disconnect any time from <a href="/home">home</a>.
+          </p>
+        </div>
+
+        <!-- in-flight overlay copy: shown while Plaid Link is open. -->
+        <div class="plaid-flight" id="plaid-flight" hidden>
+          <div class="plaid-flight__msg">connecting</div>
+          <div class="plaid-flight__pulse" aria-hidden="true"></div>
+        </div>
+      </section>
+
+      <!-- ── STATE_CLAUDE: open in claude ──────────── -->
+      <section class="state" id="state-claude" data-state="claude" aria-label="open in claude">
+        <h1 class="headline">
+          open in claude<span class="period">.</span>
+        </h1>
+        <p class="sub">
+          we'll copy the url. paste it where claude asks. allow access. done.
+        </p>
+
+        <div class="action">
+          <button class="btn-primary btn-block" id="claude-btn" type="button">
+            <span>open in claude</span>
+            <span class="arrow" aria-hidden="true">→</span>
+          </button>
+
+          <p class="secondary">
+            or go to <a href="/home">your home</a>.
+          </p>
+        </div>
+      </section>
+
+      <!-- ── STATE_RETURNING_PHONE ─────────────────── -->
       <section class="state" id="state-returning-phone" data-state="returning-phone" aria-label="sign in with your phone">
         <h1 class="headline">
           welcome back<span class="period">,</span><br>
@@ -608,18 +719,18 @@
           </button>
 
           <p class="secondary">
-            <button class="as-link" id="returning-back" type="button">new here? connect a bank instead</button>
+            <button class="as-link" id="returning-back" type="button">new here? start at the top</button>
           </p>
         </form>
       </section>
 
-      <!-- ── state 6. returning user. OTP ──────────── -->
+      <!-- ── STATE_RETURNING_OTP ───────────────────── -->
       <section class="state" id="state-returning-otp" data-state="returning-otp" aria-label="enter the code we texted you">
         <h1 class="headline">
-          we sent a code<span class="period">.</span>
+          check your texts<span class="period">.</span>
         </h1>
         <p class="sub">
-          to <strong id="returning-phone-display">your number</strong>. 6 digits, just texted.
+          enter the code we just sent to <strong id="returning-phone-display">your number</strong>.
         </p>
 
         <form class="action" id="returning-otp-form" autocomplete="off">
@@ -650,6 +761,9 @@
       </section>
 
     </div>
+
+    <!-- toast for "url copied to clipboard" feedback on STATE_CLAUDE -->
+    <div class="toast" id="toast" role="status" aria-live="polite">url copied. paste it in the claude.ai dialog.</div>
 
     <!-- ── footer ─────────────────────────────────── -->
     <footer class="footer">

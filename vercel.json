@@ -4,6 +4,11 @@
   "redirects": [
     { "source": "/claude", "destination": "/", "permanent": true },
     { "source": "/claude.html", "destination": "/", "permanent": true },
+    { "source": "/talk",
+      "has": [{ "type": "query", "key": "subscribed", "value": "1" }],
+      "destination": "/signup?subscribed=1",
+      "permanent": false
+    },
     { "source": "/talk", "destination": "/", "permanent": true },
     { "source": "/talk.html", "destination": "/", "permanent": true },
     { "source": "/signup.html", "destination": "/signup", "permanent": true }
