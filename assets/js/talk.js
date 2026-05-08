@@ -99,16 +99,23 @@
   }
 
   function onAddClick() {
+    // CRITICAL: open the new tab SYNCHRONOUSLY here, inside the click handler.
+    // Browsers (Safari + Firefox strict mode especially) block window.open()
+    // called after an `await` / Promise resolution because the user-gesture
+    // context is gone. Opening it first preserves the gesture, then we do
+    // the copy in the background.
+    const newTab = window.open(CLAUDE_URL, "_blank", "noopener");
+
     copyToClipboard(MCP_URL).then(function (ok) {
-      track("mcp_connect_clicked", { copy_succeeded: ok });
+      track("mcp_connect_clicked", { copy_succeeded: ok, popup_opened: !!newTab });
       if (ok) {
         showToast("URL copied. paste it in the claude.ai dialog.");
+      } else if (newTab) {
+        showToast("couldn't auto-copy — use the copy button below to grab it.");
       } else {
-        showToast("couldn't auto-copy — copy manually from the box below.");
+        // Both popup blocked AND copy failed — last-ditch user instructions.
+        showToast("popup blocked. allow popups for cashbff.com, or copy the URL below manually.");
       }
-      // Open claude.ai in a new tab regardless. If the copy failed, the user
-      // still gets where they need to be and can copy manually from this page.
-      window.open(CLAUDE_URL, "_blank", "noopener");
     });
   }
 
