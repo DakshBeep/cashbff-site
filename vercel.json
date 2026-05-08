@@ -1,6 +1,10 @@
 {
   "cleanUrls": true,
   "trailingSlash": false,
+  "redirects": [
+    { "source": "/claude", "destination": "/talk", "permanent": true },
+    { "source": "/claude.html", "destination": "/talk", "permanent": true }
+  ],
   "headers": [
     {
       "source": "/fonts/(.*)",

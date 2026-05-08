@@ -209,6 +209,39 @@
     }
     .url-copy:hover { background: rgba(1, 71, 81, 0.1); }
 
+    /* ── Trial CTA divider + button ──────────────── */
+    .trial-divider {
+      font-size: 0.78rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      opacity: 0.45;
+      margin: 0.85rem 0 0.25rem;
+      font-weight: 600;
+    }
+    .cta-trial {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.15rem;
+      background: var(--vanilla);
+      color: var(--cash-green);
+      border: 1.5px solid var(--cash-green);
+      font-weight: 700;
+      padding: 0.85rem 1.6rem;
+      border-radius: 14px;
+      text-transform: lowercase;
+      letter-spacing: -0.005em;
+      transition: transform .12s ease, background .15s ease, color .15s ease;
+      text-decoration: none;
+      max-width: 22rem;
+      width: 100%;
+      text-align: center;
+    }
+    .cta-trial:hover { background: var(--electric-green); transform: translateY(-1px); }
+    .cta-trial:active { transform: translateY(1px); }
+    .cta-trial__main { font-size: 1rem; }
+    .cta-trial__sub { font-size: 0.78rem; font-weight: 500; opacity: 0.75; letter-spacing: 0.01em; }
+
     /* ── Steps ───────────────────────────────────── */
     .steps {
       max-width: 36rem;
@@ -341,13 +374,13 @@
   <main class="stage">
     <header class="bar">
       <a href="/" class="wordmark">cash bff</a>
-      <div class="bar__right">connect</div>
+      <div class="bar__right">talk</div>
     </header>
 
     <section class="hero">
-      <h1 class="headline">talk to your money<span class="period">.</span><br>in claude<span class="period">.</span></h1>
+      <h1 class="headline">talk<span class="period">.</span><br>to your money<span class="period">.</span></h1>
       <p class="sub">
-        connect cash bff to claude (or chatgpt) and ask anything about your money in plain english. read-only. takes about a minute.
+        connect cash bff to claude, chatgpt, or any AI. ask anything about your money in plain english. read-only. takes about a minute.
       </p>
     </section>
 
@@ -365,6 +398,15 @@
         <code id="mcp-url">https://api.cashbff.com/mcp</code>
         <button class="url-copy" id="copy-btn" type="button">copy</button>
       </div>
+
+      <div class="trial-divider">or</div>
+
+      <a class="cta-trial" id="trial-btn" href="https://buy.stripe.com/14A9ATdOeen7aKA8BT1sQ01" target="_blank" rel="noopener" aria-label="start a 14-day free trial of Cash BFF Talk">
+        <span class="cta-trial__main">start free 14-day trial</span>
+        <span class="cta-trial__sub">$12.99/mo after · cancel anytime</span>
+      </a>
+
+      <p class="cta-hint">guaranteed access as we add features. cancel anytime in stripe before the trial ends.</p>
     </section>
 
     <section class="steps">

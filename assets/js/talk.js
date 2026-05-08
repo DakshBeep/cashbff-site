@@ -1,19 +1,24 @@
 /**
- * /claude page — landing + setup for the cash bff MCP connector.
+ * /talk page — landing + setup for the cash bff MCP connector + paid tier.
  *
- * Two interactions only:
- *   1. Primary CTA: copy MCP URL + open claude.ai's add-custom-connector dialog
- *      in a new tab. (As of May 2026, claude.ai doesn't pre-fill the URL field
- *      via query param — we have to ship the user's clipboard with our URL and
- *      they paste in the dialog. ~3 seconds end-to-end.)
- *   2. Inline copy button on the URL block (fallback if the primary one fails
+ * Three interactions:
+ *   1. Primary CTA "add to claude": copy MCP URL + open claude.ai's
+ *      add-custom-connector dialog in a new tab. (As of May 2026, claude.ai
+ *      doesn't pre-fill the URL field via query param — we ship the user's
+ *      clipboard with our URL and they paste in the dialog.)
+ *   2. Inline copy button on the URL block (fallback if the primary fails
  *      or the user wants to copy without opening claude.ai).
+ *   3. Trial CTA "start free 14-day trial" — opens the Stripe Payment Link
+ *      in a new tab. We track the click so we can build a checkout funnel
+ *      in PostHog. The link itself handles redirect-back to /talk?subscribed=1
+ *      after successful checkout.
  *
- * Tracks via PostHog (autocapture handles clicks; we add an explicit event
- * for the primary CTA so funnels are easy to build):
- *   - `mcp_connect_clicked` — they clicked the big button
- *   - `mcp_url_copied`      — they used the inline copy button (a different
- *                              intent — already in claude or copying for elsewhere)
+ * PostHog events:
+ *   - `mcp_connect_clicked`  — they clicked the big "add to claude" button
+ *   - `mcp_url_copied`        — they used the inline copy button
+ *   - `talk_trial_started`    — they clicked the trial CTA (pre-Stripe; the
+ *                               actual subscription event will fire from a
+ *                               Stripe webhook later if/when we wire one up)
  */
 
 (function () {
@@ -100,10 +105,17 @@
     });
   }
 
+  function onTrialClick() {
+    track("talk_trial_started", { source: "talk_page" });
+    // The link itself handles navigation. Tracking is fire-and-forget.
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     const addBtn = $("add-btn");
     if (addBtn) addBtn.addEventListener("click", onAddClick);
     const copyBtn = $("copy-btn");
     if (copyBtn) copyBtn.addEventListener("click", onInlineCopy);
+    const trialBtn = $("trial-btn");
+    if (trialBtn) trialBtn.addEventListener("click", onTrialClick);
   });
 })();
