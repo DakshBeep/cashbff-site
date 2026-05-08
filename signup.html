@@ -345,6 +345,69 @@
       cursor: not-allowed;
     }
 
+    /* ── bank list — ledger pattern from /pricing ── */
+    .bank-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+      margin: 0 0 1.5rem;
+      max-width: 32rem;
+    }
+    .bank-list[hidden] { display: none; }
+    .bank-list__head {
+      font-size: 0.78rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      font-weight: 600;
+      opacity: 0.5;
+      margin-bottom: 0.2rem;
+    }
+    .bank-list__item {
+      font-size: clamp(1rem, 1.8vw, 1.1rem);
+      line-height: 1.4;
+      color: var(--off-black);
+      font-weight: 500;
+      text-transform: lowercase;
+      letter-spacing: -0.005em;
+    }
+    .bank-list__mask {
+      opacity: 0.55;
+      margin-left: 0.4rem;
+      letter-spacing: 0.05em;
+    }
+
+    /* secondary outline button — sits next to .btn-primary in list view */
+    .btn-secondary {
+      background: transparent;
+      color: var(--off-black);
+      font-weight: 600;
+      font-size: 1.05rem;
+      padding: 1.05rem 2rem;
+      border: 1px solid var(--off-black);
+      border-radius: 14px;
+      text-transform: lowercase;
+      letter-spacing: -0.005em;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.65rem;
+      min-height: 44px;
+      transition: transform .12s ease, opacity .15s, background-color .15s;
+    }
+    .btn-secondary:hover:not(:disabled) {
+      background: rgba(26, 23, 23, 0.04);
+      transform: translateY(-1px);
+    }
+    .btn-secondary:active { transform: translateY(1px); }
+    .btn-secondary:disabled { opacity: 0.55; cursor: progress; transform: none; }
+
+    /* button row used in the list view — wraps on mobile */
+    .action-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+    }
+
     /* ── plaid in-flight ── */
     .plaid-flight {
       padding: 1rem 0;
@@ -627,6 +690,13 @@
       </section>
 
       <!-- ── STATE_PLAID: connect bank via plaid ───── -->
+      <!--
+        Two sub-views inside this state:
+          • empty-state  — first connection (#plaid-empty visible, #plaid-list hidden)
+          • list-state   — one or more banks linked (#plaid-list visible, #plaid-empty hidden)
+        signup.js toggles [hidden] on each container and (re-)renders #bank-list
+        from /api/me's banks[] array.
+      -->
       <section class="state" id="state-plaid" data-state="plaid" aria-label="connect your bank">
         <h1 class="headline">
           your bank<span class="period">.</span>
@@ -635,7 +705,8 @@
           read-only. your bank stays with your bank.
         </p>
 
-        <div class="action">
+        <!-- empty state: no banks yet -->
+        <div class="action" id="plaid-empty">
           <button class="btn-primary btn-block" id="connect-btn" type="button">
             <span>connect</span>
             <span class="arrow" aria-hidden="true">→</span>
@@ -644,6 +715,24 @@
           <p class="micro">
             disconnect any time from <a href="/home">home</a>.
           </p>
+        </div>
+
+        <!-- list state: one or more banks already linked -->
+        <div id="plaid-list" hidden>
+          <div class="bank-list" id="bank-list" aria-label="linked banks">
+            <div class="bank-list__head">linked.</div>
+            <!-- items injected by signup.js -->
+          </div>
+
+          <div class="action-row">
+            <button class="btn-secondary" id="add-another-btn" type="button">
+              <span>add another bank</span>
+            </button>
+            <button class="btn-primary" id="plaid-continue-btn" type="button">
+              <span>continue</span>
+              <span class="arrow" aria-hidden="true">→</span>
+            </button>
+          </div>
         </div>
 
         <!-- in-flight overlay copy: shown while Plaid Link is open. -->

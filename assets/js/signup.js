@@ -75,6 +75,11 @@
   const trialBtn        = $('trial-btn');
   const connectBtn      = $('connect-btn');
   const plaidFlight     = $('plaid-flight');
+  const plaidEmpty      = $('plaid-empty');
+  const plaidList       = $('plaid-list');
+  const bankList        = $('bank-list');
+  const addAnotherBtn   = $('add-another-btn');
+  const plaidContinueBtn = $('plaid-continue-btn');
   const claudeBtn       = $('claude-btn');
   const toast           = $('toast');
 
@@ -394,11 +399,58 @@
     window.location.href = url;
   }
 
+  // ── STATE_PLAID: bank list rendering ────────────
+  // Toggles between empty + list sub-views and renders #bank-list items
+  // from a banks[] array (each: { item_id, institution, mask }).
+  function renderBankList(banks) {
+    const list = Array.isArray(banks) ? banks : [];
+    if (!plaidEmpty || !plaidList || !bankList) return;
+
+    if (list.length === 0) {
+      plaidEmpty.hidden = false;
+      plaidList.hidden = true;
+      return;
+    }
+
+    // Clear all but the eyebrow header (.bank-list__head), then re-append items.
+    const head = bankList.querySelector('.bank-list__head');
+    while (bankList.firstChild) bankList.removeChild(bankList.firstChild);
+    if (head) bankList.appendChild(head);
+
+    list.forEach((b) => {
+      if (!b) return;
+      const row = document.createElement('div');
+      row.className = 'bank-list__item';
+      const inst = String(b.institution || 'your bank').toLowerCase();
+      row.appendChild(document.createTextNode(inst));
+      if (b.mask) {
+        const m = document.createElement('span');
+        m.className = 'bank-list__mask';
+        m.textContent = '····' + String(b.mask);
+        row.appendChild(m);
+      }
+      bankList.appendChild(row);
+    });
+
+    plaidEmpty.hidden = true;
+    plaidList.hidden = false;
+  }
+
+  // Pull /api/me and refresh the bank list. Used after every Plaid success
+  // and on STATE_PLAID entry so the user always sees the current set.
+  async function refreshBankList() {
+    const me = await fetchMe();
+    const banks = (me.ok && me.data && Array.isArray(me.data.banks)) ? me.data.banks : [];
+    renderBankList(banks);
+    return banks;
+  }
+
   // ── STATE_PLAID: link token + Plaid Link ────────
   async function startPlaidFlow() {
     if (inFlight) return;
     inFlight = true;
     if (connectBtn) connectBtn.disabled = true;
+    if (addAnotherBtn) addAnotherBtn.disabled = true;
     hideBanner();
 
     let linkToken;
@@ -410,14 +462,16 @@
       showBanner("we couldn't reach the bank service. give it a sec and try again.", 'error');
       inFlight = false;
       if (connectBtn) connectBtn.disabled = false;
+      if (addAnotherBtn) addAnotherBtn.disabled = false;
       return;
     }
 
     const plaidReady = await waitForPlaid(4000);
     if (!plaidReady) {
-      showBanner("plaid didn't load. check your connection and try again.", 'error');
+      showBanner("the bank picker didn't load. check your connection and try again.", 'error');
       inFlight = false;
       if (connectBtn) connectBtn.disabled = false;
+      if (addAnotherBtn) addAnotherBtn.disabled = false;
       return;
     }
 
@@ -437,6 +491,7 @@
       showBanner("we couldn't open the bank picker. try again.", 'error');
       inFlight = false;
       if (connectBtn) connectBtn.disabled = false;
+      if (addAnotherBtn) addAnotherBtn.disabled = false;
     }
   }
 
@@ -447,22 +502,33 @@
       track('signup_plaid_connected', {});
       inFlight = false;
       if (connectBtn) connectBtn.disabled = false;
+      if (addAnotherBtn) addAnotherBtn.disabled = false;
       if (plaidFlight) plaidFlight.hidden = true;
-      showState(STATE_CLAUDE);
+      // Stay on STATE_PLAID. Refresh the list so the user can see what's
+      // linked + decide whether to add more or continue.
+      await refreshBankList();
     } catch (_) {
       if (plaidFlight) plaidFlight.hidden = true;
       showBanner("we connected but couldn't save it. one more try?", 'error');
       inFlight = false;
       if (connectBtn) connectBtn.disabled = false;
+      if (addAnotherBtn) addAnotherBtn.disabled = false;
     }
   }
 
   function handlePlaidExit(err /*, metadata */) {
     inFlight = false;
     if (connectBtn) connectBtn.disabled = false;
+    if (addAnotherBtn) addAnotherBtn.disabled = false;
     if (plaidFlight) plaidFlight.hidden = true;
-    if (err) showBanner("plaid closed before we finished. try again whenever.", 'error');
+    if (err) showBanner("the bank picker closed before we finished. try again whenever.", 'error');
     else     showBanner("no worries. try again whenever.", 'info');
+  }
+
+  // Continue button: advance to STATE_CLAUDE.
+  function handlePlaidContinue() {
+    track('signup_plaid_continued', {});
+    showState(STATE_CLAUDE);
   }
 
   // ── STATE_CLAUDE: copy MCP url + open connector ─
@@ -604,11 +670,11 @@
   // ── Smart routing on page load ──────────────────
   // Decision tree:
   //   /api/me 401                                    → STATE_PHONE
-  //   /api/me 200 + ?subscribed=1                    → STATE_PLAID
-  //   /api/me 200 + ?step=plaid                      → STATE_PLAID
+  //   /api/me 200 + ?subscribed=1                    → STATE_PLAID (empty view)
+  //   /api/me 200 + ?step=plaid                      → STATE_PLAID (list view if banks)
   //   /api/me 200 + ?step=claude                     → STATE_CLAUDE
-  //   /api/me 200 + trialing/active + has_bank       → /home (full setup)
-  //   /api/me 200 + trialing/active + no bank        → STATE_PLAID
+  //   /api/me 200 + trialing/active + has_bank       → /home (full setup, direct hit)
+  //   /api/me 200 + trialing/active + no bank        → STATE_PLAID (empty)
   //   /api/me 200 + no/none talk_status              → STATE_TRIAL
   // /api/me failures (network etc) fall back to STATE_PHONE.
   async function decideStartingState() {
@@ -633,24 +699,41 @@
 
     const status  = me.data && me.data.talk_status ? String(me.data.talk_status).toLowerCase() : null;
     const hasBank = !!(me.data && me.data.has_bank);
+    const banks   = (me.data && Array.isArray(me.data.banks)) ? me.data.banks : [];
     const subscribed = status === 'trialing' || status === 'active';
 
-    // Just came back from Stripe checkout.
-    if (justSubscribed) { showState(STATE_PLAID); return; }
+    // Just came back from Stripe checkout: force the empty state — they
+    // just paid and it's time for their first bank, even if some stale
+    // banks[] data exists.
+    if (justSubscribed) {
+      renderBankList([]);
+      showState(STATE_PLAID);
+      return;
+    }
 
-    // Explicit deep-links.
-    if (stepParam === 'plaid')  { showState(STATE_PLAID); return; }
+    // Explicit ?step=plaid: show STATE_PLAID with whatever banks are linked
+    // (so a user coming back from /home can add more).
+    if (stepParam === 'plaid') {
+      renderBankList(banks);
+      showState(STATE_PLAID);
+      return;
+    }
     if (stepParam === 'claude') { showState(STATE_CLAUDE); return; }
 
     // Fully set up: subscribe + bank linked → bounce to home (or ?next).
+    // Direct /signup hit, no ?step=, no ?subscribed=1.
     if (subscribed && hasBank) {
       const nextDest = safeNextFromUrl();
       location.href = nextDest || '/home';
       return;
     }
 
-    // Subscribed but no bank yet → connect bank.
-    if (subscribed && !hasBank) { showState(STATE_PLAID); return; }
+    // Subscribed but no bank yet → connect bank (empty view).
+    if (subscribed && !hasBank) {
+      renderBankList([]);
+      showState(STATE_PLAID);
+      return;
+    }
 
     // Authed but no subscription → trial pitch.
     showState(STATE_TRIAL);
@@ -687,7 +770,9 @@
     if (trialBtn) trialBtn.addEventListener('click', handleStartTrial);
 
     // STATE_PLAID
-    if (connectBtn) connectBtn.addEventListener('click', startPlaidFlow);
+    if (connectBtn)        connectBtn.addEventListener('click', startPlaidFlow);
+    if (addAnotherBtn)     addAnotherBtn.addEventListener('click', startPlaidFlow);
+    if (plaidContinueBtn)  plaidContinueBtn.addEventListener('click', handlePlaidContinue);
 
     // STATE_CLAUDE
     if (claudeBtn) claudeBtn.addEventListener('click', handleOpenInClaude);
