@@ -10,16 +10,16 @@
   ></script>
   <script src="/assets/js/sentry-init.js"></script>
 
-  <title>cash bff — talk to your money. in claude.</title>
-  <meta name="description" content="connect your bank once. ask claude anything about your money. read-only. takes about a minute.">
-  <meta property="og:title" content="cash bff — talk to your money. in claude.">
-  <meta property="og:description" content="connect your bank once. ask claude anything about your money. read-only.">
+  <title>cash bff — talk to your money. inside claude.</title>
+  <meta name="description" content="connect your bank. ask claude anything about your money. read-only.">
+  <meta property="og:title" content="cash bff — talk to your money. inside claude.">
+  <meta property="og:description" content="connect your bank. ask claude anything about your money. read-only.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://cashbff.com">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <!-- PostHog product analytics. Hybrid mode: backend tracks business events,
        browser handles autocapture + pageviews. CSP-safe (no eval). -->
@@ -45,14 +45,12 @@
       font-display: swap;
     }
 
-    /* ── B&W brand: vanilla bg + off-black ink. cash-green is the ONLY
-       color accent — used exclusively on the .period spans of display
-       headlines (the brand's signature punctuation move). everything else
-       (buttons, borders, links) is monochrome. ───────────────────────── */
+    /* B&W brand. cash-green is used ONLY on .period spans + the wordmark
+       + the step numbers. everything else is monochrome. */
     :root {
       --vanilla: #FCFAF2;
       --off-black: #1A1717;
-      --cash-green: #014751;       /* accent only — periods + wordmark */
+      --cash-green: #014751;
       --hairline: rgba(26, 23, 23, 0.12);
       --soft-ink: rgba(26, 23, 23, 0.62);
 
@@ -73,9 +71,7 @@
     }
     a { color: inherit; text-decoration: none; }
     button { font-family: inherit; cursor: pointer; border: none; background: none; }
-    code { font-family: 'SF Mono', Menlo, Consolas, monospace; }
 
-    /* ── stage ── */
     .stage {
       max-width: 720px;
       margin: 0 auto;
@@ -91,7 +87,7 @@
       align-items: center;
       justify-content: space-between;
       flex-shrink: 0;
-      margin-bottom: 4rem;
+      margin-bottom: 5rem;
     }
     .wordmark {
       font-family: var(--font-display);
@@ -116,7 +112,7 @@
     /* ── hero ── */
     .hero {
       text-align: left;
-      margin: 1rem 0 2rem;
+      margin: 0 0 2.25rem;
       opacity: 0;
       animation: fadeIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.05s forwards;
     }
@@ -132,55 +128,67 @@
       letter-spacing: -0.02em;
       text-transform: lowercase;
       color: var(--off-black);
-      margin-bottom: 1.4rem;
+      margin-bottom: 1.1rem;
     }
     .headline .period { color: var(--cash-green); }
     .sub {
-      font-size: clamp(1rem, 1.8vw, 1.15rem);
-      max-width: 32rem;
-      margin: 0;
-      opacity: 0.72;
+      font-size: clamp(0.95rem, 1.6vw, 1.05rem);
+      max-width: 28rem;
+      opacity: 0.65;
       line-height: 1.5;
     }
 
-    /* ── primary CTA stack ── */
+    /* ── CTA stack ── */
     .cta {
       display: flex;
       flex-direction: column;
       align-items: flex-start;
       gap: 0.85rem;
       margin: 0 0 5rem;
-      width: 100%;
-      max-width: 22rem;
       opacity: 0;
       animation: fadeIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.2s forwards;
     }
     .btn-primary {
-      width: 100%;
       background: var(--off-black);
       color: var(--vanilla);
       font-weight: 700;
       font-size: 1.1rem;
-      padding: 1.05rem 1.75rem;
+      padding: 1.05rem 2rem;
       border-radius: 14px;
       text-transform: lowercase;
       letter-spacing: -0.005em;
       display: inline-flex;
       align-items: center;
-      justify-content: center;
-      gap: 0.6rem;
+      gap: 0.65rem;
       transition: transform .12s ease, opacity .15s;
     }
     .btn-primary:hover { opacity: 0.92; transform: translateY(-1px); }
     .btn-primary:active { transform: translateY(1px); }
     .btn-primary .arrow { font-size: 1.15rem; }
-    .cta-hint {
-      font-size: 0.85rem;
+
+    .secondary-link {
+      font-size: 0.9rem;
       opacity: 0.55;
-      max-width: 24rem;
-      text-align: left;
-      line-height: 1.5;
+      transition: opacity .15s;
     }
+    .secondary-link .as-link {
+      /* button styled as inline link — same look as <a>, no default nav.
+         keeping it as <button> means clicks fire onAddClick (talk.js)
+         without an `href="#"` causing a hash-jump to top. */
+      display: inline;
+      background: none;
+      border: 0;
+      padding: 0;
+      margin: 0;
+      font: inherit;
+      color: var(--off-black);
+      text-decoration: underline;
+      text-decoration-color: var(--hairline);
+      text-underline-offset: 3px;
+      cursor: pointer;
+    }
+    .secondary-link .as-link:hover { text-decoration-color: var(--off-black); }
+
     .toast {
       position: fixed;
       top: 1rem;
@@ -195,149 +203,42 @@
       opacity: 0;
       transition: opacity .25s, transform .25s;
       pointer-events: none;
-      max-width: 24rem;
+      max-width: 22rem;
       z-index: 50;
     }
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-    /* ── URL block (fallback for copy-fail) ── */
-    .url-block {
-      background: transparent;
-      border: 1px solid var(--hairline);
-      border-radius: 12px;
-      padding: 0.85rem 1rem;
-      display: flex;
-      align-items: center;
-      gap: 0.7rem;
-      width: 100%;
-      max-width: 22rem;
-    }
-    .url-block code {
-      font-size: 0.85rem;
-      flex: 1;
-      overflow-x: auto;
-      white-space: nowrap;
-      opacity: 0.75;
-    }
-    .url-copy {
-      font-size: 0.8rem;
-      font-weight: 600;
-      padding: 0.35rem 0.75rem;
-      border-radius: 6px;
-      transition: background .15s;
-      flex-shrink: 0;
-      border: 1px solid var(--hairline);
-    }
-    .url-copy:hover { background: var(--off-black); color: var(--vanilla); border-color: var(--off-black); }
-
-    /* ── divider ── */
-    .or {
-      font-size: 0.72rem;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      opacity: 0.4;
-      font-weight: 600;
-      margin: 0.4rem 0 0.4rem;
-      text-align: left;
-    }
-
-    /* ── trial button (secondary) ── */
-    .btn-trial {
-      width: 100%;
-      display: inline-flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.15rem;
-      background: var(--vanilla);
-      color: var(--off-black);
-      border: 1.5px solid var(--off-black);
-      font-weight: 700;
-      padding: 0.9rem 1.4rem;
-      border-radius: 14px;
-      text-transform: lowercase;
-      letter-spacing: -0.005em;
-      transition: transform .12s ease, background .15s ease, color .15s ease;
-    }
-    .btn-trial:hover { background: var(--off-black); color: var(--vanilla); transform: translateY(-1px); }
-    .btn-trial:active { transform: translateY(1px); }
-    .btn-trial__main { font-size: 1rem; }
-    .btn-trial__sub { font-size: 0.78rem; font-weight: 500; opacity: 0.72; letter-spacing: 0.01em; }
-
-    /* ── prompts ── */
-    .prompts {
+    /* ── how it works — 3 steps ── */
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
       margin: 0 0 5rem;
-      max-width: 36rem;
-      width: 100%;
     }
-    .section__eyebrow {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: clamp(1.5rem, 3.8vw, 2rem);
-      letter-spacing: -0.01em;
-      text-transform: lowercase;
-      margin-bottom: 1.4rem;
-      text-align: left;
+    @media (max-width: 640px) {
+      .steps { grid-template-columns: 1fr; gap: 1.5rem; }
     }
-    .section__eyebrow .period { color: var(--cash-green); }
-    .prompt-list {
+    .step {
       display: flex;
       flex-direction: column;
-      gap: 0.65rem;
+      gap: 0.45rem;
     }
-    .prompt {
-      font-size: clamp(1rem, 1.9vw, 1.2rem);
-      padding: 0.95rem 1.2rem;
-      border: 1px solid var(--hairline);
-      border-radius: 12px;
-      line-height: 1.4;
-      transition: border-color .15s;
-      cursor: default;
-      letter-spacing: -0.005em;
-      text-align: left;
-    }
-    .prompt:hover {
-      border-color: var(--off-black);
-    }
-    .prompt::before { content: "“"; opacity: 0.45; margin-right: 0.06em; }
-    .prompt::after  { content: "”"; opacity: 0.45; margin-left: 0.06em; }
-
-    /* ── how it works ── */
-    .how {
-      margin: 0 0 6rem;
-      max-width: 36rem;
-      width: 100%;
-    }
-    .how__body {
-      font-size: 1rem;
-      line-height: 1.65;
-      max-width: 32rem;
-      margin: 0 0 1.4rem;
-      text-align: left;
-      opacity: 0.78;
-    }
-    .how__list {
-      display: flex;
-      flex-direction: column;
-      gap: 0.6rem;
-      max-width: 28rem;
-      margin: 0;
-      list-style: none;
-    }
-    .how__item {
-      display: flex;
-      align-items: flex-start;
-      gap: 0.85rem;
-      font-size: 0.95rem;
-      line-height: 1.5;
-    }
-    .how__num {
+    .step__num {
       font-family: var(--font-display);
       font-weight: 700;
-      font-size: 1.1rem;
+      font-size: 2rem;
       color: var(--cash-green);
-      flex-shrink: 0;
-      width: 1.4rem;
-      text-align: left;
+      line-height: 1;
+      letter-spacing: -0.02em;
+    }
+    .step__title {
+      font-weight: 600;
+      font-size: 1rem;
+      letter-spacing: -0.005em;
+    }
+    .step__sub {
+      font-size: 0.85rem;
+      opacity: 0.6;
       line-height: 1.4;
     }
 
@@ -345,23 +246,20 @@
     .footer {
       margin-top: auto;
       padding-top: 2.5rem;
-      text-align: left;
       font-size: 0.85rem;
-      opacity: 0.6;
+      opacity: 0.5;
       line-height: 1.7;
       border-top: 1px solid var(--hairline);
+      text-align: left;
     }
     .footer a {
       text-decoration: underline;
       text-decoration-color: var(--hairline);
       text-underline-offset: 3px;
-      transition: text-decoration-color .15s;
+      transition: text-decoration-color .15s, opacity .15s;
     }
-    .footer a:hover { text-decoration-color: var(--off-black); }
-    .footer .sep {
-      margin: 0 0.5rem;
-      opacity: 0.4;
-    }
+    .footer a:hover { text-decoration-color: var(--off-black); opacity: 1; }
+    .footer .sep { margin: 0 0.5rem; opacity: 0.5; }
 
     /* ── reduced motion ── */
     @media (prefers-reduced-motion: reduce) {
@@ -385,63 +283,40 @@
         talk to your money<span class="period">.</span><br>
         inside claude<span class="period">.</span>
       </h1>
-      <p class="sub">connect your bank once. ask claude anything about your money.</p>
+      <p class="sub">real bank data. plain english. read-only.</p>
     </section>
 
     <section class="cta">
-      <button class="btn-primary" id="add-btn" type="button" aria-label="copy URL and open Claude to add custom connector">
-        <span>add to claude</span>
+      <a class="btn-primary" id="get-started-btn" href="/signup?next=/%3Faction%3Dstart-trial">
+        <span>get started</span>
         <span class="arrow" aria-hidden="true">→</span>
-      </button>
+      </a>
 
-      <p class="cta-hint">copies the URL and opens claude.ai. paste with <strong>cmd&#8202;+&#8202;v</strong> in the dialog that pops up.</p>
+      <p class="secondary-link">already have cash bff? <button class="as-link" id="add-btn" type="button">add to claude →</button></p>
 
       <div class="toast" id="toast" role="status" aria-live="polite">URL copied. paste it in the claude.ai dialog.</div>
-
-      <div class="url-block">
-        <code id="mcp-url">https://api.cashbff.com/mcp</code>
-        <button class="url-copy" id="copy-btn" type="button">copy</button>
-      </div>
-
-      <div class="or">or</div>
-
-      <a class="btn-trial" id="trial-btn" href="https://buy.stripe.com/14A9ATdOeen7aKA8BT1sQ01" target="_blank" rel="noopener noreferrer" aria-label="start a 14-day free trial">
-        <span class="btn-trial__main">start free 14-day trial</span>
-        <span class="btn-trial__sub">$12.99/mo after, cancel anytime</span>
-      </a>
     </section>
 
-    <section class="prompts" aria-labelledby="prompts-heading">
-      <h2 class="section__eyebrow" id="prompts-heading">stuff people ask<span class="period">.</span></h2>
-      <div class="prompt-list">
-        <div class="prompt">am i actually saving this month.</div>
-        <div class="prompt">what's the dumbest thing i bought.</div>
-        <div class="prompt">how much rent am i short on.</div>
-        <div class="prompt">did i double-pay netflix again.</div>
-        <div class="prompt">talk me out of doordash tonight.</div>
+    <section class="steps" aria-label="how it works">
+      <div class="step">
+        <div class="step__num">1</div>
+        <div class="step__title">connect your bank.</div>
+        <div class="step__sub">~1 minute via plaid.</div>
       </div>
-    </section>
-
-    <section class="how" aria-labelledby="how-heading">
-      <h2 class="section__eyebrow" id="how-heading">how it works<span class="period">.</span></h2>
-      <p class="how__body">
-        link your bank to cash bff in about a minute. we give claude a read-only window into your real transactions and balances. you ask questions, claude does the talking. nothing gets moved or sent. you stay in control of access.
-      </p>
-      <ul class="how__list">
-        <li class="how__item"><span class="how__num">1</span><span>a bank account cash bff supports.</span></li>
-        <li class="how__item"><span class="how__num">2</span><span>the claude desktop or web app.</span></li>
-        <li class="how__item"><span class="how__num">3</span><span>two minutes to connect.</span></li>
-      </ul>
+      <div class="step">
+        <div class="step__num">2</div>
+        <div class="step__title">start free 14-day trial.</div>
+        <div class="step__sub">$12.99/mo after, cancel anytime.</div>
+      </div>
+      <div class="step">
+        <div class="step__num">3</div>
+        <div class="step__title">add to claude.</div>
+        <div class="step__sub">paste url, allow access. ask anything.</div>
+      </div>
     </section>
 
     <footer class="footer">
-      no account yet? <a href="/signup">sign up free</a>
-      <span class="sep">·</span>
-      <a href="/privacy">privacy</a>
-      <span class="sep">·</span>
-      <a href="/terms">terms</a>
-      <span class="sep">·</span>
-      <a href="/pricing">pricing</a>
+      <a href="/privacy">privacy</a><span class="sep">·</span><a href="/terms">terms</a><span class="sep">·</span><a href="/pricing">pricing</a>
     </footer>
 
   </main>
