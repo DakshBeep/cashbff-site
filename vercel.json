@@ -2,8 +2,11 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "redirects": [
-    { "source": "/claude", "destination": "/talk", "permanent": true },
-    { "source": "/claude.html", "destination": "/talk", "permanent": true }
+    { "source": "/claude", "destination": "/", "permanent": true },
+    { "source": "/claude.html", "destination": "/", "permanent": true },
+    { "source": "/talk", "destination": "/", "permanent": true },
+    { "source": "/talk.html", "destination": "/", "permanent": true },
+    { "source": "/signup.html", "destination": "/signup", "permanent": true }
   ],
   "headers": [
     {

@@ -9,8 +9,13 @@
     crossorigin="anonymous"
   ></script>
   <script src="/assets/js/sentry-init.js"></script>
-  <title>cash bff</title>
-  <meta name="description" content="See what's coming. Before it hits. A money bff for credit cards.">
+
+  <title>cash bff — talk to your money. in claude.</title>
+  <meta name="description" content="connect your bank once. ask claude anything about your money. read-only. takes about a minute.">
+  <meta property="og:title" content="cash bff — talk to your money. in claude.">
+  <meta property="og:description" content="connect your bank once. ask claude anything about your money. read-only.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://cashbff.com">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,17 +25,11 @@
        browser handles autocapture + pageviews. CSP-safe (no eval). -->
   <script src="/assets/js/posthog-init.js" defer></script>
 
-  <!-- Vercel Analytics + Speed Insights — cookieless edge-collected pageviews +
-       Web Vitals (CLS, FID, LCP, TTFB) per route. Stub queues are extracted to
-       same-origin .js files because our CSP forbids inline scripts. The real
-       scripts at /_vercel/insights/* are served by Vercel's edge automatically. -->
+  <!-- Vercel Analytics + Speed Insights — cookieless edge-collected pageviews + web vitals. -->
   <script src="/assets/js/vercel-analytics-init.js" defer></script>
   <script defer src="/_vercel/insights/script.js"></script>
   <script src="/assets/js/vercel-speed-insights-init.js" defer></script>
   <script defer src="/_vercel/speed-insights/script.js"></script>
-
-  <!-- Plaid Link. stable v2 -->
-  <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
 
   <style>
     @font-face {
@@ -46,13 +45,16 @@
       font-display: swap;
     }
 
+    /* ── B&W brand: vanilla bg + off-black ink. cash-green is the ONLY
+       color accent — used exclusively on the .period spans of display
+       headlines (the brand's signature punctuation move). everything else
+       (buttons, borders, links) is monochrome. ───────────────────────── */
     :root {
-      --cash-green: #014751;
-      --electric-green: #D3FFB4;
-      --periwinkle: #C5B6F1;
-      --off-black: #1A1717;
       --vanilla: #FCFAF2;
-      --error: #7a1f2a;
+      --off-black: #1A1717;
+      --cash-green: #014751;       /* accent only — periods + wordmark */
+      --hairline: rgba(26, 23, 23, 0.12);
+      --soft-ink: rgba(26, 23, 23, 0.62);
 
       --font-display: 'Greed Condensed', 'Archivo Narrow', 'Arial Narrow', Impact, sans-serif;
       --font-body: 'Instrument Sans', system-ui, -apple-system, sans-serif;
@@ -71,25 +73,25 @@
     }
     a { color: inherit; text-decoration: none; }
     button { font-family: inherit; cursor: pointer; border: none; background: none; }
+    code { font-family: 'SF Mono', Menlo, Consolas, monospace; }
 
-    /* ── Stage ─────────────────────────────────────── */
+    /* ── stage ── */
     .stage {
-      min-height: 100dvh;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      padding: 1.5rem 2rem 1.5rem;
       max-width: 720px;
       margin: 0 auto;
-      width: 100%;
-      position: relative;
+      padding: 1.5rem 1.5rem 4rem;
+      display: flex;
+      flex-direction: column;
+      min-height: 100dvh;
     }
 
+    /* ── top bar ── */
     .bar {
       display: flex;
       align-items: center;
       justify-content: space-between;
       flex-shrink: 0;
+      margin-bottom: 4rem;
     }
     .wordmark {
       font-family: var(--font-display);
@@ -97,946 +99,364 @@
       font-size: 1.5rem;
       letter-spacing: -0.02em;
       color: var(--cash-green);
-    }
-    .bar__right {
-      font-size: 0.72rem;
-      opacity: 0.45;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      font-weight: 600;
-    }
-
-    /* ── Card hero (V4-original revived) ───────────── */
-    /* `.card-stage` is the wrapper that holds the tilted credit card. In
-       STATE_CONNECT the card sits at full size; once the user advances
-       (state-plaid / state-phone / state-otp) it shrinks via .is-compact so
-       the form can take over the bottom of the viewport. */
-    .card-stage {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 1.75rem 0 1.25rem;
-      flex-shrink: 0;
-      transition: padding 0.4s cubic-bezier(0.34, 1.2, 0.64, 1);
-    }
-    .card-stage.is-compact { padding: 0.75rem 0 0.5rem; }
-
-    .card-wrap {
-      perspective: 1400px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: transform 0.4s cubic-bezier(0.34, 1.2, 0.64, 1);
-    }
-    .card-stage.is-compact .card-wrap {
-      transform: scale(0.62);
-    }
-
-    .card {
-      width: min(22rem, 86vw);
-      aspect-ratio: 1.586 / 1;
-      background: var(--cash-green);
-      border-radius: 1.25rem;
-      padding: 1.5rem 1.4rem 1.25rem;
-      position: relative;
-      color: var(--vanilla);
-      transform: rotate(-8deg) translateZ(0);
-      box-shadow:
-        0 30px 60px -20px rgba(26, 23, 23, 0.35),
-        0 12px 24px -10px rgba(1, 71, 81, 0.35),
-        inset 0 0 0 1px rgba(213, 255, 180, 0.08);
-      animation: float 6.5s ease-in-out infinite;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      overflow: hidden;
-      opacity: 0;
-      animation: float 6.5s ease-in-out infinite, cardEnter 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.1s forwards;
-    }
-    @keyframes float {
-      0%, 100% { transform: rotate(-8deg) translateY(0); }
-      50%      { transform: rotate(-8deg) translateY(-6px); }
-    }
-    @keyframes cardEnter {
-      from { opacity: 0; transform: rotate(-2deg) translateY(20px) scale(0.92); }
-      to   { opacity: 1; transform: rotate(-8deg) translateY(0) scale(1); }
-    }
-
-    .card::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      border-radius: inherit;
-      background: radial-gradient(120% 80% at 10% 0%, rgba(213, 255, 180, 0.08), transparent 60%);
-      pointer-events: none;
-    }
-
-    .card__top {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      position: relative;
-      z-index: 1;
-    }
-    .chip {
-      width: 2.4rem;
-      height: 1.8rem;
-      background: var(--periwinkle);
-      border-radius: 0.35rem;
-      position: relative;
-      overflow: hidden;
-    }
-    .chip::before, .chip::after {
-      content: "";
-      position: absolute;
-      left: 10%; right: 10%;
-      height: 1px;
-      background: var(--cash-green);
-      opacity: 0.55;
-    }
-    .chip::before { top: 32%; box-shadow: 0 6px 0 rgba(1,71,81,0.55), 0 12px 0 rgba(1,71,81,0.55); }
-    .chip::after  { display: none; }
-
-    .card__brand {
-      font-family: var(--font-display);
-      font-weight: 500;
-      font-size: 0.85rem;
-      letter-spacing: -0.01em;
-      opacity: 0.85;
-    }
-
-    .numbers {
-      display: flex;
-      gap: 0.9rem;
-      flex-wrap: wrap;
-      position: relative;
-      z-index: 1;
-      mask-image: linear-gradient(90deg, transparent 0%, #000 4%, #000 96%, transparent 100%);
-      -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 4%, #000 96%, transparent 100%);
-    }
-    .group {
-      display: flex;
-      gap: 0.08em;
-    }
-    .digit {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: clamp(1.25rem, 4.2vw, 1.75rem);
-      letter-spacing: 0.04em;
-      color: var(--electric-green);
-      display: inline-block;
-      animation: redact 4.2s cubic-bezier(0.65, 0.05, 0.36, 1) infinite;
-      animation-delay: calc(var(--i) * 180ms);
-      will-change: opacity, filter;
-    }
-
-    @keyframes redact {
-      0%, 100% { opacity: 1;    filter: blur(0);   }
-      38%      { opacity: 0.18; filter: blur(6px); }
-      62%      { opacity: 0.18; filter: blur(6px); }
-    }
-
-    /* gradient sweep that periodically wipes across the numbers */
-    .numbers::before {
-      content: "";
-      position: absolute;
-      inset: -20% -5%;
-      background: linear-gradient(
-        100deg,
-        transparent 0%,
-        transparent 42%,
-        rgba(252, 250, 242, 0.14) 48%,
-        rgba(252, 250, 242, 0.28) 50%,
-        rgba(252, 250, 242, 0.14) 52%,
-        transparent 58%,
-        transparent 100%
-      );
-      background-size: 260% 100%;
-      background-position: -30% 0;
-      mix-blend-mode: screen;
-      pointer-events: none;
-      animation: sweep 7s cubic-bezier(0.85, 0, 0.15, 1) infinite;
-    }
-    @keyframes sweep {
-      0%   { background-position: -30% 0; }
-      55%  { background-position: 130% 0; }
-      100% { background-position: 130% 0; }
-    }
-
-    .card__bottom {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-      position: relative;
-      z-index: 1;
-      font-size: 0.62rem;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      opacity: 0.55;
-    }
-    .card__bottom .name {
-      font-family: var(--font-display);
-      font-weight: 500;
-      font-size: 0.78rem;
-      letter-spacing: 0;
       text-transform: lowercase;
-      opacity: 1;
     }
-    .card__meta {
+    .nav {
       display: flex;
-      gap: 0.9rem;
-      font-family: var(--font-body);
+      gap: 1.4rem;
+      font-size: 0.9rem;
       font-weight: 500;
     }
-    .card__meta .dot {
-      display: inline-block;
-      width: 0.45rem; height: 0.45rem;
-      border-radius: 50%;
-      background: var(--electric-green);
-      margin-right: 0.35rem;
-      vertical-align: middle;
-      animation: pulse 2.4s ease-in-out infinite;
+    .nav a {
+      opacity: 0.7;
+      transition: opacity .15s;
     }
-    @keyframes pulse {
-      0%, 100% { opacity: 1;    transform: scale(1);   }
-      50%      { opacity: 0.35; transform: scale(0.8); }
-    }
+    .nav a:hover { opacity: 1; }
 
-    /* ── Hero copy block (lives inside state-connect) ── */
-    .hero-copy {
-      text-align: left;
-      max-width: 32rem;
-      margin: 0;
-      padding: 0.5rem 0.25rem 1.25rem;
+    /* ── hero ── */
+    .hero {
+      text-align: center;
+      margin: 1rem 0 2.5rem;
       opacity: 0;
-      animation: copyEnter 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.45s forwards;
+      animation: fadeIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.05s forwards;
     }
-    @keyframes copyEnter {
+    @keyframes fadeIn {
       from { opacity: 0; transform: translateY(14px); }
       to   { opacity: 1; transform: translateY(0); }
     }
     .headline {
       font-family: var(--font-display);
       font-weight: 700;
-      font-size: clamp(2.25rem, 6vw, 3.75rem);
-      line-height: 0.92;
-      letter-spacing: -0.015em;
-      text-transform: uppercase;
+      font-size: clamp(2.8rem, 9vw, 5.25rem);
+      line-height: 0.93;
+      letter-spacing: -0.02em;
+      text-transform: lowercase;
       color: var(--off-black);
-      margin-bottom: 0.85rem;
+      margin-bottom: 1.4rem;
     }
     .headline .period { color: var(--cash-green); }
-
     .sub {
-      font-size: clamp(0.95rem, 1.8vw, 1.05rem);
-      max-width: 30rem;
-      margin: 0 0 1.5rem;
-      opacity: 0.7;
-      line-height: 1.55;
+      font-size: clamp(1rem, 1.8vw, 1.15rem);
+      max-width: 32rem;
+      margin: 0 auto;
+      opacity: 0.72;
+      line-height: 1.5;
     }
 
-    /* ── Funnel container ──────────────────────────── */
-    .funnel {
-      flex: 1;
+    /* ── primary CTA stack ── */
+    .cta {
       display: flex;
       flex-direction: column;
-      justify-content: flex-start;
-      padding: 0 0 1rem;
-    }
-
-    /* Each state. only one .is-active at a time. */
-    .state { display: none; animation: fadeUp 0.35s ease-out; }
-    .state.is-active { display: block; }
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(8px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    /* The connect state is special: it has no panel chrome. the hero copy
-       above sells the page, and a full-width pill CTA sits below. */
-    .connect-actions {
-      max-width: 32rem;
-      margin: 0;
+      align-items: center;
+      gap: 0.85rem;
+      margin: 0 auto 3rem;
       width: 100%;
-      text-align: left;
+      max-width: 26rem;
       opacity: 0;
-      animation: copyEnter 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.7s forwards;
+      animation: fadeIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.2s forwards;
     }
-
-    .panel {
-      background: rgba(1, 71, 81, 0.04);
-      border-radius: 22px;
-      padding: 1.5rem 1.5rem;
-      max-width: 28rem;
-      margin: 0 auto;
+    .btn-primary {
       width: 100%;
-    }
-
-    .panel__step {
-      font-size: 0.7rem;
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
-      opacity: 0.5;
-      font-weight: 600;
-      margin-bottom: 0.85rem;
-      text-align: center;
-    }
-    .panel__title {
-      font-family: var(--font-display);
+      background: var(--off-black);
+      color: var(--vanilla);
       font-weight: 700;
-      font-size: clamp(1.6rem, 4vw, 2.1rem);
-      text-transform: uppercase;
-      letter-spacing: -0.015em;
-      line-height: 1.05;
-      color: var(--off-black);
-      text-align: center;
-      margin-bottom: 0.6rem;
-    }
-    .panel__title .check {
-      color: var(--cash-green);
-      font-weight: 500;
-    }
-    .panel__sub {
-      font-size: 0.95rem;
-      opacity: 0.7;
-      line-height: 1.55;
-      text-align: center;
-      margin-bottom: 1.5rem;
-    }
-    .panel__sub strong {
-      color: var(--cash-green);
-      font-weight: 600;
-    }
-
-    /* ── Primary CTA ─────────────────────────────── */
-    /* Two flavours:
-         .cta-pill . used in STATE_CONNECT (large pill with arrow micro-translate)
-         .cta-btn  . used inside panels (stays a flat full-width pill)
-       Both share the same hover lift + shadow signature. */
-    .cta-pill {
+      font-size: 1.1rem;
+      padding: 1.05rem 1.75rem;
+      border-radius: 14px;
+      text-transform: lowercase;
+      letter-spacing: -0.005em;
       display: inline-flex;
       align-items: center;
-      gap: 0.55rem;
-      font-family: var(--font-body);
-      font-weight: 700;
-      font-size: 1rem;
-      padding: 1.05rem 2rem;
-      background: var(--cash-green);
-      color: var(--vanilla);
-      border-radius: 100px;
-      cursor: pointer;
-      letter-spacing: 0.005em;
-      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
-                  box-shadow 0.25s ease,
-                  opacity 0.2s ease;
+      justify-content: center;
+      gap: 0.6rem;
+      transition: transform .12s ease, opacity .15s;
     }
-    .cta-pill:hover:not(:disabled) {
-      transform: translateY(-2px);
-      box-shadow:
-        0 16px 40px rgba(1, 71, 81, 0.25),
-        0 0 40px rgba(211, 255, 180, 0.18);
-    }
-    .cta-pill:disabled {
+    .btn-primary:hover { opacity: 0.92; transform: translateY(-1px); }
+    .btn-primary:active { transform: translateY(1px); }
+    .btn-primary .arrow { font-size: 1.15rem; }
+    .cta-hint {
+      font-size: 0.85rem;
       opacity: 0.55;
-      cursor: progress;
-      transform: none;
-      box-shadow: none;
-    }
-    .cta-pill__arrow { transition: transform 0.25s ease; display: inline-block; }
-    .cta-pill:hover:not(:disabled) .cta-pill__arrow { transform: translateX(3px); }
-
-    .cta-btn {
-      display: block;
-      width: 100%;
-      background: var(--cash-green);
-      color: var(--vanilla);
-      padding: 1.05rem 1.5rem;
-      font-weight: 700;
-      font-size: 1rem;
-      border-radius: 100px;
+      max-width: 24rem;
       text-align: center;
-      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
-                  box-shadow 0.25s ease,
-                  opacity 0.2s ease;
-    }
-    .cta-btn:hover:not(:disabled) {
-      transform: translateY(-2px);
-      box-shadow: 0 16px 40px rgba(1, 71, 81, 0.22);
-    }
-    .cta-btn:disabled {
-      opacity: 0.55;
-      cursor: progress;
-      transform: none;
-      box-shadow: none;
-    }
-
-    /* Micro line under the connect CTA. */
-    .micro {
-      margin-top: 0.95rem;
-      font-size: 0.78rem;
-      color: var(--off-black);
-      opacity: 0.5;
-      letter-spacing: 0.015em;
       line-height: 1.5;
     }
-    .micro .sep {
-      display: inline-block;
-      margin: 0 0.45rem;
-      opacity: 0.6;
+    .toast {
+      background: var(--off-black);
+      color: var(--vanilla);
+      padding: 0.75rem 1.1rem;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      opacity: 0;
+      transform: translateY(-6px);
+      transition: opacity .25s, transform .25s;
+      pointer-events: none;
+      max-width: 24rem;
     }
+    .toast.show { opacity: 1; transform: translateY(0); }
 
-    /* ── Disclaimer ──────────────────────────────── */
-    .disclaimer {
-      margin-top: 0.85rem;
-      font-size: 0.78rem;
-      opacity: 0.55;
-      line-height: 1.5;
-      font-style: italic;
-      text-align: center;
-    }
-    /* Hero / connect state runs left-aligned (Phase 12A). Panels stay centered. */
-    .connect-actions .disclaimer { text-align: left; }
-    .disclaimer a {
-      text-decoration: underline;
-      opacity: 0.85;
-    }
-    .disclaimer a:hover { opacity: 1; color: var(--cash-green); }
-
-    /* ── Inline link (sign in / change number) ───── */
-    .inline-link-wrap {
-      text-align: center;
-      margin-top: 1.25rem;
-    }
-    .connect-actions .inline-link-wrap { text-align: left; }
-    /* Phase 13A: the under-18 row sits closer to the existing sign-in row
-       and is one notch smaller — visible but clearly secondary so it
-       doesn't compete with the main "already have an account?" link. */
-    .inline-link-wrap--under18 { margin-top: 0.4rem; }
-    .inline-link-wrap--under18 .inline-link {
-      font-size: 0.82rem;
-      opacity: 0.55;
-    }
-    .inline-link {
-      font-size: 0.88rem;
-      opacity: 0.65;
-      text-decoration: underline;
-      transition: opacity 0.15s ease, color 0.15s ease;
-      background: none;
-      border: none;
-      padding: 0;
-      color: inherit;
-      font-family: inherit;
-      cursor: pointer;
-    }
-    .inline-link:hover {
-      opacity: 1;
-      color: var(--cash-green);
-    }
-
-    /* ── Phone input ─────────────────────────────── */
-    .phone-form {
-      display: flex;
-      gap: 0.5rem;
-      background: rgba(252, 250, 242, 0.6);
-      border: 1px solid rgba(26, 23, 23, 0.15);
-      border-radius: 100px;
-      padding: 0.35rem;
-      transition: border-color 0.2s ease, background 0.2s ease;
-      margin-bottom: 0.85rem;
-    }
-    .phone-form:focus-within {
-      border-color: var(--cash-green);
-      background: #fff;
-    }
-    .phone-prefix {
+    /* ── URL block (fallback for copy-fail) ── */
+    .url-block {
+      background: transparent;
+      border: 1px solid var(--hairline);
+      border-radius: 12px;
+      padding: 0.85rem 1rem;
       display: flex;
       align-items: center;
-      padding-left: 1.1rem;
-      font-weight: 600;
-      opacity: 0.55;
-      font-size: 0.95rem;
-    }
-    .phone-input {
-      flex: 1;
-      background: transparent;
-      border: none;
-      outline: none;
-      color: var(--off-black);
-      font-family: inherit;
-      font-size: 1rem;
-      font-weight: 500;
-      padding: 0.85rem 0.75rem;
-      min-width: 0;
-      letter-spacing: 0.01em;
-    }
-    .phone-input::placeholder { color: rgba(26, 23, 23, 0.35); }
-
-    /* ── OTP input (single 6-digit field) ────────── */
-    .otp-form { margin-bottom: 0.85rem; }
-    .otp-input {
-      display: block;
+      gap: 0.7rem;
       width: 100%;
-      padding: 1rem 1.25rem;
-      border: 1px solid rgba(26, 23, 23, 0.18);
-      border-radius: 100px;
-      background: #fff;
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: 1.5rem;
-      color: var(--off-black);
-      text-align: center;
-      letter-spacing: 0.6rem;
-      outline: none;
-      transition: border-color 0.15s ease, box-shadow 0.2s ease;
     }
-    .otp-input:focus {
-      border-color: var(--cash-green);
-      box-shadow: 0 6px 18px rgba(1, 71, 81, 0.12);
-    }
-    .otp-input::placeholder {
-      color: rgba(26, 23, 23, 0.2);
-      letter-spacing: 0.6rem;
-    }
-
-    /* ── OTP meta row (resend / change) ──────────── */
-    .otp-meta {
-      margin-top: 1.5rem;
-      display: flex;
-      gap: 1.5rem;
-      justify-content: center;
+    .url-block code {
       font-size: 0.85rem;
+      flex: 1;
+      overflow-x: auto;
+      white-space: nowrap;
+      opacity: 0.75;
     }
-    .otp-meta button,
-    .otp-meta a {
-      opacity: 0.6;
-      text-decoration: underline;
-      padding: 0;
-      color: var(--off-black);
-      font-size: 0.85rem;
-      font-family: inherit;
-      transition: opacity 0.15s ease, color 0.15s ease;
-      background: none;
-      border: none;
-      cursor: pointer;
+    .url-copy {
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 0.35rem 0.75rem;
+      border-radius: 6px;
+      transition: background .15s;
+      flex-shrink: 0;
+      border: 1px solid var(--hairline);
     }
-    .otp-meta button:hover:not(:disabled),
-    .otp-meta a:hover {
-      opacity: 1;
-      color: var(--cash-green);
-    }
-    .otp-meta button:disabled {
-      opacity: 0.3;
-      cursor: not-allowed;
-    }
+    .url-copy:hover { background: var(--off-black); color: var(--vanilla); border-color: var(--off-black); }
 
-    /* ── Plaid in-flight panel (state 2) ─────────── */
-    .plaid-flight {
-      text-align: center;
-      padding: 2rem 1rem;
-    }
-    .plaid-flight__wordmark {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: 2.25rem;
-      letter-spacing: -0.02em;
-      color: var(--cash-green);
-      margin-bottom: 1.25rem;
-      opacity: 0.85;
-    }
-    .plaid-flight__msg {
-      font-family: var(--font-display);
-      font-weight: 500;
-      font-size: 1.25rem;
-      color: var(--cash-green);
+    /* ── divider ── */
+    .or {
+      font-size: 0.78rem;
+      letter-spacing: 0.18em;
       text-transform: uppercase;
+      opacity: 0.4;
+      font-weight: 600;
+      margin: 0.4rem 0 0.4rem;
+    }
+
+    /* ── trial button (secondary) ── */
+    .btn-trial {
+      width: 100%;
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.15rem;
+      background: var(--vanilla);
+      color: var(--off-black);
+      border: 1.5px solid var(--off-black);
+      font-weight: 700;
+      padding: 0.9rem 1.4rem;
+      border-radius: 14px;
+      text-transform: lowercase;
+      letter-spacing: -0.005em;
+      transition: transform .12s ease, background .15s ease, color .15s ease;
+    }
+    .btn-trial:hover { background: var(--off-black); color: var(--vanilla); transform: translateY(-1px); }
+    .btn-trial:active { transform: translateY(1px); }
+    .btn-trial__main { font-size: 1rem; }
+    .btn-trial__sub { font-size: 0.78rem; font-weight: 500; opacity: 0.72; letter-spacing: 0.01em; }
+
+    /* ── section divider ── */
+    hr.rule {
+      border: 0;
+      height: 1px;
+      background: var(--hairline);
+      margin: 0 auto;
+      max-width: 24rem;
+      width: 100%;
+    }
+
+    /* ── prompts ── */
+    .prompts {
+      margin: 3.5rem 0;
+      max-width: 36rem;
+      width: 100%;
+      align-self: center;
+    }
+    .section__eyebrow {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: clamp(1.5rem, 3.8vw, 2rem);
+      letter-spacing: -0.01em;
+      text-transform: lowercase;
+      margin-bottom: 1.4rem;
+      text-align: center;
+    }
+    .section__eyebrow .period { color: var(--cash-green); }
+    .prompt-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+    .prompt {
+      font-size: clamp(1rem, 1.9vw, 1.2rem);
+      padding: 0.95rem 1.2rem;
+      border: 1px solid var(--hairline);
+      border-radius: 12px;
+      line-height: 1.4;
+      transition: border-color .15s, transform .12s;
+      cursor: default;
       letter-spacing: -0.005em;
     }
-    .plaid-flight__msg::after {
-      content: '';
-      display: inline-block;
-      width: 1.2em;
-      text-align: left;
-      animation: dots 1.3s steps(4, end) infinite;
+    .prompt:hover {
+      border-color: var(--off-black);
+      transform: translateY(-1px);
     }
-    @keyframes dots {
-      0%   { content: ''; }
-      25%  { content: '.'; }
-      50%  { content: '..'; }
-      75%  { content: '...'; }
-      100% { content: ''; }
-    }
-    .plaid-flight__pulse {
-      width: 64px;
-      height: 6px;
-      margin: 1.25rem auto 0;
-      border-radius: 100px;
-      background: linear-gradient(90deg,
-        rgba(1, 71, 81, 0.15) 0%,
-        var(--cash-green) 50%,
-        rgba(1, 71, 81, 0.15) 100%);
-      background-size: 200% 100%;
-      animation: slide 1.6s linear infinite;
-    }
-    @keyframes slide {
-      from { background-position: 200% 0; }
-      to   { background-position: -200% 0; }
-    }
+    .prompt::before { content: "“"; opacity: 0.45; margin-right: 0.06em; }
+    .prompt::after  { content: "”"; opacity: 0.45; margin-left: 0.06em; }
 
-    /* ── Banner (errors / friendly notes) ────────── */
-    .banner {
-      max-width: 28rem;
-      margin: 0 auto 1rem;
-      padding: 0.85rem 1.15rem;
-      border-radius: 14px;
-      font-size: 0.88rem;
-      line-height: 1.45;
+    /* ── how it works ── */
+    .how {
+      margin: 0 auto 3rem;
+      max-width: 36rem;
+      width: 100%;
+    }
+    .how__body {
+      font-size: 1rem;
+      line-height: 1.65;
+      max-width: 32rem;
+      margin: 0 auto 1.4rem;
       text-align: center;
-      animation: fadeUp 0.3s ease-out;
+      opacity: 0.78;
     }
-    .banner[hidden] { display: none; }
-    .banner--info {
-      background: rgba(197, 182, 241, 0.35);
-      color: var(--off-black);
-    }
-    .banner--error {
-      background: rgba(122, 31, 42, 0.08);
-      color: var(--error);
-      border: 1px solid rgba(122, 31, 42, 0.18);
-    }
-
-    /* ── Footer ───────────────────────────────────── */
-    /* `flex-wrap` keeps the row from breaking words at 375px (the inline
-       separator spans become flex items and need horizontal room); we let
-       the whole row wrap as one unit instead. */
-    .page-foot {
-      flex-shrink: 0;
+    .how__list {
       display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 0.4rem 1.1rem;
-      font-size: 0.72rem;
-      opacity: 0.4;
-      padding-top: 1rem;
+      flex-direction: column;
+      gap: 0.6rem;
+      max-width: 28rem;
+      margin: 0 auto;
+      list-style: none;
+    }
+    .how__item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.85rem;
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+    .how__num {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: var(--cash-green);
+      flex-shrink: 0;
+      width: 1.4rem;
       text-align: center;
-    }
-    .page-foot a:hover { opacity: 1; color: var(--cash-green); }
-
-    /* ── Mobile (≤ 480px) ─────────────────────────── */
-    @media (max-width: 640px) {
-      .stage { padding: 1.25rem 1.25rem 1.25rem; }
-      .card { transform: rotate(-5deg); }
-      @keyframes float {
-        0%, 100% { transform: rotate(-5deg) translateY(0); }
-        50%      { transform: rotate(-5deg) translateY(-4px); }
-      }
-      @keyframes cardEnter {
-        from { opacity: 0; transform: rotate(-1deg) translateY(16px) scale(0.92); }
-        to   { opacity: 1; transform: rotate(-5deg) translateY(0) scale(1); }
-      }
-      .digit { font-size: clamp(1.1rem, 5.2vw, 1.5rem); }
-      .headline { font-size: clamp(2rem, 9vw, 2.65rem); }
-      .sub { font-size: 0.95rem; }
-      .cta-pill { font-size: 0.95rem; padding: 0.95rem 1.75rem; }
-      .card-stage { padding: 1rem 0 0.75rem; }
-      .card-stage.is-compact .card-wrap { transform: scale(0.55); }
-    }
-    @media (max-width: 480px) {
-      .panel { padding: 1.4rem 1.15rem; }
-      .panel__title { font-size: clamp(1.4rem, 7vw, 1.85rem); }
-      .otp-input { font-size: 1.3rem; letter-spacing: 0.45rem; padding: 0.9rem 1rem; }
-      .otp-input::placeholder { letter-spacing: 0.45rem; }
-    }
-    @media (max-width: 380px) {
-      .card { width: min(18rem, 88vw); padding: 1.1rem 1rem 0.95rem; }
-      .numbers { gap: 0.55rem; }
+      line-height: 1.4;
     }
 
-    /* ── Reduced motion ───────────────────────────── */
+    /* ── footer ── */
+    .footer {
+      margin-top: auto;
+      padding-top: 2.5rem;
+      text-align: center;
+      font-size: 0.85rem;
+      opacity: 0.6;
+      line-height: 1.7;
+      border-top: 1px solid var(--hairline);
+    }
+    .footer a {
+      text-decoration: underline;
+      text-decoration-color: var(--hairline);
+      text-underline-offset: 3px;
+      transition: text-decoration-color .15s;
+    }
+    .footer a:hover { text-decoration-color: var(--off-black); }
+    .footer .sep {
+      margin: 0 0.5rem;
+      opacity: 0.4;
+    }
+
+    /* ── reduced motion ── */
     @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-      }
-      .card { opacity: 1; transform: rotate(-8deg); animation: none; }
-      .digit { opacity: 0.3; filter: blur(2px); animation: none; }
-      .numbers::before { animation: none; }
-      .card__meta .dot { animation: none; }
-      .hero-copy, .connect-actions { opacity: 1; transform: none; animation: none; }
-      .plaid-flight__pulse { background: var(--cash-green); animation: none; }
-    }
-
-    /* ── Tall landscape (laptops). extra breathing room */
-    @media (min-height: 780px) and (min-width: 900px) {
-      .card-stage { padding: 2.25rem 0 1.5rem; }
+      * { animation: none !important; transition: none !important; }
     }
   </style>
 </head>
 <body>
+  <main class="stage">
 
-  <div class="stage">
-    <!-- ── Top bar ────────────────────────────────── -->
     <header class="bar">
-      <a href="/" class="wordmark" aria-label="cash bff home">cash bff</a>
-      <div class="bar__right">est. 2026</div>
+      <a href="/" class="wordmark">cash bff</a>
+      <nav class="nav" aria-label="primary">
+        <a href="/pricing">pricing</a>
+        <a href="/signup">sign in</a>
+      </nav>
     </header>
 
-    <!-- ── Tilted credit card ─────────────────────── -->
-    <!-- The card stays mounted across all states. JS toggles `.is-compact`
-         on `.card-stage` once the user advances past STATE_CONNECT so the
-         form section gets the room. -->
-    <div class="card-stage" id="card-stage">
-      <div class="card-wrap">
-        <div class="card" role="img" aria-label="a credit card whose numbers are fading out">
-          <div class="card__top">
-            <div class="chip" aria-hidden="true"></div>
-            <div class="card__brand">cash bff</div>
-          </div>
+    <section class="hero">
+      <h1 class="headline">
+        talk to your money<span class="period">.</span><br>
+        in plain english<span class="period">.</span><br>
+        inside claude<span class="period">.</span>
+      </h1>
+      <p class="sub">connect your bank once. ask claude anything about your money.</p>
+    </section>
 
-          <div class="numbers" aria-hidden="true">
-            <div class="group">
-              <span class="digit" style="--i: 0;">4</span>
-              <span class="digit" style="--i: 1;">9</span>
-              <span class="digit" style="--i: 2;">2</span>
-              <span class="digit" style="--i: 3;">0</span>
-            </div>
-            <div class="group">
-              <span class="digit" style="--i: 4;">1</span>
-              <span class="digit" style="--i: 5;">3</span>
-              <span class="digit" style="--i: 6;">5</span>
-              <span class="digit" style="--i: 7;">7</span>
-            </div>
-            <div class="group">
-              <span class="digit" style="--i: 8;">8</span>
-              <span class="digit" style="--i: 9;">8</span>
-              <span class="digit" style="--i: 10;">0</span>
-              <span class="digit" style="--i: 11;">2</span>
-            </div>
-            <div class="group">
-              <span class="digit" style="--i: 12;">6</span>
-              <span class="digit" style="--i: 13;">6</span>
-              <span class="digit" style="--i: 14;">4</span>
-              <span class="digit" style="--i: 15;">1</span>
-            </div>
-          </div>
+    <section class="cta">
+      <button class="btn-primary" id="add-btn" type="button" aria-label="copy URL and open Claude to add custom connector">
+        <span>add to claude</span>
+        <span class="arrow" aria-hidden="true">→</span>
+      </button>
 
-          <div class="card__bottom">
-            <span class="name" id="card-name">your name here</span>
-            <span class="card__meta">
-              <span><span class="dot" aria-hidden="true"></span>handled</span>
-            </span>
-          </div>
-        </div>
+      <p class="cta-hint">copies the URL and opens claude.ai. paste with <strong>cmd&#8202;+&#8202;v</strong> in the dialog that pops up.</p>
+
+      <div class="toast" id="toast" role="status" aria-live="polite">URL copied. paste it in the claude.ai dialog.</div>
+
+      <div class="url-block">
+        <code id="mcp-url">https://api.cashbff.com/mcp</code>
+        <button class="url-copy" id="copy-btn" type="button">copy</button>
       </div>
-    </div>
 
-    <!-- ── Funnel ─────────────────────────────────── -->
-    <main class="funnel" id="funnel">
-      <!-- Inline banner for errors / info, shared across states. -->
-      <div class="banner" id="banner" role="status" aria-live="polite" hidden></div>
+      <div class="or">or</div>
 
-      <!-- ── State 1. landing / connect-bank ──────── -->
-      <section class="state is-active" id="state-connect" data-state="connect" aria-label="connect your bank">
-        <div class="hero-copy">
-          <h1 class="headline">
-            see what's coming<span class="period">.</span><br>
-            before it hits<span class="period">.</span>
-          </h1>
-          <p class="sub">
-            a money bff for credit cards. quiet, on your side, never a dashboard.
-          </p>
-        </div>
-        <div class="connect-actions">
-          <button class="cta-pill" id="connect-btn" type="button">
-            connect your bank
-            <span class="cta-pill__arrow" aria-hidden="true">→</span>
-          </button>
-          <div class="micro">
-            7 days free<span class="sep">·</span>no bank connection until you say so<span class="sep">·</span>cancel anytime
-          </div>
-          <p class="disclaimer">
-            by clicking, you confirm you're 18+ and agree to our <a href="terms.html">terms</a>.
-          </p>
-          <div class="inline-link-wrap">
-            <button class="inline-link" id="returning-link" type="button">
-              already have an account? sign in →
-            </button>
-          </div>
-          <!-- Phase 13A: under-18 sign-in path. Most kids returning to the
-               site already have a kid login code, so we point at the login
-               page (signups go through the school onboarding from /school).
-               Kept small + subtle so it doesn't compete with the main funnel. -->
-          <div class="inline-link-wrap inline-link-wrap--under18">
-            <a class="inline-link" id="under18-link" href="/school/login">
-              under 18? sign in here →
-            </a>
-          </div>
-        </div>
-      </section>
+      <a class="btn-trial" id="trial-btn" href="https://buy.stripe.com/14A9ATdOeen7aKA8BT1sQ01" target="_blank" rel="noopener noreferrer" aria-label="start a 14-day free trial">
+        <span class="btn-trial__main">start free 14-day trial</span>
+        <span class="btn-trial__sub">$12.99/mo after, cancel anytime</span>
+      </a>
+    </section>
 
-      <!-- ── State 2. Plaid in flight ─────────────── -->
-      <section class="state" id="state-plaid" data-state="plaid" aria-label="connecting your bank">
-        <div class="panel">
-          <div class="plaid-flight">
-            <div class="plaid-flight__msg">connecting</div>
-            <div class="plaid-flight__pulse" aria-hidden="true"></div>
-          </div>
-        </div>
-      </section>
+    <hr class="rule">
 
-      <!-- ── State 3. phone entry (signup) ────────── -->
-      <section class="state" id="state-phone" data-state="phone" aria-label="enter your phone">
-        <div class="panel">
-          <div class="panel__step">step 2 of 2</div>
-          <h2 class="panel__title">
-            we connected your <strong id="institution-name">bank</strong> account
-            <span class="check" aria-hidden="true">·&nbsp;✓</span>
-          </h2>
-          <p class="panel__sub">
-            now your phone. we'll text one code to confirm it's you.
-          </p>
-          <form class="phone-form" id="phone-form" autocomplete="off" novalidate>
-            <span class="phone-prefix">+1</span>
-            <input
-              type="tel"
-              class="phone-input"
-              id="phone-input"
-              name="phone"
-              placeholder="(555) 555-5555"
-              autocomplete="tel-national"
-              inputmode="tel"
-              aria-label="phone number"
-              required
-              data-ph-no-capture="1"
-            >
-          </form>
-          <button class="cta-btn" id="send-otp-btn" type="button">
-            send code
-          </button>
-          <p class="disclaimer">
-            by entering your phone, you confirm you're 18+ and agree to our <a href="terms.html">terms</a>.
-          </p>
-        </div>
-      </section>
+    <section class="prompts" aria-labelledby="prompts-heading">
+      <h2 class="section__eyebrow" id="prompts-heading">stuff people ask<span class="period">.</span></h2>
+      <div class="prompt-list">
+        <div class="prompt">am i actually saving this month.</div>
+        <div class="prompt">what's the dumbest thing i bought.</div>
+        <div class="prompt">how much rent am i short on.</div>
+        <div class="prompt">did i double-pay netflix again.</div>
+        <div class="prompt">talk me out of doordash tonight.</div>
+      </div>
+    </section>
 
-      <!-- ── State 4. OTP entry (signup) ──────────── -->
-      <section class="state" id="state-otp" data-state="otp" aria-label="enter the code we texted you">
-        <div class="panel">
-          <div class="panel__step">last step</div>
-          <h2 class="panel__title">
-            code sent to <strong id="phone-display">your number</strong>
-            <span class="check" aria-hidden="true">·&nbsp;✓</span>
-          </h2>
-          <p class="panel__sub">
-            6 digits, just texted to you.
-          </p>
-          <form class="otp-form" id="otp-form" autocomplete="off">
-            <input
-              type="text"
-              class="otp-input"
-              id="otp-input"
-              inputmode="numeric"
-              autocomplete="one-time-code"
-              pattern="\d{6}"
-              maxlength="6"
-              placeholder="• • • • • •"
-              aria-label="6-digit code"
-              data-ph-no-capture="1"
-            >
-          </form>
-          <button class="cta-btn" id="verify-otp-btn" type="button">
-            verify
-          </button>
-          <div class="otp-meta">
-            <button id="resend-otp" type="button">didn't get it? resend</button>
-            <button id="change-phone" type="button">wrong number? change it</button>
-          </div>
-        </div>
-      </section>
+    <hr class="rule">
 
-      <!-- ── Returning user. phone entry ──────────── -->
-      <section class="state" id="state-returning-phone" data-state="returning-phone" aria-label="sign in with your phone">
-        <div class="panel">
-          <div class="panel__step">welcome back</div>
-          <h2 class="panel__title">your number, please</h2>
-          <p class="panel__sub">
-            we'll text a code to sign you back in.
-          </p>
-          <form class="phone-form" id="returning-phone-form" autocomplete="off" novalidate>
-            <span class="phone-prefix">+1</span>
-            <input
-              type="tel"
-              class="phone-input"
-              id="returning-phone-input"
-              name="phone"
-              placeholder="(555) 555-5555"
-              autocomplete="tel-national"
-              inputmode="tel"
-              aria-label="phone number"
-              required
-              data-ph-no-capture="1"
-            >
-          </form>
-          <button class="cta-btn" id="returning-send-btn" type="button">
-            send code
-          </button>
-          <div class="inline-link-wrap">
-            <button class="inline-link" id="returning-back" type="button">
-              ← new here? connect a bank instead
-            </button>
-          </div>
-        </div>
-      </section>
+    <section class="how" aria-labelledby="how-heading">
+      <h2 class="section__eyebrow" id="how-heading">how it works<span class="period">.</span></h2>
+      <p class="how__body">
+        link your bank to cash bff in about a minute. we give claude a read-only window into your real transactions and balances. you ask questions, claude does the talking. nothing gets moved or sent. you stay in control of access.
+      </p>
+      <ul class="how__list">
+        <li class="how__item"><span class="how__num">1</span><span>a bank account cash bff supports.</span></li>
+        <li class="how__item"><span class="how__num">2</span><span>the claude desktop or web app.</span></li>
+        <li class="how__item"><span class="how__num">3</span><span>two minutes to connect.</span></li>
+      </ul>
+    </section>
 
-      <!-- ── Returning user. OTP entry ────────────── -->
-      <section class="state" id="state-returning-otp" data-state="returning-otp" aria-label="enter the code we texted you">
-        <div class="panel">
-          <div class="panel__step">welcome back</div>
-          <h2 class="panel__title">
-            code sent to <strong id="returning-phone-display">your number</strong>
-            <span class="check" aria-hidden="true">·&nbsp;✓</span>
-          </h2>
-          <p class="panel__sub">
-            6 digits, just texted to you.
-          </p>
-          <form class="otp-form" id="returning-otp-form" autocomplete="off">
-            <input
-              type="text"
-              class="otp-input"
-              id="returning-otp-input"
-              inputmode="numeric"
-              autocomplete="one-time-code"
-              pattern="\d{6}"
-              maxlength="6"
-              placeholder="• • • • • •"
-              aria-label="6-digit code"
-              data-ph-no-capture="1"
-            >
-          </form>
-          <button class="cta-btn" id="returning-verify-btn" type="button">
-            verify
-          </button>
-          <div class="otp-meta">
-            <button id="returning-resend" type="button">didn't get it? resend</button>
-            <button id="returning-change" type="button">wrong number? change it</button>
-          </div>
-        </div>
-      </section>
-    </main>
-
-    <!-- ── Page footer ───────────────────────────── -->
-    <footer class="page-foot">
-      <span>&copy; 2026 cash bff</span>
-      <span>·</span>
-      <a href="privacy.html">privacy</a>
-      <span>·</span>
-      <a href="terms.html">terms</a>
-      <span>·</span>
-      <a href="mailto:daksh@cashbff.com">daksh@cashbff.com</a>
+    <footer class="footer">
+      no account yet? <a href="/signup">sign up free</a>
+      <span class="sep">·</span>
+      <a href="/privacy">privacy</a>
+      <span class="sep">·</span>
+      <a href="/terms">terms</a>
+      <span class="sep">·</span>
+      <a href="/pricing">pricing</a>
     </footer>
-  </div>
+
+  </main>
 
   <script src="/assets/js/auth-banner.js" defer></script>
-  <script src="/assets/js/index.js" defer></script>
+  <script src="/assets/js/talk.js" defer></script>
 </body>
 </html>

@@ -159,13 +159,13 @@
       notice.appendChild(msg);
 
       const link = document.createElement("a");
-      // TODO: index.js doesn't yet honor a `next=` query param after signup
+      // TODO: signup.js doesn't yet honor a `next=` query param after signup
       // verify (it follows server-provided `redirect` or falls back to
-      // /home.html). For v0 we just send users to "/" and accept the
+      // /home.html). For v0 we send users to "/signup" and accept the
       // rougher UX of them having to click "start free trial" again after
-      // logging in. When index.js learns to read `next=/talk?action=start-trial`,
+      // logging in. When signup.js learns to read next=/?action=start-trial,
       // swap this href to that path so we round-trip cleanly.
-      link.href = "/?next=/talk?action=start-trial";
+      link.href = "/signup?next=/";
       link.textContent = "sign in";
       link.style.textDecoration = "underline";
       notice.appendChild(link);
