@@ -510,7 +510,13 @@
         public_token: public_token,
         metadata: metadata || null,
       });
-      if (!r.ok || !r.data || r.data.ok !== true) throw new Error('exchange failed');
+      // /api/plaid/exchange returns { success: true, item_id, institution }
+      // — NOT { ok: true } like the legacy /api/signup/exchange. The old
+      // check `r.data.ok !== true` was always falsy → caught error → showed
+      // "we connected but couldn't save it" toast on EVERY successful save.
+      // Accept either shape so we're safe against future contract drift.
+      const saved = r.ok && r.data && (r.data.success === true || r.data.ok === true);
+      if (!saved) throw new Error('exchange failed');
       track('signup_plaid_connected', {});
       inFlight = false;
       if (connectBtn) connectBtn.disabled = false;
