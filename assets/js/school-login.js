@@ -79,8 +79,9 @@ async function probeAuth() {
       window.showAuthHomeButton();
     }
     const userId = (data && data.user_id) || '';
-    const accountType = (data && data.account_type) || '';
-    const isSchool = accountType === 'school' || (typeof userId === 'string' && userId.startsWith('school_'));
+    // /api/me doesn't return account_type today; classify via user_id prefix.
+    // (Was reading data.account_type which has been undefined since Phase 8.)
+    const isSchool = typeof userId === 'string' && userId.startsWith('school_');
     if (isSchool) {
       // Disable the form and show a friendly inline "you're signed in" note.
       if (typeof window.hidePageInteractionForAuthed === 'function') {

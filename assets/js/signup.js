@@ -333,7 +333,7 @@
       track('signup_otp_verified', {});
       // Pre-fetch /api/me so the Stripe button is instant when the user clicks.
       fetchMe().then((me) => {
-        if (me.ok && me.data && me.data.user_id) cachedUserId = me.data.user_id;
+        if (me.ok && me.data && (me.data.user_id || me.data.id)) cachedUserId = me.data.user_id || me.data.id;
       }).catch(() => {});
       showState(STATE_TRIAL);
       verifyOtpBtn.disabled = false;
@@ -711,7 +711,7 @@
     }
 
     // We have a session. Cache user_id for the Stripe handoff.
-    if (me.data && me.data.user_id) cachedUserId = me.data.user_id;
+    if (me.data && (me.data.user_id || me.data.id)) cachedUserId = me.data.user_id || me.data.id;
     window.__authedUser = me.data || {};
     try { if (typeof window.showAuthHomeButton === 'function') window.showAuthHomeButton(); } catch (_) {}
 
