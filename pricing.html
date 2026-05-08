@@ -10,7 +10,7 @@
   ></script>
   <script src="/assets/js/sentry-init.js"></script>
   <title>pricing — cash bff</title>
-  <meta name="description" content="cash bff pricing. $7.49 a month, 7 days free first. cancel anytime.">
+  <meta name="description" content="cash bff pricing. $12.99 a month, 14-day free trial. cancel anytime.">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -612,9 +612,9 @@
           </div>
 
           <div class="card__bottom">
-            <span class="name">$7.49 / month</span>
+            <span class="name">$12.99 / month</span>
             <span class="card__meta">
-              <span><span class="dot" aria-hidden="true"></span>7 days free</span>
+              <span><span class="dot" aria-hidden="true"></span>14 days free</span>
             </span>
           </div>
         </div>
@@ -628,84 +628,30 @@
         forget about it<span class="period">.</span>
       </h1>
       <p class="sub">
-        7 days free. cancel anytime. no surprises, no upsells.
+        14 days free. cancel anytime. no surprises, no upsells.
       </p>
     </section>
 
     <!-- ── Tier grid ──────────────────────────────── -->
     <section class="tiers" aria-label="pricing tiers">
-      <!-- Tier 1: $7.49/mo (the real product) -->
+      <!-- Tier 1: $12.99/mo Talk (the real product) -->
       <article class="tier tier--paid">
         <span class="tier__badge">monthly</span>
         <div class="tier__price" data-test="price">
-          $7.49<span class="per">/ month</span>
+          $12.99<span class="per">/ month</span>
         </div>
-        <p class="tier__sub"><strong>7 days free</strong> first.</p>
+        <p class="tier__sub"><strong>14 days free</strong> first.</p>
         <ul class="tier__list">
-          <li>the calendar that knows what's coming.</li>
+          <li>talk to your money in claude.</li>
           <li>up to 5 banks via plaid.</li>
           <li>unlimited manual cards.</li>
           <li>recurring streams that auto-project 3 months ahead.</li>
-          <li>snapshot for any AI you want.</li>
+          <li>the calendar that knows what's coming.</li>
           <li>cancel anytime.</li>
         </ul>
-        <a href="/" class="cta-btn" data-test="paid-cta">start your 7 days →</a>
-      </article>
-
-      <!-- Tier 2: SMS agent beta — coming soon -->
-      <article class="tier tier--soon" id="sms-tier">
-        <span class="tier__badge">coming soon</span>
-        <h2 class="tier__heading">SMS agent · coming soon</h2>
-        <p class="tier__tagline">
-          text your money questions. get answers back. like a quiet accountability partner that lives in your pocket.
-        </p>
-
-        <!-- Form (visible until success swap) -->
-        <form class="waitlist-form" id="waitlist-form" novalidate aria-label="sms agent beta waitlist">
-          <div class="field">
-            <label class="field__label" for="waitlist-email">your email</label>
-            <input
-              class="field__input"
-              type="email"
-              id="waitlist-email"
-              name="email"
-              placeholder="you@email.com"
-              autocomplete="email"
-              inputmode="email"
-              required
-              data-ph-no-capture="1"
-            >
-          </div>
-          <div class="field">
-            <label class="field__label" for="waitlist-note">tell us why you'd use this (optional)</label>
-            <textarea
-              class="field__textarea"
-              id="waitlist-note"
-              name="note"
-              maxlength="280"
-              placeholder="what would you ask?"
-              data-ph-no-capture="1"
-            ></textarea>
-          </div>
-          <div class="waitlist-error" id="waitlist-error" role="alert" hidden></div>
-          <button class="cta-btn cta-btn--soft" type="submit" id="waitlist-submit" data-test="waitlist-submit">
-            get on the early-access list →
-          </button>
-        </form>
-
-        <!-- Success state (revealed by pricing.js after 200) -->
-        <div class="waitlist-success" id="waitlist-success" role="status" hidden>
-          <strong>you're in. we'll text you first.</strong>
-          <span class="quiet">we won't spam — only when we have something real.</span>
-        </div>
+        <a href="https://buy.stripe.com/14A9ATdOeen7aKA8BT1sQ01" target="_blank" rel="noopener" class="cta-btn" data-test="paid-cta">start your 14 days →</a>
       </article>
     </section>
-
-    <!-- ── Promise to early users ─────────────────── -->
-    <p class="promise">
-      <strong>early users get permanent perks.</strong>
-      we'll be loud about that when we have the room.
-    </p>
 
     <!-- ── Page footer ───────────────────────────── -->
     <footer class="page-foot">
