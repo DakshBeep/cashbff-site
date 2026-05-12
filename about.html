@@ -100,9 +100,39 @@
     }
     .nav a:hover { opacity: 1; }
 
-    /* placeholder content area — fill in later. */
     .content {
       flex: 1;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .lead {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: clamp(2rem, 5.5vw, 3.4rem);
+      line-height: 1.02;
+      letter-spacing: -0.02em;
+      text-transform: lowercase;
+      color: var(--off-black);
+      margin: 0 0 3rem;
+      opacity: 0;
+      animation: fadeIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.05s forwards;
+    }
+    .lead .period { color: var(--cash-green); }
+
+    .prose {
+      display: flex;
+      flex-direction: column;
+      gap: 1.6rem;
+      max-width: 60ch;
+      font-size: clamp(1rem, 1.6vw, 1.075rem);
+      line-height: 1.7;
+      color: var(--off-black);
+      opacity: 0;
+      animation: fadeIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.2s forwards;
     }
 
     .footer {
@@ -141,7 +171,19 @@
     </header>
 
     <section class="content" aria-label="about">
-      <!-- empty for now — content TBD. -->
+      <h1 class="lead">
+        financial literacy<br>
+        has long belonged<br>
+        to the few<span class="period">.</span>
+      </h1>
+
+      <div class="prose">
+        <p>the people who would benefit most from honest answers about their money are usually the ones least likely to have someone in their vicinity to ask. cashbff exists to change that. we aim to serve the people personal finance has historically overlooked, and to build a place where anyone can understand their money without the implied assumption that they should have figured it out by now.</p>
+
+        <p>cashbff is an ai personal finance assistant that lives inside claude. connect your bank once, and you can ask claude anything about your money. how much do i have. where did it go. what's coming up. can i afford this. cashbff works as a model context protocol (mcp) server, so it works with your claude free or pro/max plans on web, desktop, and mobile. setup takes a couple of minutes. and we are very privacy-first.</p>
+
+        <p>cashbff was founded by daksh khanna. he is a rise fellow, a prometheus x venture fellow, a polyglot, and a labradoodle dad. he started cashbff after realising how important one's financial wellbeing is for their mental and physical health.</p>
+      </div>
     </section>
 
     <footer class="footer">
