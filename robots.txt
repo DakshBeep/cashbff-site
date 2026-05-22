@@ -1,0 +1,8 @@
+# https://cashbff.com/robots.txt
+# All crawlers welcome, including search and AI assistants
+# (AhrefsBot, AhrefsSiteAudit, GPTBot, OAI-SearchBot, ChatGPT-User,
+#  ClaudeBot, PerplexityBot, Google-Extended, Applebot-Extended, CCBot, Bingbot).
+User-agent: *
+Allow: /
+
+Sitemap: https://cashbff.com/sitemap.xml

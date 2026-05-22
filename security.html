@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <!-- Sentry browser SDK: forwards JS errors + unhandled rejections to our Sentry project. -->
+  <script
+    src="https://js.sentry-cdn.com/2d45e7a7cdc726451c61d775aa22fbf2.min.js"
+    crossorigin="anonymous"
+  ></script>
+  <script src="/assets/js/sentry-init.js"></script>
+
+  <title>CashBFF Security, how your bank data is protected</title>
+  <meta name="description" content="How CashBFF protects your money and data: bank access through Plaid, AES-256-GCM encryption at rest, OAuth sign-in, read-only by default, and you approve every write. Built on the Model Context Protocol for Claude.">
+  <meta property="og:title" content="CashBFF Security, how your bank data is protected">
+  <meta property="og:description" content="Bank access through Plaid, AES-256-GCM encryption at rest, OAuth sign-in, read-only by default, and you approve every write.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://cashbff.com/security">
+  <link rel="canonical" href="https://cashbff.com/security">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "CashBFF",
+    "url": "https://cashbff.com",
+    "description": "CashBFF is a remote MCP server that connects your bank to Claude through Plaid. Bank data is protected with AES-256-GCM encryption at rest, OAuth sign-in, and a read-only-by-default permission model.",
+    "founder": {
+      "@type": "Person",
+      "name": "Daksh Khanna",
+      "jobTitle": "Founder",
+      "url": "https://khannadaksh.com",
+      "sameAs": [
+        "https://www.linkedin.com/in/khannadaksh",
+        "https://twitter.com/khannacloud"
+      ]
+    },
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "contactType": "security",
+      "email": "daksh@cashbff.com"
+    }
+  }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- PostHog product analytics. CSP-safe (no eval). -->
+  <script src="/assets/js/posthog-init.js" defer></script>
+  <!-- Ahrefs Web Analytics: cookieless analytics + verification. -->
+  <script src="https://analytics.ahrefs.com/analytics.js" data-key="VVGz3n14q6Xh0BWgHrV3hw" async></script>
+  <!-- Vercel Analytics + Speed Insights. -->
+  <script src="/assets/js/vercel-analytics-init.js" defer></script>
+  <script defer src="/_vercel/insights/script.js"></script>
+
+  <style>
+    @font-face {
+      font-family: 'Greed Condensed';
+      src: url('/fonts/GreedCondensed-Bold.woff2') format('woff2');
+      font-weight: 700;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Greed Condensed';
+      src: url('/fonts/GreedCondensed-Medium.woff2') format('woff2');
+      font-weight: 500;
+      font-display: swap;
+    }
+
+    :root {
+      --vanilla: #FCFAF2;
+      --off-black: #1A1717;
+      --cash-green: #014751;
+      --hairline: rgba(26, 23, 23, 0.12);
+      --soft-ink: rgba(26, 23, 23, 0.62);
+
+      --font-display: 'Greed Condensed', 'Archivo Narrow', 'Arial Narrow', Impact, sans-serif;
+      --font-body: 'Instrument Sans', system-ui, -apple-system, sans-serif;
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font-body);
+      background: var(--vanilla);
+      color: var(--off-black);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      line-height: 1.5;
+      min-height: 100dvh;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { font-family: inherit; cursor: pointer; border: none; background: none; }
+
+    .stage {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 1.5rem 1.5rem 4rem;
+      display: flex;
+      flex-direction: column;
+      min-height: 100dvh;
+    }
+
+    /* ── top bar ── */
+    .bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      margin-bottom: 4rem;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.5rem;
+      letter-spacing: -0.02em;
+      color: var(--cash-green);
+      text-transform: lowercase;
+    }
+    .nav { display: flex; gap: 1.4rem; font-size: 0.9rem; font-weight: 500; }
+    .nav a { opacity: 0.7; transition: opacity .15s; }
+    .nav a:hover { opacity: 1; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── hero ── */
+    .hero {
+      margin: 0 0 3rem;
+      opacity: 0;
+      animation: fadeIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.05s forwards;
+    }
+    .headline {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: clamp(2.6rem, 8vw, 4.5rem);
+      line-height: 0.95;
+      letter-spacing: -0.02em;
+      text-transform: lowercase;
+      color: var(--off-black);
+      margin-bottom: 1.4rem;
+    }
+    .headline .period { color: var(--cash-green); }
+    .lede {
+      font-size: clamp(1.02rem, 1.8vw, 1.18rem);
+      line-height: 1.6;
+      max-width: 56ch;
+    }
+
+    /* ── sections ── */
+    .section {
+      margin: 0 0 2.8rem;
+      opacity: 0;
+      animation: fadeIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.18s forwards;
+    }
+    .section h2 {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: clamp(1.6rem, 4vw, 2.1rem);
+      letter-spacing: -0.02em;
+      text-transform: lowercase;
+      margin-bottom: 1.1rem;
+    }
+    .section h2 .period { color: var(--cash-green); }
+    .section p { max-width: 60ch; margin-bottom: 0.9rem; }
+    .section p:last-child { margin-bottom: 0; }
+
+    /* ── key/value list ── */
+    .kv { border-top: 1px solid var(--hairline); }
+    .kv div {
+      display: grid;
+      grid-template-columns: 11rem 1fr;
+      gap: 1rem;
+      padding: 0.8rem 0;
+      border-bottom: 1px solid var(--hairline);
+      font-size: 0.95rem;
+    }
+    .kv dt { font-weight: 600; }
+    .kv dd { color: var(--soft-ink); }
+    @media (max-width: 560px) {
+      .kv div { grid-template-columns: 1fr; gap: 0.2rem; }
+    }
+
+    /* ── CTA ── */
+    .cta { margin: 0.4rem 0 0; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+    .btn-primary {
+      background: var(--off-black);
+      color: var(--vanilla);
+      font-weight: 700;
+      font-size: 1.05rem;
+      padding: 0.95rem 1.9rem;
+      border-radius: 14px;
+      text-transform: lowercase;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      transition: transform .12s ease, opacity .15s;
+    }
+    .btn-primary:hover { opacity: 0.92; transform: translateY(-1px); }
+    .btn-primary:active { transform: translateY(1px); }
+    .link-quiet { font-size: 0.95rem; opacity: 0.7; text-decoration: underline; text-decoration-color: var(--hairline); text-underline-offset: 3px; }
+    .link-quiet:hover { opacity: 1; text-decoration-color: var(--off-black); }
+
+    .updated { font-size: 0.8rem; color: var(--soft-ink); margin-top: 2rem; }
+
+    /* ── footer ── */
+    .footer {
+      margin-top: auto;
+      padding-top: 2.5rem;
+      font-size: 0.85rem;
+      opacity: 0.5;
+      line-height: 1.7;
+      border-top: 1px solid var(--hairline);
+    }
+    .footer a {
+      text-decoration: underline;
+      text-decoration-color: var(--hairline);
+      text-underline-offset: 3px;
+      transition: text-decoration-color .15s, opacity .15s;
+    }
+    .footer a:hover { text-decoration-color: var(--off-black); opacity: 1; }
+    .footer .sep { margin: 0 0.5rem; opacity: 0.5; }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="stage">
+
+    <header class="bar">
+      <a href="/" class="wordmark">cashbff</a>
+      <nav class="nav" aria-label="primary">
+        <a href="/">home</a>
+        <a href="/mcp">how it works</a>
+        <a href="/pricing">pricing</a>
+        <a href="/signup">sign in</a>
+      </nav>
+    </header>
+
+    <section class="hero">
+      <h1 class="headline">
+        your money is safe<br>
+        with cashbff<span class="period">.</span>
+      </h1>
+      <p class="lede">
+        CashBFF is a remote MCP server that connects your bank to Claude through Plaid. It is
+        designed to be careful with your money and your data, and this page explains exactly how
+        it protects you.
+      </p>
+    </section>
+
+    <section class="section" aria-labelledby="connect">
+      <h2 id="connect">how your bank connects<span class="period">.</span></h2>
+      <p>
+        CashBFF reaches your accounts through Plaid, the bank-connection service trusted by apps
+        like Venmo, Robinhood, and Chime. Plaid handles the bank login directly, so your banking
+        username and password stay between you, your bank, and Plaid. CashBFF receives a secure
+        access token from Plaid and uses it to read your financial picture.
+      </p>
+    </section>
+
+    <section class="section" aria-labelledby="protect">
+      <h2 id="protect">how your data is protected<span class="period">.</span></h2>
+      <dl class="kv">
+        <div><dt>Encryption at rest</dt><dd>Your Plaid access tokens are stored with AES-256-GCM encryption.</dd></div>
+        <div><dt>In transit</dt><dd>All traffic runs over HTTPS.</dd></div>
+        <div><dt>Single source</dt><dd>Your financial data comes from Plaid, and Plaid alone.</dd></div>
+        <div><dt>Account numbers</dt><dd>CashBFF works from the last four digits of an account, and full account and routing numbers stay private.</dd></div>
+      </dl>
+    </section>
+
+    <section class="section" aria-labelledby="readfirst">
+      <h2 id="readfirst">read-first by design<span class="period">.</span></h2>
+      <p>
+        By default, CashBFF reads your money and reports back. It sees your balances, transactions,
+        recurring expenses, scheduled forecasts, and the last four digits of an account, which is
+        everything Claude needs to answer questions like how much you have or whether you can
+        afford something. Your money stays exactly where it is.
+      </p>
+    </section>
+
+    <section class="section" aria-labelledby="writes">
+      <h2 id="writes">you approve every change<span class="period">.</span></h2>
+      <p>
+        Write actions stay turned off until you choose to enable them. When they are on, every
+        change starts as a preview that you confirm first, and edits apply to entries you created
+        yourself, such as a goal, a note, or a forecast.
+      </p>
+    </section>
+
+    <section class="section" aria-labelledby="signin">
+      <h2 id="signin">how you sign in<span class="period">.</span></h2>
+      <p>
+        You connect CashBFF inside Claude through an OAuth consent screen. Claude completes the
+        handshake and keeps a session for you, so the connection is clear, scoped, and yours to
+        manage. Access uses a session token rather than any password you type.
+      </p>
+    </section>
+
+    <section class="section" aria-labelledby="control">
+      <h2 id="control">you stay in control<span class="period">.</span></h2>
+      <p>
+        You can remove CashBFF from Claude's connectors whenever you like, which ends its access.
+        For how your data is collected, used, and retained, see our
+        <a href="/privacy" style="text-decoration:underline">privacy policy</a>.
+      </p>
+    </section>
+
+    <section class="section" aria-labelledby="contact">
+      <h2 id="contact">questions about security<span class="period">.</span></h2>
+      <p>
+        Security questions and disclosures are welcome. Email
+        <a href="mailto:daksh@cashbff.com" style="text-decoration:underline">daksh@cashbff.com</a>
+        and we will respond.
+      </p>
+      <div class="cta">
+        <a class="btn-primary" href="/signup"><span>start now</span><span aria-hidden="true">&rarr;</span></a>
+        <a class="link-quiet" href="/mcp">see how it works</a>
+      </div>
+      <p class="updated">Last updated May 2026.</p>
+    </section>
+
+    <footer class="footer">
+      <a href="/mcp">how it works</a><span class="sep">·</span><a href="/privacy">privacy</a><span class="sep">·</span><a href="/terms">terms</a><span class="sep">·</span><a href="/pricing">pricing</a><span class="sep">·</span>Built by <a href="https://khannadaksh.com" rel="me">Daksh Khanna</a><span class="sep">·</span>Khanna's LLC
+    </footer>
+
+  </main>
+</body>
+</html>
