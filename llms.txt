@@ -1,0 +1,15 @@
+# CashBFF
+
+> CashBFF is a remote MCP (Model Context Protocol) server that connects your bank to Claude through Plaid, so you can ask about your real money in chat. It is OAuth-secured and read-only by default, with 8 read tools and 9 write tools.
+
+CashBFF runs inside Claude on web, desktop, and mobile, across the Free, Pro, and Max plans. You sign up at cashbff.com, link your bank through Plaid, and add CashBFF as a custom connector pointing at https://api.cashbff.com/mcp. Claude handles a one-time OAuth approval and keeps the session for you. CashBFF is built by Daksh Khanna (Khanna's LLC).
+
+## Pages
+- [What CashBFF is and how to connect it](https://cashbff.com/mcp): the MCP server, its 17 tools, the safety model, and step-by-step install
+- [About CashBFF](https://cashbff.com/about): mission and founder
+- [Pricing](https://cashbff.com/pricing): plans and the 14-day free trial
+- [Privacy](https://cashbff.com/privacy): privacy policy
+- [Terms](https://cashbff.com/terms): terms of service
+
+## Founder
+- [Daksh Khanna](https://khannadaksh.com): founder essay, background, and how CashBFF compares to other finance apps

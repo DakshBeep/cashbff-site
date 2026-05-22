@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <!-- Sentry browser SDK: forwards JS errors + unhandled rejections to our Sentry project. -->
+  <script
+    src="https://js.sentry-cdn.com/2d45e7a7cdc726451c61d775aa22fbf2.min.js"
+    crossorigin="anonymous"
+  ></script>
+  <script src="/assets/js/sentry-init.js"></script>
+
+  <title>CashBFF, the personal finance MCP for Claude</title>
+  <meta name="description" content="CashBFF is a remote MCP server that connects your bank to Claude through Plaid, so you can ask about your real money in chat. OAuth-secured, read-only by default, with 8 read tools and 9 write tools.">
+  <meta property="og:title" content="CashBFF, the personal finance MCP for Claude">
+  <meta property="og:description" content="A remote MCP server that connects your bank to Claude through Plaid. Ask about your real money in chat. OAuth-secured and read-only by default.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://cashbff.com/mcp">
+  <link rel="canonical" href="https://cashbff.com/mcp">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "CashBFF",
+    "applicationCategory": "FinanceApplication",
+    "operatingSystem": "Claude (web, desktop, mobile)",
+    "description": "CashBFF is a remote MCP (Model Context Protocol) server that connects your bank to Claude through Plaid, so you can ask about your real money in chat. OAuth-secured and read-only by default, with 8 read tools and 9 write tools.",
+    "url": "https://cashbff.com/mcp",
+    "softwareVersion": "1.2.0",
+    "offers": { "@type": "Offer", "price": "12.99", "priceCurrency": "USD" },
+    "creator": {
+      "@type": "Person",
+      "name": "Daksh Khanna",
+      "url": "https://khannadaksh.com"
+    },
+    "sameAs": ["https://cashbff.com"]
+  }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- PostHog product analytics. CSP-safe (no eval). -->
+  <script src="/assets/js/posthog-init.js" defer></script>
+  <!-- Ahrefs Web Analytics: cookieless analytics + verification. -->
+  <script src="https://analytics.ahrefs.com/analytics.js" data-key="VVGz3n14q6Xh0BWgHrV3hw" async></script>
+  <!-- Vercel Analytics + Speed Insights. -->
+  <script src="/assets/js/vercel-analytics-init.js" defer></script>
+  <script defer src="/_vercel/insights/script.js"></script>
+
+  <style>
+    @font-face {
+      font-family: 'Greed Condensed';
+      src: url('/fonts/GreedCondensed-Bold.woff2') format('woff2');
+      font-weight: 700;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Greed Condensed';
+      src: url('/fonts/GreedCondensed-Medium.woff2') format('woff2');
+      font-weight: 500;
+      font-display: swap;
+    }
+
+    :root {
+      --vanilla: #FCFAF2;
+      --off-black: #1A1717;
+      --cash-green: #014751;
+      --hairline: rgba(26, 23, 23, 0.12);
+      --soft-ink: rgba(26, 23, 23, 0.62);
+
+      --font-display: 'Greed Condensed', 'Archivo Narrow', 'Arial Narrow', Impact, sans-serif;
+      --font-body: 'Instrument Sans', system-ui, -apple-system, sans-serif;
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font-body);
+      background: var(--vanilla);
+      color: var(--off-black);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      line-height: 1.5;
+      min-height: 100dvh;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { font-family: inherit; cursor: pointer; border: none; background: none; }
+
+    .stage {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 1.5rem 1.5rem 4rem;
+      display: flex;
+      flex-direction: column;
+      min-height: 100dvh;
+    }
+
+    /* ── top bar ── */
+    .bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      margin-bottom: 4rem;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.5rem;
+      letter-spacing: -0.02em;
+      color: var(--cash-green);
+      text-transform: lowercase;
+    }
+    .nav { display: flex; gap: 1.4rem; font-size: 0.9rem; font-weight: 500; }
+    .nav a { opacity: 0.7; transition: opacity .15s; }
+    .nav a:hover { opacity: 1; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── hero ── */
+    .hero {
+      margin: 0 0 3rem;
+      opacity: 0;
+      animation: fadeIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.05s forwards;
+    }
+    .headline {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: clamp(2.6rem, 8vw, 4.5rem);
+      line-height: 0.95;
+      letter-spacing: -0.02em;
+      text-transform: lowercase;
+      color: var(--off-black);
+      margin-bottom: 1.4rem;
+    }
+    .headline .period { color: var(--cash-green); }
+    .lede {
+      font-size: clamp(1.02rem, 1.8vw, 1.18rem);
+      line-height: 1.6;
+      max-width: 56ch;
+      margin-bottom: 1rem;
+    }
+    .lede + .lede { font-size: 1rem; color: var(--soft-ink); }
+
+    /* ── sections ── */
+    .section {
+      margin: 0 0 3rem;
+      opacity: 0;
+      animation: fadeIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.18s forwards;
+    }
+    .section h2 {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: clamp(1.6rem, 4vw, 2.1rem);
+      letter-spacing: -0.02em;
+      text-transform: lowercase;
+      margin-bottom: 1.1rem;
+    }
+    .section h2 .period { color: var(--cash-green); }
+    .section p { max-width: 60ch; margin-bottom: 0.9rem; }
+    .section p:last-child { margin-bottom: 0; }
+
+    /* ── key/value list ── */
+    .kv { border-top: 1px solid var(--hairline); }
+    .kv div {
+      display: grid;
+      grid-template-columns: 9rem 1fr;
+      gap: 1rem;
+      padding: 0.8rem 0;
+      border-bottom: 1px solid var(--hairline);
+      font-size: 0.95rem;
+    }
+    .kv dt { font-weight: 600; }
+    .kv dd { color: var(--soft-ink); }
+    @media (max-width: 560px) {
+      .kv div { grid-template-columns: 1fr; gap: 0.2rem; }
+    }
+
+    /* ── tool tables ── */
+    .tool-group { margin-bottom: 1.8rem; }
+    .tool-group h3 {
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--cash-green);
+      margin-bottom: 0.7rem;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+    td { padding: 0.7rem 0; border-bottom: 1px solid var(--hairline); vertical-align: top; }
+    tr:first-child td { border-top: 1px solid var(--hairline); }
+    td.tool-name {
+      width: 16rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.85rem;
+      color: var(--off-black);
+      padding-right: 1rem;
+    }
+    td.tool-desc { color: var(--soft-ink); }
+    @media (max-width: 560px) {
+      table, tbody, tr, td { display: block; width: 100%; }
+      td.tool-name { border-bottom: none; padding-bottom: 0.1rem; }
+      td.tool-desc { padding-top: 0.1rem; }
+      tr:first-child td.tool-name { border-top: 1px solid var(--hairline); padding-top: 0.7rem; }
+    }
+
+    /* ── numbered steps ── */
+    ol.steps { list-style: none; counter-reset: step; }
+    ol.steps li {
+      counter-increment: step;
+      position: relative;
+      padding: 0 0 1.1rem 2.6rem;
+      max-width: 60ch;
+    }
+    ol.steps li::before {
+      content: counter(step);
+      position: absolute;
+      left: 0;
+      top: -0.1rem;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.3rem;
+      color: var(--cash-green);
+      line-height: 1;
+    }
+    ol.steps code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.88rem;
+      background: rgba(1, 71, 81, 0.07);
+      padding: 0.1rem 0.4rem;
+      border-radius: 5px;
+      word-break: break-all;
+    }
+    .ask {
+      font-family: var(--font-display);
+      font-weight: 500;
+      font-size: 1.25rem;
+      text-transform: lowercase;
+      margin-top: 0.4rem;
+    }
+
+    /* ── CTA ── */
+    .cta { margin: 1.2rem 0 0; }
+    .btn-primary {
+      background: var(--off-black);
+      color: var(--vanilla);
+      font-weight: 700;
+      font-size: 1.05rem;
+      padding: 0.95rem 1.9rem;
+      border-radius: 14px;
+      text-transform: lowercase;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      transition: transform .12s ease, opacity .15s;
+    }
+    .btn-primary:hover { opacity: 0.92; transform: translateY(-1px); }
+    .btn-primary:active { transform: translateY(1px); }
+
+    .updated { font-size: 0.8rem; color: var(--soft-ink); margin-top: 2rem; }
+
+    /* ── footer ── */
+    .footer {
+      margin-top: auto;
+      padding-top: 2.5rem;
+      font-size: 0.85rem;
+      opacity: 0.5;
+      line-height: 1.7;
+      border-top: 1px solid var(--hairline);
+    }
+    .footer a {
+      text-decoration: underline;
+      text-decoration-color: var(--hairline);
+      text-underline-offset: 3px;
+      transition: text-decoration-color .15s, opacity .15s;
+    }
+    .footer a:hover { text-decoration-color: var(--off-black); opacity: 1; }
+    .footer .sep { margin: 0 0.5rem; opacity: 0.5; }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="stage">
+
+    <header class="bar">
+      <a href="/" class="wordmark">cashbff</a>
+      <nav class="nav" aria-label="primary">
+        <a href="/">home</a>
+        <a href="/about">about</a>
+        <a href="/pricing">pricing</a>
+        <a href="/signup">sign in</a>
+      </nav>
+    </header>
+
+    <section class="hero">
+      <h1 class="headline">
+        cashbff is a<br>
+        personal finance mcp<span class="period">.</span>
+      </h1>
+      <p class="lede">
+        CashBFF is a remote MCP server that securely connects your bank to Claude, so you can
+        ask about your real money right inside the chat you already use. Ask how much you have,
+        what is coming up, or whether you can afford something, and Claude answers using your
+        actual balances, transactions, and upcoming bills.
+      </p>
+      <p class="lede">
+        It runs on the Model Context Protocol, the open standard Anthropic introduced for
+        connecting AI assistants to real data. CashBFF is hosted, OAuth-secured, and installs
+        as a custom connector in Claude.
+      </p>
+    </section>
+
+    <section class="section" aria-labelledby="what">
+      <h2 id="what">what it is<span class="period">.</span></h2>
+      <dl class="kv">
+        <div><dt>Type</dt><dd>A remote HTTP MCP server, hosted by CashBFF.</dd></div>
+        <div><dt>Protocol</dt><dd>Model Context Protocol (MCP), the open standard from Anthropic, now stewarded by the Linux Foundation.</dd></div>
+        <div><dt>Works in</dt><dd>Claude on web, desktop, and mobile, across the Free, Pro, and Max plans.</dd></div>
+        <div><dt>Sign-in</dt><dd>A one-time OAuth approval inside Claude. Claude handles the handshake and keeps the session for you.</dd></div>
+        <div><dt>Data source</dt><dd>Your bank, through Plaid.</dd></div>
+        <div><dt>Tags</dt><dd>personal finance, budgeting, banking, Plaid, Claude.</dd></div>
+      </dl>
+    </section>
+
+    <section class="section" aria-labelledby="safe">
+      <h2 id="safe">how it keeps your money safe<span class="period">.</span></h2>
+      <p>CashBFF is built to be careful with your money and your data. Here is exactly how it works.</p>
+      <dl class="kv">
+        <div><dt>Plaid only</dt><dd>CashBFF reaches your bank through Plaid, the same provider behind apps like Venmo and Robinhood. Your bank login stays between you, your bank, and Plaid.</dd></div>
+        <div><dt>Encrypted</dt><dd>Your Plaid access tokens are stored with AES-256-GCM encryption at rest.</dd></div>
+        <div><dt>Read-first</dt><dd>By default, CashBFF reads your financial picture: balances, transactions, recurring expenses, scheduled forecasts, and the last four digits of an account.</dd></div>
+        <div><dt>Money stays put</dt><dd>CashBFF keeps your money exactly where it is, and full account and routing numbers stay private. It works from the last four digits of an account.</dd></div>
+        <div><dt>You approve writes</dt><dd>Write actions stay turned off until you enable them. Each one shows you a preview and asks for your confirmation first, and edits apply to entries you created yourself.</dd></div>
+      </dl>
+    </section>
+
+    <section class="section" aria-labelledby="does">
+      <h2 id="does">what it can do<span class="period">.</span></h2>
+      <p>CashBFF gives Claude its capabilities as tools. There are 17 today: 8 that read your money and 9 that act on it once you turn writes on.</p>
+
+      <div class="tool-group">
+        <h3>Read tools (8)</h3>
+        <table>
+          <tbody>
+            <tr><td class="tool-name">get_my_money_snapshot</td><td class="tool-desc">your whole money picture in one call: running balance, the next 30 days of recurring items, the next 90 days of scheduled items, and recent transactions</td></tr>
+            <tr><td class="tool-name">get_my_balances</td><td class="tool-desc">cash on hand minus credit-card debt, broken out per account</td></tr>
+            <tr><td class="tool-name">get_my_upcoming</td><td class="tool-desc">what is due over the next 60 days</td></tr>
+            <tr><td class="tool-name">get_my_runway</td><td class="tool-desc">at your current pace, the day your balance reaches zero</td></tr>
+            <tr><td class="tool-name">get_balance_on_date</td><td class="tool-desc">your projected balance on any future date you name</td></tr>
+            <tr><td class="tool-name">get_calendar_view</td><td class="tool-desc">your money in and out, laid out by week or by month</td></tr>
+            <tr><td class="tool-name">search_my_transactions</td><td class="tool-desc">keyword and merchant search across your bank transactions</td></tr>
+            <tr><td class="tool-name">list_recurring_suggestions</td><td class="tool-desc">recurring charges CashBFF has detected and is waiting for you to confirm</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="tool-group">
+        <h3>Write tools (9, you turn these on)</h3>
+        <table>
+          <tbody>
+            <tr><td class="tool-name">add_goal</td><td class="tool-desc">save a plain goal like "pay off card by july"</td></tr>
+            <tr><td class="tool-name">add_transaction_note</td><td class="tool-desc">log an off-bank entry such as cash, an IOU, or side income</td></tr>
+            <tr><td class="tool-name">add_scheduled_transaction</td><td class="tool-desc">forecast a one-off like "$1,200 rent on the 1st"</td></tr>
+            <tr><td class="tool-name">add_recurring_stream</td><td class="tool-desc">add a recurring charge yourself, like a subscription you just signed up for</td></tr>
+            <tr><td class="tool-name">confirm_recurring_suggestion</td><td class="tool-desc">promote a detected charge to a confirmed recurring stream</td></tr>
+            <tr><td class="tool-name">update_recurring</td><td class="tool-desc">adjust a recurring charge's amount, date, or name</td></tr>
+            <tr><td class="tool-name">edit_scheduled_transaction</td><td class="tool-desc">update a forecast you created</td></tr>
+            <tr><td class="tool-name">delete_scheduled_transaction</td><td class="tool-desc">remove a forecast you created</td></tr>
+            <tr><td class="tool-name">mark_transaction_reimbursable</td><td class="tool-desc">flag a charge so you can get paid back later</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="connect">
+      <h2 id="connect">how to connect it<span class="period">.</span></h2>
+      <ol class="steps">
+        <li>Sign up at <a href="/signup" style="text-decoration:underline">cashbff.com</a> and start your free trial. It runs 14 days, then $12.99 per month through Stripe.</li>
+        <li>Link your bank through Plaid. This takes about a minute.</li>
+        <li>In Claude, open <strong>Settings</strong>, then <strong>Connectors</strong>, then <strong>Add custom connector</strong>.</li>
+        <li>Paste the CashBFF server URL: <code>https://api.cashbff.com/mcp</code></li>
+        <li>Approve the consent screen. Claude completes the OAuth handshake and keeps the session for you.</li>
+        <li>Ask Claude a money question.<div class="ask">"can i afford this?"</div></li>
+      </ol>
+      <div class="cta">
+        <a class="btn-primary" href="/signup"><span>start now</span><span aria-hidden="true">&rarr;</span></a>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="who">
+      <h2 id="who">who built it<span class="period">.</span></h2>
+      <p>
+        CashBFF is built by Daksh Khanna (Khanna's LLC). He is a Rise Fellow, a Prometheus X
+        Venture Fellow, and was profiled by the Interledger Foundation. Read the full story at
+        <a href="https://khannadaksh.com" rel="me" style="text-decoration:underline">khannadaksh.com</a>.
+      </p>
+      <p class="updated">Last updated May 2026.</p>
+    </section>
+
+    <footer class="footer">
+      <a href="/privacy">privacy</a><span class="sep">·</span><a href="/terms">terms</a><span class="sep">·</span><a href="/pricing">pricing</a><span class="sep">·</span>Built by <a href="https://khannadaksh.com" rel="me">Daksh Khanna</a><span class="sep">·</span>Khanna's LLC
+    </footer>
+
+  </main>
+</body>
+</html>
