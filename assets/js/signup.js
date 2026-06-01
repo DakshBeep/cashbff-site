@@ -10,9 +10,13 @@
 //                   redirects back to /signup?subscribed=1 → smart routing
 //                   puts the user in STATE_PLAID.
 //   STATE_PLAID   → "connect your bank" opens Plaid Link. Same /api/signup/start
-//                   + /api/signup/exchange flow as before. On success → STATE_CLAUDE
-//   STATE_CLAUDE  → "open in claude" copies the MCP URL to clipboard +
-//                   opens claude.ai's connector dialog in a new tab.
+//                   + /api/signup/exchange flow as before. On success → STATE_DONE
+//   STATE_DONE    → "you're all set" completion step. Bank connected + trial
+//                   running; the user heads to /home. cashbff's channel is
+//                   WhatsApp and the public wa.me link is still gated on Meta
+//                   verification, so onboarding to the agent is handled by a
+//                   person for now. (This step used to be the old third-party
+//                   assistant hand-off; that copy was retired on 2026-06-01.)
 //
 // Returning lane (preserved):
 //   STATE_RETURNING_PHONE / STATE_RETURNING_OTP → straight /api/otp/* sign-in
@@ -34,27 +38,29 @@
 
   const API_BASE = 'https://api.cashbff.com';
   const STRIPE_PAYMENT_LINK = 'https://buy.stripe.com/14A9ATdOeen7aKA8BT1sQ01';
-  const MCP_URL = 'https://api.cashbff.com/mcp';
-  const CLAUDE_CONNECTOR_URL = 'https://claude.ai/settings/connectors?modal=add-custom-connector';
 
   // ── states ──────────────────────────────────────
   const STATE_PHONE            = 'phone';
   const STATE_OTP              = 'otp';
   const STATE_TRIAL            = 'trial';
   const STATE_PLAID            = 'plaid';
-  const STATE_CLAUDE           = 'claude';
+  // Terminal "you're all set" step. The internal token was renamed to 'done'
+  // in the old-stack copy pass (2026-06-01). Any legacy deep-link that pinned
+  // the old token now just falls through to the default smart-routing branches
+  // (no crash).
+  const STATE_DONE             = 'done';
   const STATE_RETURNING_PHONE  = 'returning-phone';
   const STATE_RETURNING_OTP    = 'returning-otp';
 
   // Forward-flow order. used to drive the progress dots.
-  const FORWARD_FLOW = [STATE_PHONE, STATE_OTP, STATE_TRIAL, STATE_PLAID, STATE_CLAUDE];
+  const FORWARD_FLOW = [STATE_PHONE, STATE_OTP, STATE_TRIAL, STATE_PLAID, STATE_DONE];
   // Map state → which progress dot index to highlight (phone+otp share dot 0).
   const PROGRESS_INDEX = {
     [STATE_PHONE]:  0,
     [STATE_OTP]:    0,
     [STATE_TRIAL]:  1,
     [STATE_PLAID]:  2,
-    [STATE_CLAUDE]: 3,
+    [STATE_DONE]:   3,
   };
 
   // ── DOM hooks ────────────────────────────────────
@@ -80,7 +86,6 @@
   const bankList        = $('bank-list');
   const addAnotherBtn   = $('add-another-btn');
   const plaidContinueBtn = $('plaid-continue-btn');
-  const claudeBtn       = $('claude-btn');
   const toast           = $('toast');
 
   const returningPhoneInput   = $('returning-phone-input');
@@ -543,42 +548,18 @@
     else     showBanner("no worries. try again whenever.", 'info');
   }
 
-  // Continue button: advance to STATE_CLAUDE.
+  // Continue button: advance to the terminal "you're all set" step.
   function handlePlaidContinue() {
     track('signup_plaid_continued', {});
-    showState(STATE_CLAUDE);
+    showState(STATE_DONE);
   }
 
-  // ── STATE_CLAUDE: copy MCP url + open connector ─
-  async function handleOpenInClaude() {
-    if (!claudeBtn) return;
-    // Try modern Clipboard API first; fall back to legacy execCommand for
-    // older browsers. Either way we open the dialog so the user can paste.
-    let copied = false;
-    try {
-      if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
-        await navigator.clipboard.writeText(MCP_URL);
-        copied = true;
-      }
-    } catch (_) { /* fall through to legacy */ }
-    if (!copied) {
-      try {
-        const ta = document.createElement('textarea');
-        ta.value = MCP_URL;
-        ta.setAttribute('readonly', '');
-        ta.style.position = 'absolute';
-        ta.style.left = '-9999px';
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand('copy');
-        document.body.removeChild(ta);
-        copied = true;
-      } catch (_) { /* clipboard blocked. open the dialog anyway. */ }
-    }
-    if (copied) showToast('url copied. paste it in the claude.ai dialog.');
-    track('signup_claude_added', { copied: copied });
-    window.open(CLAUDE_CONNECTOR_URL, '_blank', 'noopener');
-  }
+  // ── STATE_DONE ──────────────────────────────────
+  // No JS handler: the "go to your home" button is a plain <a href="/home">.
+  // (This step previously copied a server URL + opened an external third-party
+  // add-integration dialog; that hand-off was removed in the old-stack copy
+  // pass on 2026-06-01. When the public WhatsApp wa.me link is live, turn the
+  // button into the "text cashbff on whatsapp" hand-off.)
 
   // ── Returning lane ──────────────────────────────
   function handleReturningStart() {
@@ -690,7 +671,7 @@
   //   /api/me 401                                    → STATE_PHONE
   //   /api/me 200 + ?subscribed=1                    → STATE_PLAID (empty view)
   //   /api/me 200 + ?step=plaid                      → STATE_PLAID (list view if banks)
-  //   /api/me 200 + ?step=claude                     → STATE_CLAUDE
+  //   /api/me 200 + ?step=done                        → STATE_DONE
   //   /api/me 200 + trialing/active + has_bank       → /home (full setup, direct hit)
   //   /api/me 200 + trialing/active + no bank        → STATE_PLAID (empty)
   //   /api/me 200 + no/none talk_status              → STATE_TRIAL
@@ -736,7 +717,7 @@
       showState(STATE_PLAID);
       return;
     }
-    if (stepParam === 'claude') { showState(STATE_CLAUDE); return; }
+    if (stepParam === 'done') { showState(STATE_DONE); return; }
 
     // Fully set up: subscribe + bank linked → bounce to home (or ?next).
     // Direct /signup hit, no ?step=, no ?subscribed=1.
@@ -792,8 +773,7 @@
     if (addAnotherBtn)     addAnotherBtn.addEventListener('click', startPlaidFlow);
     if (plaidContinueBtn)  plaidContinueBtn.addEventListener('click', handlePlaidContinue);
 
-    // STATE_CLAUDE
-    if (claudeBtn) claudeBtn.addEventListener('click', handleOpenInClaude);
+    // STATE_DONE: the "go to your home" button is a plain link — no wiring.
 
     // Returning lane
     if (returningSendBtn) returningSendBtn.addEventListener('click', handleSendReturningOtp);
@@ -834,7 +814,7 @@
         showState,
         showBanner,
         hideBanner,
-        STATE_PHONE, STATE_OTP, STATE_TRIAL, STATE_PLAID, STATE_CLAUDE,
+        STATE_PHONE, STATE_OTP, STATE_TRIAL, STATE_PLAID, STATE_DONE,
         STATE_RETURNING_PHONE, STATE_RETURNING_OTP,
       };
     }

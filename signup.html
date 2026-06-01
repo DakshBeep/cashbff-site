@@ -14,7 +14,7 @@
   <script src="/assets/js/sentry-init.js"></script>
 
   <title>cashbff — sign in</title>
-  <meta name="description" content="your number. your trial. your bank. in claude.">
+  <meta name="description" content="your number. your trial. your bank. text cashbff on whatsapp.">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -589,7 +589,7 @@
       <span class="progress__dot" data-step="phone"></span>
       <span class="progress__dot" data-step="trial"></span>
       <span class="progress__dot" data-step="plaid"></span>
-      <span class="progress__dot" data-step="claude"></span>
+      <span class="progress__dot" data-step="done"></span>
     </div>
 
     <!-- ── funnel ─────────────────────────────────── -->
@@ -745,23 +745,37 @@
         </div>
       </section>
 
-      <!-- ── STATE_CLAUDE: open in claude ──────────── -->
-      <section class="state" id="state-claude" data-state="claude" aria-label="open in claude">
+      <!-- ── STATE_DONE: setup complete ─────────────── -->
+      <!--
+        FLAG FOR DAKSH (old-stack copy pass, 2026-06-01): this step used to be
+        the old third-party assistant hand-off (it copied a server URL and opened
+        an external add-integration dialog). cashbff's channel is now WhatsApp,
+        and the public wa.me link is still gated on Meta verification (same gate
+        as /start + /how-it-works). So this step is re-messaged to a channel-
+        neutral "you're all set" completion that sends the user to their home; a
+        real person handles the WhatsApp hand-off for now. The state machine
+        (phone -> otp -> trial -> plaid -> done) is unchanged. TODO when WhatsApp
+        is wired: turn this into the "text cashbff on whatsapp" hand-off (swap the
+        link target for the live wa.me link). The old-stack handler in signup.js
+        and its two URL constants were deleted in this pass; see the signup.js
+        comments near STATE_DONE for the full note.
+      -->
+      <section class="state" id="state-done" data-state="done" aria-label="you're all set">
         <h1 class="headline">
-          in claude<span class="period">.</span>
+          you're all set<span class="period">.</span>
         </h1>
         <p class="sub">
-          last step. paste where claude asks, then allow.
+          your bank's connected and your trial's running. <strong>cashbff lives in whatsapp</strong>, and we're onboarding the first people by hand right now, so a real person will get your line set up. head to your home in the meantime.
         </p>
 
         <div class="action">
-          <button class="btn-primary btn-block" id="claude-btn" type="button">
-            <span>open claude</span>
+          <a class="btn-primary btn-block" id="done-btn" href="/home">
+            <span>go to your home</span>
             <span class="arrow" aria-hidden="true">→</span>
-          </button>
+          </a>
 
           <p class="secondary">
-            or skip to <a href="/home">your home</a>.
+            questions before you start? email <a href="mailto:daksh@cashbff.com">daksh@cashbff.com</a>.
           </p>
         </div>
       </section>
@@ -840,8 +854,9 @@
 
     </div>
 
-    <!-- toast for "url copied to clipboard" feedback on STATE_CLAUDE -->
-    <div class="toast" id="toast" role="status" aria-live="polite">copied. paste it in the claude dialog.</div>
+    <!-- shared toast slot (kept for the signup.js showToast helper). text is
+         set at runtime; the default below is channel-neutral. -->
+    <div class="toast" id="toast" role="status" aria-live="polite">done.</div>
 
     <!-- ── footer ─────────────────────────────────── -->
     <footer class="footer">
