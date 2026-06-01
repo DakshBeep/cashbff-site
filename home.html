@@ -14,7 +14,7 @@
   <script src="/assets/js/sentry-init.js"></script>
 
   <title>cashbff — you're in.</title>
-  <meta name="description" content="signed in. open cashbff in claude.">
+  <meta name="description" content="signed in to cashbff.">
   <meta name="robots" content="noindex">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -167,6 +167,10 @@
     .btn-primary:hover { opacity: 0.92; transform: translateY(-1px); }
     .btn-primary:active { transform: translateY(1px); }
     .btn-primary .arrow { font-size: 1.15rem; }
+    /* fully-set-up state has no live CTA yet (WhatsApp gated on Meta
+       verification); home-status.js sets [hidden] and the author display
+       rule below wins over the UA hidden style. */
+    .btn-primary[hidden] { display: none; }
 
     .cta-helper {
       font-size: 0.95rem;
@@ -320,10 +324,11 @@
 
     <section class="cta" id="cta" hidden>
       <!-- The primary button's href + text + id are filled in by home-status.js
-           based on (talk_status, has_bank). For the "open in claude" path the
-           handler does window.open + clipboard write (mirrors talk.js#onAddClick).
-           For the trial / plaid paths the JS sets href + lets the browser
-           navigate normally. -->
+           based on (talk_status, has_bank). For the trial / plaid paths the JS
+           sets href + lets the browser navigate normally. On the fully-set-up
+           path there's no live CTA yet (the WhatsApp number is gated on Meta
+           verification — wa.me doesn't exist), so the JS hides the button and
+           shows an "all set" confirmation instead. -->
       <a class="btn-primary" id="primary-cta" href="/signup">
         <span id="primary-cta-label">continue</span>
         <span class="arrow" aria-hidden="true">→</span>
@@ -342,7 +347,7 @@
       <a href="https://billing.stripe.com/p/login/test_28o00g8oH3JB1pK000" target="_blank" rel="noopener noreferrer">manage your subscription →</a>
     </section>
 
-    <div class="toast" id="toast" role="status" aria-live="polite">URL copied. paste it in the claude.ai dialog.</div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
     <footer class="footer">
       <a href="/privacy">privacy</a><span class="sep">·</span><a href="/terms">terms</a><span class="sep">·</span><a href="/pricing">pricing</a><span class="sep">·</span>Built by <a href="https://khannadaksh.com" rel="me">Daksh Khanna</a><span class="sep">·</span>Khanna's LLC
@@ -355,8 +360,8 @@
        render the user's status inline rather than via the floating pill. -->
   <script src="/assets/js/auth-banner.js" defer></script>
   <!-- home-status.js: small (no-dependency) state machine for this page.
-       Handles /api/me load, primary CTA wiring, logout, and "open in claude"
-       click (mirrors talk.js#onAddClick). -->
+       Handles /api/me load, primary CTA wiring, the "all set" confirmation
+       state, and logout. -->
   <script src="/assets/js/home-status.js" defer></script>
 </body>
 </html>

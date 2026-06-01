@@ -2,11 +2,10 @@
  * home-status.js — minimal post-login status page.
  *
  * Replaces the legacy ~5000-line dashboard at /home with a single
- * "you're in" status view. After the cashbff product pivoted to
- * "talk to your money inside Claude", the calendar dashboard stopped
- * making sense as the primary post-login surface — the user lives in
- * Claude now, /home is just a place to confirm "yes, you're signed in"
- * and nudge them back into Claude (or finish onboarding).
+ * "you're in" status view. The cashbff product is the WhatsApp agent;
+ * once a user is signed in, banked, and subscribed they talk to their
+ * money in WhatsApp, so /home is just a place to confirm "yes, you're
+ * signed in", finish onboarding, or land on an "all set" confirmation.
  *
  * Contract:
  *   - Calls /api/me with credentials. On 401 → redirect to /signup.
@@ -15,12 +14,13 @@
  *
  *         not trialing/active     → [start your trial →]   /signup?step=trial
  *         trialing/active, no bank → [connect your bank →] /signup?step=plaid
- *         trialing/active + bank   → [open in claude →]    (clipboard + popup)
+ *         trialing/active + bank   → (no live CTA — "all set" confirmation)
  *
- *   - "open in claude" click mirrors talk.js#onAddClick exactly: open the
- *     popup SYNCHRONOUSLY inside the click handler (so Safari/Firefox
- *     don't blow away the user gesture across an await), then write the
- *     MCP URL to the clipboard in the background.
+ *   - The fully-set-up path has NO live CTA yet: the WhatsApp number is
+ *     gated on Meta business verification (wa.me doesn't exist), so we
+ *     hide the primary button and show an "all set" confirmation line
+ *     instead. When the number goes live, swap the hidden button for a
+ *     wa.me link in pickCta() (set href + drop hideButton).
  *
  *   - Logout button POSTs /api/logout with credentials, then sends the
  *     user to /. The endpoint clears the cookie and returns 200.
@@ -46,12 +46,6 @@
   "use strict";
 
   const API_BASE = "https://api.cashbff.com";
-  const MCP_URL = "https://api.cashbff.com/mcp";
-  // Confirmed via talk.js (May 2026): no query-param URL pre-fill, this
-  // opens the right add-custom-connector dialog. Keep in sync with talk.js.
-  const CLAUDE_URL = "https://claude.ai/settings/connectors?modal=add-custom-connector";
-
-  const TOAST_DURATION_MS = 3500;
 
   function $(id) { return document.getElementById(id); }
 
@@ -88,44 +82,6 @@
     }
   }
 
-  function showToast(message, durationMs) {
-    const t = $("toast");
-    if (!t) return;
-    if (message) t.textContent = message;
-    t.classList.add("show");
-    const dur = typeof durationMs === "number" ? durationMs : TOAST_DURATION_MS;
-    setTimeout(function () { t.classList.remove("show"); }, dur);
-  }
-
-  /** Try to copy text to clipboard. Same fallback ladder as talk.js:
-   *  navigator.clipboard (modern HTTPS path) → execCommand (legacy Safari).
-   *  Returns true on success, false otherwise. Caller decides what to do
-   *  with a failure (toast + manual copy is the usual pattern). */
-  async function copyToClipboard(text) {
-    try {
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(text);
-        return true;
-      }
-    } catch (e) {
-      // fall through to legacy
-    }
-    try {
-      const ta = document.createElement("textarea");
-      ta.value = text;
-      ta.style.position = "fixed";
-      ta.style.opacity = "0";
-      ta.style.left = "-1000px";
-      document.body.appendChild(ta);
-      ta.select();
-      const ok = document.execCommand("copy");
-      document.body.removeChild(ta);
-      return ok;
-    } catch (e) {
-      return false;
-    }
-  }
-
   /** Render the linked-banks section, then unhide it. Mirrors the format
    *  used in signup.js#renderBankList: institution name (lowercased) + a
    *  separated mask span (····1234). On empty array we leave the section
@@ -156,9 +112,10 @@
   }
 
   /** Decide which primary-CTA flavor to show.
-   *  Returns { label, href, helper, onClick? }. If onClick is present we
-   *  wire it to the button instead of relying on the href (used for the
-   *  "open in claude" path that needs synchronous window.open). */
+   *  Returns { label, href, helper, hideButton? }. When hideButton is true,
+   *  render() hides the primary button entirely and shows only the helper
+   *  line — used for the fully-set-up state, which has no live CTA yet
+   *  (the WhatsApp number is gated on Meta business verification). */
   function pickCta(status, hasBank) {
     const subscribed = status === "trialing" || status === "active";
 
@@ -167,7 +124,7 @@
         label: "start your trial",
         href: "/signup?step=trial",
         helper: "your trial isn't started yet.",
-        onClick: null
+        hideButton: false
       };
     }
     if (subscribed && !hasBank) {
@@ -175,36 +132,20 @@
         label: "connect your bank",
         href: "/signup?step=plaid",
         helper: "you've got the trial. now let's link a bank.",
-        onClick: null
+        hideButton: false
       };
     }
-    // happy path: subscribed + bank linked.
+    // Fully set up: subscribed + bank linked. There's no live CTA here yet —
+    // the WhatsApp number is gated on Meta business verification (wa.me
+    // doesn't exist), so we hide the button and just confirm "you're all
+    // set". When the number goes live, set href to the wa.me link and flip
+    // hideButton to false (and give it a label like "open whatsapp").
     return {
-      label: "open in claude",
-      href: CLAUDE_URL,
-      helper: "you're set up. talk to your money in claude.",
-      onClick: onOpenInClaude
+      label: "",
+      href: "",
+      helper: "you're all set. we'll text you from cashbff on whatsapp when it's ready.",
+      hideButton: true
     };
-  }
-
-  /** Open-in-Claude click handler. Identical pattern to talk.js#onAddClick:
-   *  fire window.open SYNCHRONOUSLY inside the gesture handler so Safari /
-   *  Firefox strict mode don't block the popup, THEN do the async clipboard
-   *  write in the background. The toast surfaces success/failure. */
-  function onOpenInClaude(e) {
-    if (e && typeof e.preventDefault === "function") e.preventDefault();
-    const newTab = window.open(CLAUDE_URL, "_blank", "noopener");
-
-    copyToClipboard(MCP_URL).then(function (ok) {
-      track("home_open_in_claude_clicked", { copy_succeeded: ok, popup_opened: !!newTab });
-      if (ok) {
-        showToast("URL copied. paste it in the claude.ai dialog.");
-      } else if (newTab) {
-        showToast("couldn't auto-copy — copy this URL: " + MCP_URL);
-      } else {
-        showToast("popup blocked. allow popups for cashbff.com.");
-      }
-    });
   }
 
   /** Logout: POST /api/logout with credentials. Backend clears the session
@@ -246,12 +187,15 @@
     const helperEl = $("cta-helper");
     const choice = pickCta(status, hasBank);
 
-    if (labelEl) labelEl.textContent = choice.label;
     if (helperEl) helperEl.textContent = choice.helper || "";
     if (ctaEl) {
-      ctaEl.setAttribute("href", choice.href);
-      if (choice.onClick) {
-        ctaEl.addEventListener("click", choice.onClick);
+      if (choice.hideButton) {
+        // Fully-set-up state: no live CTA yet (WhatsApp number gated on Meta
+        // verification). Hide the button; the helper line carries the message.
+        ctaEl.hidden = true;
+      } else {
+        if (labelEl) labelEl.textContent = choice.label;
+        ctaEl.setAttribute("href", choice.href);
       }
     }
 

@@ -13,16 +13,16 @@
   ></script>
   <script src="/assets/js/sentry-init.js"></script>
 
-  <title>CashBFF Security, how your bank data is protected</title>
-  <meta name="description" content="How CashBFF protects your money and data: bank access through Plaid, AES-256-GCM encryption at rest, secure sign-in, read-first by design, and you approve every change.">
-  <meta property="og:title" content="CashBFF Security, how your bank data is protected">
+  <title>Start texting CashBFF on WhatsApp</title>
+  <meta name="description" content="start texting cashbff, the money-nerd best friend on whatsapp. it connects to your accounts, does the looking you've been dreading, and hands you one easy win. no judgment.">
+  <meta property="og:title" content="Start texting CashBFF on WhatsApp">
   <meta property="og:image" content="https://cashbff.com/icon.png">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:image" content="https://cashbff.com/icon.png">
-  <meta property="og:description" content="How CashBFF protects your money and data: bank access through Plaid, AES-256-GCM encryption at rest, secure sign-in, read-first by design, and you approve every change.">
+  <meta property="og:description" content="start texting cashbff, the money-nerd best friend on whatsapp. it connects to your accounts, does the looking you've been dreading, and hands you one easy win. no judgment.">
   <meta property="og:type" content="website">
-  <meta property="og:url" content="https://cashbff.com/security">
-  <link rel="canonical" href="https://cashbff.com/security">
+  <meta property="og:url" content="https://cashbff.com/start">
+  <link rel="canonical" href="https://cashbff.com/start">
 
   <script type="application/ld+json">
   {
@@ -30,7 +30,7 @@
     "@type": "Organization",
     "name": "CashBFF",
     "url": "https://cashbff.com",
-    "description": "CashBFF is the money-nerd best friend you text on WhatsApp, connected to your accounts through Plaid. Bank data is protected with AES-256-GCM encryption at rest and secure sign-in, and it is read-first by design: the only changes it makes are to entries you set up yourself, and only after you confirm.",
+    "description": "CashBFF is the money-nerd best friend you text on WhatsApp. It connects to your real accounts through Plaid, does the looking for you, and hands you one easy win at a time. It finds and surfaces; you act.",
     "founder": {
       "@type": "Person",
       "name": "Daksh Khanna",
@@ -44,12 +44,7 @@
     "sameAs": [
       "https://khannadaksh.com",
       "https://www.linkedin.com/in/khannadaksh"
-    ],
-    "contactPoint": {
-      "@type": "ContactPoint",
-      "contactType": "security",
-      "email": "daksh@cashbff.com"
-    }
+    ]
   }
   </script>
 
@@ -140,7 +135,7 @@
 
     /* ── hero ── */
     .hero {
-      margin: 0 0 3rem;
+      margin: 0 0 2.4rem;
       opacity: 0;
       animation: fadeIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.05s forwards;
     }
@@ -159,41 +154,10 @@
       font-size: clamp(1.02rem, 1.8vw, 1.18rem);
       line-height: 1.6;
       max-width: 56ch;
+      margin-bottom: 1rem;
     }
-
-    /* ── sections ── */
-    .section {
-      margin: 0 0 2.8rem;
-      opacity: 0;
-      animation: fadeIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.18s forwards;
-    }
-    .section h2 {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: clamp(1.6rem, 4vw, 2.1rem);
-      letter-spacing: -0.02em;
-      text-transform: lowercase;
-      margin-bottom: 1.1rem;
-    }
-    .section h2 .period { color: var(--cash-green); }
-    .section p { max-width: 60ch; margin-bottom: 0.9rem; }
-    .section p:last-child { margin-bottom: 0; }
-
-    /* ── key/value list ── */
-    .kv { border-top: 1px solid var(--hairline); }
-    .kv div {
-      display: grid;
-      grid-template-columns: 11rem 1fr;
-      gap: 1rem;
-      padding: 0.8rem 0;
-      border-bottom: 1px solid var(--hairline);
-      font-size: 0.95rem;
-    }
-    .kv dt { font-weight: 600; }
-    .kv dd { color: var(--soft-ink); }
-    @media (max-width: 560px) {
-      .kv div { grid-template-columns: 1fr; gap: 0.2rem; }
-    }
+    .lede:last-child { margin-bottom: 0; }
+    .lede.muted { color: var(--soft-ink); }
 
     /* ── CTA ── */
     .cta { margin: 0.4rem 0 0; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
@@ -214,6 +178,13 @@
     .btn-primary:active { transform: translateY(1px); }
     .link-quiet { font-size: 0.95rem; opacity: 0.7; text-decoration: underline; text-decoration-color: var(--hairline); text-underline-offset: 3px; }
     .link-quiet:hover { opacity: 1; text-decoration-color: var(--off-black); }
+    .inline-link {
+      text-decoration: underline;
+      text-decoration-color: var(--hairline);
+      text-underline-offset: 3px;
+      transition: text-decoration-color .15s;
+    }
+    .inline-link:hover { text-decoration-color: var(--off-black); }
 
     .updated { font-size: 0.8rem; color: var(--soft-ink); margin-top: 2rem; }
 
@@ -248,97 +219,33 @@
       <nav class="nav" aria-label="primary">
         <a href="/">home</a>
         <a href="/how-it-works">how it works</a>
+        <a href="/is-cashbff-legit">is cashbff legit?</a>
         <a href="/pricing">pricing</a>
-        <a href="/start">start</a>
       </nav>
     </header>
 
     <section class="hero">
       <h1 class="headline">
-        your money is safe<br>
-        with cashbff<span class="period">.</span>
+        start texting cashbff<span class="period">.</span>
       </h1>
-      <p class="lede">
-        cashbff is the money-nerd best friend you text on whatsapp, connected to your accounts
-        through plaid. it's built to be careful with your money and your data, and this page
-        lays out exactly how it looks after you.
-      </p>
+      <p class="lede">cashbff is the money-nerd best friend you text on whatsapp. it connects to your real accounts, does the looking you've been dreading, and hands you one easy win at a time. starting is one message, and there's nothing to download.</p>
+      <p class="lede muted">right now we're onboarding the first people by hand, one at a time, so the welcome is warm and nothing breaks. you're early, and that's a good place to be.</p>
     </section>
 
-    <section class="section" aria-labelledby="connect">
-      <h2 id="connect">how your bank connects<span class="period">.</span></h2>
-      <p>
-        cashbff reaches your accounts through plaid, the bank-connection service behind apps
-        like venmo, robinhood, and chime. plaid handles the bank login directly, so your banking
-        username and password stay between you, your bank, and plaid. cashbff gets a secure
-        access token from plaid and uses it to read your financial picture.
-      </p>
-    </section>
-
-    <section class="section" aria-labelledby="protect">
-      <h2 id="protect">how your data is protected<span class="period">.</span></h2>
-      <dl class="kv">
-        <div><dt>encryption at rest</dt><dd>your plaid access tokens are stored with aes-256-gcm encryption.</dd></div>
-        <div><dt>in transit</dt><dd>all traffic runs over https.</dd></div>
-        <div><dt>single source</dt><dd>your financial data comes from plaid, and plaid alone.</dd></div>
-        <div><dt>account numbers</dt><dd>cashbff works from the last four digits of an account, and full account and routing numbers stay private.</dd></div>
-      </dl>
-    </section>
-
-    <section class="section" aria-labelledby="readfirst">
-      <h2 id="readfirst">read-first by design<span class="period">.</span></h2>
-      <p>
-        by default, cashbff reads your money and reports back. it sees your balances, transactions,
-        recurring expenses, scheduled forecasts, and the last four digits of an account, which is
-        everything it needs to answer questions like how much you have or whether you can
-        afford something. it never moves money out of your accounts. your money stays exactly where it is.
-      </p>
-    </section>
-
-    <section class="section" aria-labelledby="writes">
-      <h2 id="writes">you approve every change<span class="period">.</span></h2>
-      <p>
-        write actions stay turned off until you choose to enable them. when they're on, every
-        change starts as a preview that you confirm first, and edits apply to entries you created
-        yourself, such as a goal, a note, or a forecast.
-      </p>
-    </section>
-
-    <section class="section" aria-labelledby="signin">
-      <h2 id="signin">how you connect<span class="period">.</span></h2>
-      <p>
-        you set cashbff up by texting it on whatsapp and linking your accounts through plaid's
-        secure consent screen. the connection is clear, scoped, and yours to manage. access uses a
-        secure token from plaid rather than any password you type.
-      </p>
-    </section>
-
-    <section class="section" aria-labelledby="control">
-      <h2 id="control">you stay in control<span class="period">.</span></h2>
-      <p>
-        you can disconnect your accounts whenever you like, which ends its access.
-        for how your data is collected, used, and retained, see our
-        <a href="/privacy" style="text-decoration:underline">privacy policy</a>.
-      </p>
-    </section>
-
-    <section class="section" aria-labelledby="contact">
-      <h2 id="contact">questions about security<span class="period">.</span></h2>
-      <p>
-        security questions and disclosures are welcome. email
-        <a href="mailto:daksh@cashbff.com" style="text-decoration:underline">daksh@cashbff.com</a>
-        and we'll respond.
-      </p>
+    <section class="hero" aria-label="start">
       <div class="cta">
-        <!-- [[WA_LINK]] pending Meta verification: no wa.me link exists yet; href="#" until /start goes live. -->
+        <!-- [[WA_LINK]] pending Meta verification: no wa.me link exists yet; href="#" until WhatsApp verification clears. -->
         <a class="btn-primary" href="#"><span>text cashbff on whatsapp</span><span aria-hidden="true">&rarr;</span></a>
-        <a class="link-quiet" href="/how-it-works">see how it works</a>
+        <a class="link-quiet" href="/how-it-works">see how it works first</a>
       </div>
+      <p class="lede muted" style="margin-top:1.4rem;">want to be in the first group? email <a class="inline-link" href="mailto:daksh@cashbff.com">daksh@cashbff.com</a> and a real person will get you set up. when the whatsapp line opens to everyone, this button goes live and you can text it directly.</p>
+      <p class="lede muted">still deciding? here's <a class="inline-link" href="/is-cashbff-legit">why it's safe</a>.</p>
       <p class="updated">last updated may 2026.</p>
     </section>
 
     <footer class="footer">
-      <a href="/how-it-works">how it works</a><span class="sep">·</span><a href="/privacy">privacy</a><span class="sep">·</span><a href="/terms">terms</a><span class="sep">·</span><a href="/pricing">pricing</a><span class="sep">·</span>Built by <a href="https://khannadaksh.com" rel="me">Daksh Khanna</a><span class="sep">·</span>Khanna's LLC
+      <!-- privacy/terms links gated by the separate legal branch; trust points to /is-cashbff-legit until those ship. -->
+      <a href="/how-it-works">how it works</a><span class="sep">·</span><a href="/is-cashbff-legit">is cashbff legit?</a><span class="sep">·</span><a href="/pricing">pricing</a><span class="sep">·</span><a href="/start">start</a><span class="sep">·</span>Built by <a href="https://khannadaksh.com" rel="me">Daksh Khanna</a><span class="sep">·</span>Khanna's LLC
     </footer>
 
   </main>
