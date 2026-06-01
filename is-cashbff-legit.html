@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/png" href="/icon.png">
+  <link rel="apple-touch-icon" href="/icon.png">
+  <meta name="theme-color" content="#014751">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <!-- Sentry browser SDK: forwards JS errors + unhandled rejections to our Sentry project. -->
+  <script
+    src="https://js.sentry-cdn.com/2d45e7a7cdc726451c61d775aa22fbf2.min.js"
+    crossorigin="anonymous"
+  ></script>
+  <script src="/assets/js/sentry-init.js"></script>
+
+  <title>Is CashBFF legit? Security, privacy, and why it is not a lender</title>
+  <meta name="description" content="is cashbff legit? yes. how the security works, what happens to your data, and why it is not a lender. it reads your money and never moves money out of your accounts.">
+  <meta property="og:title" content="Is CashBFF legit? Security, privacy, and why it is not a lender">
+  <meta property="og:image" content="https://cashbff.com/icon.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:image" content="https://cashbff.com/icon.png">
+  <meta property="og:description" content="is cashbff legit? yes. how the security works, what happens to your data, and why it is not a lender. it reads your money and never moves money out of your accounts.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://cashbff.com/is-cashbff-legit">
+  <link rel="canonical" href="https://cashbff.com/is-cashbff-legit">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "CashBFF",
+    "url": "https://cashbff.com",
+    "description": "CashBFF is the money-nerd best friend you text on WhatsApp. It connects to your real accounts through Plaid, does the looking for you, and hands you one easy win at a time. It finds and surfaces; you act. It is read-first by design: the only changes it makes are to entries you set up yourself, and only after you confirm.",
+    "founder": {
+      "@type": "Person",
+      "name": "Daksh Khanna",
+      "jobTitle": "Founder",
+      "url": "https://khannadaksh.com",
+      "sameAs": [
+        "https://www.linkedin.com/in/khannadaksh",
+        "https://twitter.com/khannacloud"
+      ]
+    },
+    "sameAs": [
+      "https://khannadaksh.com",
+      "https://www.linkedin.com/in/khannadaksh"
+    ],
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "contactType": "security",
+      "email": "daksh@cashbff.com"
+    }
+  }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- PostHog product analytics. CSP-safe (no eval). -->
+  <script src="/assets/js/posthog-init.js" defer></script>
+  <!-- Ahrefs Web Analytics: cookieless analytics + verification. -->
+  <script src="https://analytics.ahrefs.com/analytics.js" data-key="VVGz3n14q6Xh0BWgHrV3hw" async></script>
+  <!-- Vercel Analytics + Speed Insights. -->
+  <script src="/assets/js/vercel-analytics-init.js" defer></script>
+  <script defer src="/_vercel/insights/script.js"></script>
+
+  <style>
+    @font-face {
+      font-family: 'Greed Condensed';
+      src: url('/fonts/GreedCondensed-Bold.woff2') format('woff2');
+      font-weight: 700;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Greed Condensed';
+      src: url('/fonts/GreedCondensed-Medium.woff2') format('woff2');
+      font-weight: 500;
+      font-display: swap;
+    }
+
+    :root {
+      --vanilla: #FCFAF2;
+      --off-black: #1A1717;
+      --cash-green: #014751;
+      --hairline: rgba(26, 23, 23, 0.12);
+      --soft-ink: rgba(26, 23, 23, 0.62);
+
+      --font-display: 'Greed Condensed', 'Archivo Narrow', 'Arial Narrow', Impact, sans-serif;
+      --font-body: 'Instrument Sans', system-ui, -apple-system, sans-serif;
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font-body);
+      background: var(--vanilla);
+      color: var(--off-black);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      line-height: 1.5;
+      min-height: 100dvh;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { font-family: inherit; cursor: pointer; border: none; background: none; }
+
+    .stage {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 1.5rem 1.5rem 4rem;
+      display: flex;
+      flex-direction: column;
+      min-height: 100dvh;
+    }
+
+    /* ── top bar ── */
+    .bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      margin-bottom: 4rem;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.5rem;
+      letter-spacing: -0.02em;
+      color: var(--cash-green);
+      text-transform: lowercase;
+    }
+    .nav { display: flex; gap: 1.4rem; font-size: 0.9rem; font-weight: 500; }
+    .nav a { opacity: 0.7; transition: opacity .15s; }
+    .nav a:hover { opacity: 1; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── hero ── */
+    .hero {
+      margin: 0 0 2.4rem;
+      opacity: 0;
+      animation: fadeIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.05s forwards;
+    }
+    .headline {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: clamp(2.6rem, 8vw, 4.5rem);
+      line-height: 0.95;
+      letter-spacing: -0.02em;
+      text-transform: lowercase;
+      color: var(--off-black);
+      margin-bottom: 1.4rem;
+    }
+    .headline .period { color: var(--cash-green); }
+    .lede {
+      font-size: clamp(1.02rem, 1.8vw, 1.18rem);
+      line-height: 1.6;
+      max-width: 60ch;
+      margin-bottom: 1rem;
+    }
+    .lede:last-child { margin-bottom: 0; }
+    .lede.muted { color: var(--soft-ink); }
+
+    /* ── sections ── */
+    .section {
+      margin: 0 0 3rem;
+      opacity: 0;
+      animation: fadeIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.18s forwards;
+    }
+    .section h2 {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: clamp(1.6rem, 4vw, 2.1rem);
+      letter-spacing: -0.02em;
+      text-transform: lowercase;
+      margin-bottom: 1.1rem;
+      scroll-margin-top: 1.5rem;
+    }
+    .section h2 .period { color: var(--cash-green); }
+    .section p { max-width: 60ch; margin-bottom: 0.9rem; }
+    .section p:last-child { margin-bottom: 0; }
+    .section .muted { color: var(--soft-ink); }
+
+    /* ── key/value list ── */
+    .kv { border-top: 1px solid var(--hairline); }
+    .kv div {
+      display: grid;
+      grid-template-columns: 13rem 1fr;
+      gap: 1rem;
+      padding: 0.8rem 0;
+      border-bottom: 1px solid var(--hairline);
+      font-size: 0.95rem;
+    }
+    .kv dt { font-weight: 600; }
+    .kv dd { color: var(--soft-ink); }
+    @media (max-width: 560px) {
+      .kv div { grid-template-columns: 1fr; gap: 0.2rem; }
+    }
+
+    /* ── jump nav ── */
+    .jump { display: flex; gap: 1rem; flex-wrap: wrap; margin: 0 0 3rem; font-size: 0.95rem; }
+    .jump a {
+      text-decoration: underline;
+      text-decoration-color: var(--hairline);
+      text-underline-offset: 3px;
+      opacity: 0.75;
+      transition: opacity .15s, text-decoration-color .15s;
+    }
+    .jump a:hover { opacity: 1; text-decoration-color: var(--off-black); }
+
+    /* ── CTA ── */
+    .cta { margin: 0.4rem 0 0; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+    .btn-primary {
+      background: var(--off-black);
+      color: var(--vanilla);
+      font-weight: 700;
+      font-size: 1.05rem;
+      padding: 0.95rem 1.9rem;
+      border-radius: 14px;
+      text-transform: lowercase;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      transition: transform .12s ease, opacity .15s;
+    }
+    .btn-primary:hover { opacity: 0.92; transform: translateY(-1px); }
+    .btn-primary:active { transform: translateY(1px); }
+    .link-quiet { font-size: 0.95rem; opacity: 0.7; text-decoration: underline; text-decoration-color: var(--hairline); text-underline-offset: 3px; }
+    .link-quiet:hover { opacity: 1; text-decoration-color: var(--off-black); }
+    .inline-link {
+      text-decoration: underline;
+      text-decoration-color: var(--hairline);
+      text-underline-offset: 3px;
+      transition: text-decoration-color .15s;
+    }
+    .inline-link:hover { text-decoration-color: var(--off-black); }
+
+    .updated { font-size: 0.8rem; color: var(--soft-ink); margin-top: 2rem; }
+
+    /* ── footer ── */
+    .footer {
+      margin-top: auto;
+      padding-top: 2.5rem;
+      font-size: 0.85rem;
+      opacity: 0.5;
+      line-height: 1.7;
+      border-top: 1px solid var(--hairline);
+    }
+    .footer a {
+      text-decoration: underline;
+      text-decoration-color: var(--hairline);
+      text-underline-offset: 3px;
+      transition: text-decoration-color .15s, opacity .15s;
+    }
+    .footer a:hover { text-decoration-color: var(--off-black); opacity: 1; }
+    .footer .sep { margin: 0 0.5rem; opacity: 0.5; }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="stage">
+
+    <header class="bar">
+      <a href="/" class="wordmark">cashbff</a>
+      <nav class="nav" aria-label="primary">
+        <a href="/">home</a>
+        <a href="/how-it-works">how it works</a>
+        <a href="/pricing">pricing</a>
+        <a href="/start">start</a>
+      </nav>
+    </header>
+
+    <section class="hero">
+      <h1 class="headline">
+        is cashbff legit? short answer, yes<span class="period">.</span>
+      </h1>
+      <p class="lede">cashbff is the money-nerd best friend you text on whatsapp. connecting your bank is the biggest ask in this whole thing, so this page is the long answer: how the security works, what happens to your data, and why it is not a lender. if you've been burned before, you deserve more than a one-word promise.</p>
+      <p class="lede muted">the spine of it: cashbff reads your money and reports back. it finds it and flags it; you do the cancelling, the paying, the deciding. it never moves money out of your accounts and never pays anyone on your behalf, because it's your money.</p>
+    </section>
+
+    <nav class="jump" aria-label="on this page">
+      <a href="#security">security</a>
+      <a href="#privacy">your data</a>
+      <a href="#not-a-lender">not a lender</a>
+    </nav>
+
+    <section class="section" aria-labelledby="security">
+      <h2 id="security">security<span class="period">.</span></h2>
+      <p>connecting your bank is a real decision, and it's fair to be cautious about it. here's how that connection works and how your information is looked after, in plain language.</p>
+      <!-- [[PLAID CLAIMS: confirm before publish]] All Plaid / bank-connection representations below are kept high-level and qualified. Confirm with Plaid + legal before hardening (e.g. before naming specific apps, asserting login isolation as absolute, or adding any certification). -->
+      <dl class="kv">
+        <div><dt>bank connection via plaid</dt><dd>cashbff connects to your accounts through plaid, the bank-connection service used by many apps you already trust. plaid handles the bank login, and cashbff uses a secure access token from plaid to read your financial picture.</dd></div>
+        <div><dt>your login stays yours</dt><dd>your banking username and password go to plaid, not to cashbff. you grant access through plaid's own consent screen.</dd></div>
+        <div><dt>encryption at rest</dt><dd>the access token that lets cashbff read your accounts is stored encrypted at rest, and traffic runs over https.</dd></div>
+        <div><dt>read-first by design</dt><dd>by default cashbff reads your money and reports back. it never moves money out of your accounts and never pays or transfers to anyone.</dd></div>
+        <div><dt>changes are yours to confirm</dt><dd>the only changes cashbff makes are to entries you set up inside it, like a savings goal, a note, or a forecast. each one starts as a preview that you confirm first.</dd></div>
+        <div><dt>you can leave any time</dt><dd>disconnect your accounts whenever you like, in one tap, and that ends its access.</dd></div>
+      </dl>
+      <p class="muted" style="margin-top:1.1rem;">got a security question or something to report? email <a class="inline-link" href="mailto:daksh@cashbff.com">daksh@cashbff.com</a> and a real person will answer.</p>
+    </section>
+
+    <section class="section" aria-labelledby="privacy">
+      <h2 id="privacy">your data<span class="period">.</span></h2>
+      <p>the short version: cashbff reads your financial data so it can answer your questions, and that's what it's for. it isn't here to sell you, and you stay in charge of what it can see.</p>
+      <dl class="kv">
+        <div><dt>why it reads your data</dt><dd>it reads your balances, transactions, and bills so it can tell you how much you have, what's coming up, and what's quietly draining you.</dd></div>
+        <div><dt>you're the customer</dt><dd>cashbff makes money one way, a flat subscription. you're the customer, not the product.</dd></div>
+        <div><dt>you can disconnect and delete</dt><dd>you can disconnect your accounts and have your data removed. how that works is covered in the full privacy policy.</dd></div>
+      </dl>
+      <!-- [LEGAL DOCS] gated: the standalone privacy policy is being finalized (must cover WhatsApp + the current analytics setup) before it is linked from here. Keep this a plain-text note, not a live link, until the rewritten policy deploys. -->
+      <p class="muted" style="margin-top:1.1rem;">the full privacy policy, with exactly what's collected, how it's used, and how long it's kept, is being finalized and will live here. until then, email <a class="inline-link" href="mailto:daksh@cashbff.com">daksh@cashbff.com</a> with any data question and a real person will answer.</p>
+    </section>
+
+    <section class="section" aria-labelledby="not-a-lender">
+      <h2 id="not-a-lender">not a lender<span class="period">.</span></h2>
+      <p>this one matters, so we'll be blunt about it. cashbff is not a loan or a cash-advance app. it does not lend you money and it does not give advances.</p>
+      <p>a lot of money apps make their money when you're stuck, on the advances, the fees, the late charges. that means they do better when you're broke. cashbff is the opposite of that. it makes money one way, a flat subscription, so it has nothing to gain from you staying stuck. it finds the cash you're already losing and hands you the win to keep it.</p>
+      <p class="muted">it's not a lender, it's not a bank, and it doesn't move your money. it finds it and flags it; you do the cancelling, the paying, the deciding.</p>
+      <!-- [LEGAL DOCS] gated: the standalone terms of service (with the not-financial-advice disclaimer) is being finalized before it is linked from here. Keep this a plain-text note until the ToS deploys. -->
+      <p class="muted" style="margin-top:0.9rem;">cashbff gives you a clearer view of your own money; it isn't financial, investment, or tax advice. the full terms of service are being finalized and will live here.</p>
+    </section>
+
+    <section class="section" aria-labelledby="cta">
+      <h2 id="cta" class="visually-hidden" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);">start</h2>
+      <p class="muted">that's the honest version. you're more okay than you think, and looking shouldn't feel like a risk.</p>
+      <div class="cta">
+        <!-- [[WA_LINK]] pending Meta verification: no wa.me link exists yet; href="#" until /start goes live. -->
+        <a class="btn-primary" href="/start"><span>start texting cashbff</span><span aria-hidden="true">&rarr;</span></a>
+        <a class="link-quiet" href="/how-it-works">see how it works</a>
+      </div>
+      <p class="updated">last updated may 2026.</p>
+    </section>
+
+    <footer class="footer">
+      <!-- privacy/terms links gated by the separate legal branch; trust lives on this page until those ship. -->
+      <a href="/how-it-works">how it works</a><span class="sep">·</span><a href="/is-cashbff-legit">is cashbff legit?</a><span class="sep">·</span><a href="/pricing">pricing</a><span class="sep">·</span><a href="/start">start</a><span class="sep">·</span>Built by <a href="https://khannadaksh.com" rel="me">Daksh Khanna</a><span class="sep">·</span>Khanna's LLC
+    </footer>
+
+  </main>
+</body>
+</html>
