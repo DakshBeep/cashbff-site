@@ -205,103 +205,100 @@
 
   <main class="content">
     <h1 class="content__title">privacy<span class="period">.</span></h1>
-    <p class="content__sub">This Privacy Policy describes how cashbff (the "Service") collects, uses, and safeguards information about its users. cashbff uses your information to operate the Service. cashbff does not sell your information, and cashbff does not share your information with third parties for their own use.</p>
+    <p class="content__sub"><strong>TL;DR:</strong> cashbff reads your bank transactions (read-only, through Plaid) and helps you understand your money over SMS, WhatsApp, and through AI assistants you connect. We use first-party analytics (PostHog and Sentry) that are configured to exclude the content of your messages, so we can see what works and fix bugs. We never sell or share your data, run ads, or use third-party ad trackers. cashbff finds and surfaces things, and only you act on them. We never move, pay, or transfer your money. You can disconnect your bank anytime, and you can ask us to delete your data anytime (we take care of it within 30 days).</p>
 
-    <h2>Information We Collect</h2>
-    <p>
-      Depending on how you interact with the Service, cashbff may collect the following categories of information:
-    </p>
+    <h2>1. what we collect</h2>
+    <p>We collect only what we need to run cashbff:</p>
     <ul>
-      <li>Your <strong>phone number</strong>, which serves as your sign-in identifier.</li>
-      <li>Your <strong>name</strong>, used to personalize the calendar and any communications cashbff sends to you.</li>
-      <li><strong>Transaction data</strong> obtained through Plaid, including account balances, account metadata, and transaction history. This access is read-only. cashbff never receives or stores your bank credentials.</li>
-      <li>The <strong>scheduled expenses</strong> that you enter into your calendar.</li>
-      <li>The <strong>recurring transaction streams</strong> that cashbff detects from your activity (for example, a monthly Netflix charge that recurs on the 14th of each month).</li>
-      <li>Your <strong>email address</strong>, which is collected only as part of the /school flow for purposes of parental consent and receipts.</li>
-      <li>Your <strong>Stripe customer information</strong>, which applies only to /school parents who pay for the Service. Stripe holds the payment instrument; cashbff retains only a Stripe customer identifier.</li>
+      <li><strong>Account and contact info:</strong> your phone number (used for one-time-passcode sign-in) and first name. Some sign-up flows also collect your email address, last name, and date of birth (your date of birth is used to confirm you are at least 18 and, where applicable, to help verify your identity).</li>
+      <li><strong>Messages you send us:</strong> the texts you send over SMS and WhatsApp, and requests sent through any AI assistant you connect (see Section 4). How we handle message content is explained in Section 6.</li>
+      <li><strong>Bank transaction data, read-only through Plaid:</strong> transaction dates, merchant names, amounts, categories, and account balances. Plaid connects to your bank with a read-only Transactions scope (the permission Plaid uses to read your transactions).</li>
+      <li><strong>Payment info:</strong> when you subscribe to the paid "Talk" plan, payments are handled by Stripe. Stripe processes your card details. We do not store your full card number.</li>
     </ul>
-    <p>
-      cashbff does not collect Social Security numbers, government-issued identification, contacts, location data, or microphone or camera data.
-    </p>
+    <p>We do <strong>not</strong> collect your bank login credentials, passwords, full bank account numbers, or Social Security number. Plaid handles the connection to your bank, so we never see your bank login.</p>
 
-    <h2>How We Use Your Information</h2>
-    <p>
-      cashbff uses the information described above to operate the calendar, to keep your scheduled transactions and forecasts current, to detect your recurring expenses, to maintain bank connectivity through Plaid, to send one-time codes by SMS at sign-in, and to send occasional product communications by email if you have opted in. Each category of data collected is tied to a feature of the Service that you actively use.
-    </p>
-    <p>
-      cashbff does not display advertising and does not operate an advertising business. No portion of your information is sold or licensed to any third party.
-    </p>
-
-    <h2>Use of Aggregated, Anonymized Data</h2>
-    <p>
-      cashbff may use <strong>aggregated and anonymized</strong> patterns derived from product usage to improve forecasting and transaction categorization for all users. Examples include statistics such as the share of subscriptions that bill on the first of the month, or the mapping of merchant names to spending categories. No information used for these purposes can be reasonably linked to an identifiable individual.
-    </p>
-    <p>
-      <strong>cashbff does not sell your information. cashbff does not share your information with third parties for their own use.</strong> This applies to advertising, analytics, and any other purpose.
-    </p>
-
-    <h2>AI Assistants You Connect</h2>
-    <p>
-      If you choose to share your cashbff data with an artificial-intelligence assistant (for example, Claude or ChatGPT), that assistant may read the same financial data you can view on your home page, including your running balance, recurring expenses, scheduled bills, recent transactions, and the results of searches you initiate. This access is <strong>read-only</strong>. Assistants you share with cannot create, modify, or delete data within cashbff, and they cannot access the data of any other user.
-    </p>
-    <p>
-      cashbff logs the following information for each tool call made by a connected assistant: the name of the tool invoked (for example, <code>search_my_transactions</code>), the parameters passed (for example, the merchant searched or the date range), the size of the response returned, a timestamp, and your opaque user identifier.
-    </p>
-    <p>
-      cashbff <strong>does not</strong> receive or log the natural-language conversation between you and the assistant, the assistant's reply, or any other content from that chat session. Such content remains between you and the assistant you have chosen to use. cashbff responds only to the specific data requests that the assistant transmits on your behalf.
-    </p>
-    <p>
-      cashbff uses these tool-call logs to <strong>understand the questions users ask about their finances</strong>. If many users request a feature that the Service does not yet support, cashbff may add it. <strong>cashbff does not sell these logs and does not share them with third parties.</strong>
-    </p>
-    <p>
-      You may stop sharing your cashbff data with any AI assistant at any time. Once you stop, all future access through that assistant terminates immediately.
-    </p>
-
-    <h2>Third-Party Service Providers</h2>
-    <p>
-      A limited number of service providers support specific functions of the Service. Each provider receives only the information necessary to perform its role, and each maintains its own privacy policy that governs its handling of that information:
-    </p>
+    <h2>2. how we use your data</h2>
+    <p>We use your information to run cashbff and to make it better:</p>
     <ul>
-      <li><strong>Plaid</strong> connects your bank account and returns balances and transactions. Plaid maintains its own privacy policy and receives only the information required to retrieve your account data.</li>
-      <li><strong>Twilio</strong> delivers SMS one-time codes. Twilio maintains its own privacy policy and receives only your phone number and the code being sent.</li>
-      <li><strong>Stripe</strong> processes payments and, for /school, performs age verification. Stripe maintains its own privacy policy and receives only the information required to process payment and verify identity.</li>
-      <li><strong>Anthropic</strong> provides the AI capabilities that power cashbff's recurring-detection and forecasting features. Anthropic maintains its own privacy policy and receives only the prompts cashbff sends, which do not include raw account data or directly identifying information.</li>
-      <li><strong>PostHog</strong> provides anonymized product analytics. cashbff transmits event names and your opaque user identifier to PostHog, and does not transmit your email address, phone number, or transaction details. PostHog maintains its own privacy policy. Session recordings are disabled.</li>
-      <li><strong>Vercel</strong> hosts the cashbff website and collects cookieless, edge-anonymized pageview counts and Web Vitals metrics (page-load performance) so that cashbff can evaluate site performance on real devices. Vercel does not receive information that identifies you.</li>
+      <li><strong>Answer your questions</strong> and respond to what you send us over SMS, WhatsApp, or a connected AI assistant.</li>
+      <li><strong>Find and surface insights:</strong> detect recurring subscriptions and bills from your transaction patterns, categorize and summarize your spending, and infer general lifestyle traits to personalize what we tell you.</li>
+      <li><strong>Support actions you confirm:</strong> for example, set savings goals, schedule reminders and expected income or expenses, add notes to a transaction, flag transactions as reimbursable, and confirm recurring bills we detect. cashbff finds and surfaces things, and you decide and confirm. cashbff does <strong>not</strong> move, pay, or transfer your money, and it cannot act on a financial change without your explicit confirmation.</li>
+      <li><strong>Improve the product and do research:</strong> we study spending patterns and feature usage to understand what is working and make cashbff better. We do this on <strong>aggregated or de-identified</strong> data (data stripped of details that point to you) wherever the question allows. For example, learning that a share of users have a coffee subscription, rather than pointing at any one person.</li>
     </ul>
-    <p>
-      <strong>Note:</strong> AI assistants that <strong>you choose to connect</strong> through services such as Claude or ChatGPT are not listed above because they are selected by you, not by cashbff. The handling of data through that integration is described in the section titled "AI Assistants You Connect."
-    </p>
+    <p>We do <strong>not</strong> use your personal or financial data to train any artificial-intelligence model of our own. The AI provider that processes your messages on our behalf (see Section 4) states that, under its API terms, it does not train its models on this data by default.</p>
 
-    <h2>Your Rights</h2>
-    <p>
-      You may request deletion of your information at any time by emailing <a href="mailto:daksh@cashbff.com">daksh@cashbff.com</a>. cashbff will complete deletion within <strong>30 days</strong>. You may also request a copy of all information cashbff holds about you, which cashbff will provide by the same channel. If you reside in California, the California Consumer Privacy Act (CCPA) grants you the right to know what information is collected, to receive a copy of that information, to request its deletion, and not to be discriminated against for exercising these rights. The email address above is the means by which you may exercise each of these rights.
-    </p>
-    <p>
-      cashbff retains your information only for the period during which you remain an active user, plus 30 days following deletion to ensure that the deletion has propagated through cashbff's backups.
-    </p>
+    <h2>3. how you reach cashbff (your channels)</h2>
+    <p>You can use cashbff through more than one channel, and this policy covers all of them. The channel you use does not change your data rights.</p>
+    <ul>
+      <li><strong>SMS,</strong> through Twilio.</li>
+      <li><strong>WhatsApp,</strong> through the Meta WhatsApp Cloud API.</li>
+      <li><strong>Connected AI assistants,</strong> through a secure data-access connection you set up (see Section 4). An AI assistant you connect, such as Claude, can read your money data and perform the same actions you confirm first that are described in Section 2 (for example, set goals, schedule reminders, add transaction notes, mark reimbursables, confirm recurring bills). These actions still require your confirmation, and the assistant cannot move, pay, or transfer money.</li>
+    </ul>
 
-    <h2>Cookies and Tracking</h2>
-    <p>
-      cashbff uses two categories of cookies. The first category supports authentication state and consists of <code>cbff_session</code>, <code>cbff_signup</code>, and <code>cbff_school</code>, all of which are first-party and HttpOnly. The second category supports analytics and consists of <code>ph_*</code> cookies set by PostHog to deduplicate events across page loads. cashbff does not use advertising cookies.
-    </p>
+    <h2>4. third-party services we rely on</h2>
+    <p>We use a small set of vendors to run cashbff. Each one processes data <strong>on our behalf, under contract,</strong> to deliver the service. They are not permitted to use your data for their own purposes.</p>
+    <ul>
+      <li><strong>Plaid:</strong> read-only bank access (Transactions scope). Plaid access tokens are encrypted at rest. Plaid processes your data under its own End User Privacy Policy (plaid.com/legal). You can review and revoke your Plaid connections at any time at my.plaid.com.</li>
+      <li><strong>Twilio:</strong> delivers SMS.</li>
+      <li><strong>Meta (WhatsApp Cloud API):</strong> delivers WhatsApp messages.</li>
+      <li><strong>Anthropic (Claude):</strong> processes your message context and aggregated spending data to generate responses. We never send raw full account numbers or stored access tokens. Anthropic states that, under its API terms, it does not train its models on this data by default.</li>
+      <li><strong>AI-assistant connection:</strong> when you connect an AI assistant, it accesses your money data through a connection scoped to your account, with the action limits described in Section 3.</li>
+      <li><strong>Supabase:</strong> our database (Postgres), where your account, transaction, and related data are stored.</li>
+      <li><strong>Stripe:</strong> processes payments for the paid "Talk" plan and retains payment history under its own policy.</li>
+      <li><strong>PostHog and Sentry:</strong> our first-party analytics and error monitoring (see Section 5).</li>
+    </ul>
+    <p>We process and store your data in the United States.</p>
+    <p><strong>We do not sell, rent, or share your personal or financial data with anyone for their own purposes. Ever.</strong> The vendors above are service providers, which is different from selling or sharing.</p>
 
-    <h2>Children Under 18</h2>
-    <p>
-      The standard Service is intended for users who are at least 18 years of age. Minors may use cashbff only through the <a href="/school">/school</a> flow with parental consent. The information collected from minors consists of the same minimal categories collected from any other user, together with a record of parental consent (parent name, parent email address, and timestamp). cashbff does not knowingly collect information from any individual under the age of 13. If you believe that a child under the age of 13 has registered for the Service, please contact cashbff at the address below and the associated information will be deleted.
-    </p>
+    <h2>5. analytics and monitoring (no ad trackers)</h2>
+    <p>To see what is working and fix bugs, we use two first-party tools, both configured to exclude the content of your messages:</p>
+    <ul>
+      <li><strong>PostHog</strong> (product analytics), configured in privacy mode. It captures usage events and per-message AI cost, tokens, and latency. It is configured <strong>not</strong> to capture the content of your messages.</li>
+      <li><strong>Sentry</strong> (error monitoring), with sensitive data scrubbed. We redact sensitive data such as balances, access tokens, and phone numbers before error reports are sent to Sentry.</li>
+    </ul>
+    <p>We do <strong>not</strong> use third-party advertising trackers, Google Analytics, ad pixels, or cross-site tracking cookies. We have no ads.</p>
 
-    <h2>Changes to This Policy</h2>
-    <p>
-      In the event of any material change to this Privacy Policy, cashbff will notify you by email at least 30 days before the change takes effect. Non-material clarifications and typographical corrections will be reflected by an updated "Last Updated" date below.
-    </p>
+    <h2>6. how we handle your messages</h2>
+    <p>We process your conversations to generate responses, and we send your message context to our AI provider to do that (see Section 4). How we store messages can differ by channel and may change as the Service evolves. For example, SMS message bodies are stored so we can keep context across your conversation. We may also store WhatsApp message content to provide and improve the Service. Where a message is only processed in the moment, we still keep a message identifier to avoid duplicates.</p>
+    <p>Our team does <strong>not</strong> routinely read the content of your messages. Access to message content occurs only where needed to provide or maintain the service, to investigate abuse or security issues, to comply with the law or legal process, or with your consent.</p>
 
-    <h2>Contact</h2>
-    <p>
-      For questions, deletion requests, or any other matter relating to this Privacy Policy, please contact <a href="mailto:daksh@cashbff.com">daksh@cashbff.com</a>.
-    </p>
+    <h2>7. data security</h2>
+    <p>We treat your financial information as sensitive and maintain administrative, technical, and physical safeguards designed to protect it. Practical steps we take include:</p>
+    <ul>
+      <li>Plaid access tokens are encrypted at rest using AES-256-GCM.</li>
+      <li>Bank link tokens are single-use and are nullified after your bank connects.</li>
+      <li>Incoming webhooks are validated by signature.</li>
+      <li>We apply per-user rate limiting.</li>
+      <li>We scope every request to your account, so the Service works on your own data.</li>
+    </ul>
+    <p>No method of storage or transmission is perfectly secure, and we cannot guarantee absolute security.</p>
 
-    <span class="updated">Last updated: May 8, 2026.</span>
+    <h2>8. data retention</h2>
+    <p>We keep your data while your account is active and while you use the service. We retain each type of data only as long as we need it for the purpose we collected it: account and contact info and transaction data for as long as your account is active; message content for as long as needed to provide context and operate the service; and analytics and error data on a rolling basis. When you disconnect your bank, we remove the related Plaid access token and the cached transactions tied to it. You can ask us to delete your data at any time, and we take care of it within 30 days (see Section 9). We may retain limited information where the law requires it, to complete transactions, or to prevent fraud, and routine backups age out on their own schedule. Stripe retains payment history under its own policy.</p>
+
+    <h2>9. your rights and controls</h2>
+    <p>You are in control of your data, and we make it easy:</p>
+    <ul>
+      <li><strong>Delete your data:</strong> email <strong>daksh@cashbff.com</strong> with the subject <strong>"Data deletion request,"</strong> or text cashbff. We take care of it within 30 days.</li>
+      <li><strong>Disconnect your bank anytime:</strong> this removes the Plaid access token and the cached transactions. You can also revoke access directly through Plaid at my.plaid.com.</li>
+      <li><strong>Stop messages:</strong> reply <strong>STOP</strong> to opt out of SMS and <strong>START</strong> to opt back in. For WhatsApp, you can stop messages at any time, including through WhatsApp's own controls, or by contacting us.</li>
+    </ul>
+    <p><strong>Sensitive personal information.</strong> Some of what we collect is sensitive, including your financial-account and transaction data and your date of birth. We use this information only to provide and improve the Service, as described in this policy. We do not use it to infer characteristics about you beyond providing the Service, and we do not sell or share it. Because we use it only for these permitted purposes, no separate control to limit our use of sensitive personal information is required, and we honor the right regardless.</p>
+    <p><strong>Your privacy rights.</strong> Depending on where you live, you may have the right to know and access the personal information we hold about you, to receive a copy of it (data portability), to correct it, and to delete it. You also have the right to opt out of the sale or sharing of your personal information. Because cashbff does <strong>not</strong> sell or share your personal information, there is nothing to opt out of, and we honor the right regardless. cashbff personalizes responses and detects patterns in your transactions; if you would like to ask about this automated processing, contact us using the details in Section 11.</p>
+    <p><strong>What we collect, where it comes from, and who sees it.</strong> The personal information we collect includes identifiers (such as your phone number, name, and email), your date of birth, financial-account and transaction data through Plaid, the content of your messages, payment information through Stripe, and usage and device data through our analytics. It comes from you, from your messages, from the financial accounts you connect through Plaid, and from your use of the Service. We use it for the business purposes described in Section 2, and we disclose it for those purposes only to the service providers listed in Section 4.</p>
+    <p><strong>How to exercise your rights.</strong> To make a request to know, access, delete, correct, or receive a copy of your information, email <strong>daksh@cashbff.com</strong> or text cashbff. We will verify your identity before acting on a request, and an authorized agent may submit a request on your behalf with proof of authorization. We respond within the time required by law (generally 45 days, which may be extended where permitted). We will not discriminate against you for exercising your rights.</p>
+    <p>Your financial data comes through Plaid and is sensitive. We handle it with care and apply the safeguards described in Section 7. cashbff is not a bank or a financial institution.</p>
+
+    <h2>10. changes to this policy</h2>
+    <p>We may update this policy as cashbff evolves. When we make a material change, we will update the "Last updated" date below and, where appropriate, let you know through the service. The effective date of this version is June 1, 2026.</p>
+
+    <h2>11. contact</h2>
+    <p>Questions about your privacy? Text cashbff, or email <strong>daksh@cashbff.com</strong>. cashbff is operated by Khannas LLC.</p>
+    <p><strong>cashbff. Your money buddy, not your data broker.</strong></p>
+
+    <p>See also our <a href="terms.html">Terms of Service</a>.</p>
+
+    <span class="updated">Last updated: June 1, 2026.</span>
   </main>
 
   <footer class="page-foot">
