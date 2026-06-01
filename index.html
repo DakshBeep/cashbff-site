@@ -13,15 +13,40 @@
   ></script>
   <script src="/assets/js/sentry-init.js"></script>
 
-  <title>cashbff — talk to your money, inside claude.</title>
-  <meta name="description" content="CashBFF is a personal-finance MCP server for Claude. Connect your bank through Plaid and ask about your money in chat, from balances to what you can afford.">
-  <meta property="og:title" content="cashbff — talk to your money, inside claude.">
+  <title>CashBFF: the money stuff you've been avoiding? send it over.</title>
+  <meta name="description" content="the money-nerd best friend you text on whatsapp. it connects to your accounts, does the looking you've been dreading, and hands you one easy win. no judgment.">
+  <meta property="og:title" content="CashBFF: the money stuff you've been avoiding? send it over.">
   <meta property="og:image" content="https://cashbff.com/icon.png">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:image" content="https://cashbff.com/icon.png">
-  <meta property="og:description" content="CashBFF is a personal-finance MCP server for Claude. Connect your bank through Plaid and ask about your money in chat, from balances to what you can afford.">
+  <meta property="og:description" content="the money-nerd best friend you text on whatsapp. it connects to your accounts, does the looking you've been dreading, and hands you one easy win. no judgment.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://cashbff.com">
+  <link rel="canonical" href="https://cashbff.com">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "CashBFF",
+    "url": "https://cashbff.com",
+    "description": "CashBFF is the money-nerd best friend you text on WhatsApp. It connects to your real accounts through Plaid, does the looking for you, and hands you one easy win at a time. It finds and surfaces; you act.",
+    "founder": {
+      "@type": "Person",
+      "name": "Daksh Khanna",
+      "jobTitle": "Founder",
+      "url": "https://khannadaksh.com",
+      "sameAs": [
+        "https://www.linkedin.com/in/khannadaksh",
+        "https://twitter.com/khannacloud"
+      ]
+    },
+    "sameAs": [
+      "https://khannadaksh.com",
+      "https://www.linkedin.com/in/khannadaksh"
+    ]
+  }
+  </script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -96,7 +121,7 @@
       align-items: center;
       justify-content: space-between;
       flex-shrink: 0;
-      margin-bottom: 5rem;
+      margin-bottom: 4rem;
     }
     .wordmark {
       font-family: var(--font-display);
@@ -141,10 +166,9 @@
     }
     .headline .period { color: var(--cash-green); }
     .sub {
-      font-size: clamp(0.95rem, 1.6vw, 1.05rem);
-      max-width: 28rem;
-      opacity: 0.65;
-      line-height: 1.5;
+      font-size: clamp(0.98rem, 1.7vw, 1.12rem);
+      max-width: 40rem;
+      line-height: 1.6;
     }
 
     /* ── CTA stack ── */
@@ -153,7 +177,7 @@
       flex-direction: column;
       align-items: flex-start;
       gap: 0.85rem;
-      margin: 0 0 5rem;
+      margin: 0 0 4rem;
       opacity: 0;
       animation: fadeIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.2s forwards;
     }
@@ -176,53 +200,45 @@
     .btn-primary .arrow { font-size: 1.15rem; }
 
     .secondary-link {
-      font-size: 0.9rem;
-      opacity: 0.55;
+      font-size: 0.92rem;
+      opacity: 0.6;
       transition: opacity .15s;
     }
-    .secondary-link .as-link {
-      /* button styled as inline link — same look as <a>, no default nav.
-         keeping it as <button> means clicks fire onAddClick (talk.js)
-         without an `href="#"` causing a hash-jump to top. */
-      display: inline;
-      background: none;
-      border: 0;
-      padding: 0;
-      margin: 0;
-      font: inherit;
+    .secondary-link a {
       color: var(--off-black);
       text-decoration: underline;
       text-decoration-color: var(--hairline);
       text-underline-offset: 3px;
-      cursor: pointer;
     }
-    .secondary-link .as-link:hover { text-decoration-color: var(--off-black); }
+    .secondary-link a:hover { text-decoration-color: var(--off-black); }
 
-    .toast {
-      position: fixed;
-      top: 1rem;
-      left: 50%;
-      transform: translateX(-50%) translateY(-6px);
-      background: var(--off-black);
-      color: var(--vanilla);
-      padding: 0.75rem 1.1rem;
-      border-radius: 10px;
-      font-size: 0.9rem;
-      font-weight: 500;
+    /* ── felt-need strip ── */
+    .felt {
+      margin: 0 0 4rem;
+      max-width: 60ch;
+      font-size: clamp(1.02rem, 1.8vw, 1.18rem);
+      line-height: 1.7;
       opacity: 0;
-      transition: opacity .25s, transform .25s;
-      pointer-events: none;
-      max-width: 22rem;
-      z-index: 50;
+      animation: fadeIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.28s forwards;
     }
-    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .felt p { margin-bottom: 1.1rem; }
+    .felt p:last-child { margin-bottom: 0; font-weight: 600; }
 
     /* ── how it works — 3 steps ── */
+    .eyebrow {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: clamp(1.6rem, 4vw, 2.1rem);
+      letter-spacing: -0.02em;
+      text-transform: lowercase;
+      margin-bottom: 1.4rem;
+    }
+    .eyebrow .period { color: var(--cash-green); }
     .steps {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 1.5rem;
-      margin: 0 0 5rem;
+      margin: 0 0 1.4rem;
     }
     @media (max-width: 640px) {
       .steps { grid-template-columns: 1fr; gap: 1.5rem; }
@@ -246,10 +262,60 @@
       letter-spacing: -0.005em;
     }
     .step__sub {
-      font-size: 0.85rem;
-      opacity: 0.6;
-      line-height: 1.4;
+      font-size: 0.88rem;
+      opacity: 0.62;
+      line-height: 1.5;
     }
+
+    /* ── sections ── */
+    .section {
+      margin: 0 0 4rem;
+    }
+    .section h2 {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: clamp(1.6rem, 4vw, 2.1rem);
+      letter-spacing: -0.02em;
+      text-transform: lowercase;
+      margin-bottom: 1.1rem;
+    }
+    .section h2 .period { color: var(--cash-green); }
+    .section p { max-width: 60ch; margin-bottom: 0.9rem; line-height: 1.6; }
+    .section p:last-child { margin-bottom: 0; }
+    .section .muted { color: var(--soft-ink); }
+    .ledger {
+      list-style: none;
+      margin: 0 0 1.1rem;
+      padding: 0;
+      max-width: 60ch;
+    }
+    .ledger li {
+      padding: 0.7rem 0;
+      border-bottom: 1px solid var(--hairline);
+      line-height: 1.5;
+    }
+    .ledger li:first-child { border-top: 1px solid var(--hairline); }
+    .inline-link {
+      text-decoration: underline;
+      text-decoration-color: var(--hairline);
+      text-underline-offset: 3px;
+      transition: text-decoration-color .15s;
+    }
+    .inline-link:hover { text-decoration-color: var(--off-black); }
+
+    .link-quiet { font-size: 0.95rem; opacity: 0.7; text-decoration: underline; text-decoration-color: var(--hairline); text-underline-offset: 3px; }
+    .link-quiet:hover { opacity: 1; text-decoration-color: var(--off-black); }
+
+    /* ── final CTA ── */
+    .final-cta { margin: 0 0 1rem; }
+    .final-cta .above {
+      font-size: clamp(1.1rem, 2vw, 1.3rem);
+      font-weight: 600;
+      margin-bottom: 1.2rem;
+      max-width: 50ch;
+    }
+    .final-cta .cta-row { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+    .final-cta .secondary-line { font-size: 0.92rem; opacity: 0.6; margin-top: 0.9rem; }
 
     /* ── footer ── */
     .footer {
@@ -269,6 +335,7 @@
     }
     .footer a:hover { text-decoration-color: var(--off-black); opacity: 1; }
     .footer .sep { margin: 0 0.5rem; opacity: 0.5; }
+    .updated { font-size: 0.8rem; color: var(--soft-ink); margin-top: 2rem; }
 
     /* ── reduced motion ── */
     @media (prefers-reduced-motion: reduce) {
@@ -282,54 +349,102 @@
     <header class="bar">
       <a href="/" class="wordmark">cashbff</a>
       <nav class="nav" aria-label="primary">
-        <a href="/mcp">how it works</a>
-        <a href="/about">about</a>
+        <a href="/how-it-works">how it works</a>
+        <a href="/is-cashbff-legit">is cashbff legit?</a>
         <a href="/pricing">pricing</a>
-        <a href="/signup">sign in</a>
+        <a href="/start">start</a>
       </nav>
     </header>
 
     <section class="hero">
       <h1 class="headline">
-        talk to your money<span class="period">,</span><br>
-        inside claude<span class="period">.</span>
+        the money stuff you've been avoiding<span class="period">?</span> send it over<span class="period">.</span> i've got it from here<span class="period">.</span>
       </h1>
-      <p class="sub">CashBFF is a personal-finance MCP server for Claude that connects your bank through Plaid, so you can ask about your money in the chat you already use.</p>
+      <p class="sub">cashbff is not another finance app. it's the money-nerd best friend you text on whatsapp. it connects to your real accounts, does the looking you've been dreading, and hands you one easy win at a time. no dashboard to open. no one judging the number.</p>
     </section>
 
     <section class="cta">
-      <a class="btn-primary" id="get-started-btn" href="/signup">
-        <span>start now</span>
+      <!-- [[WA_LINK]] pending Meta verification: no wa.me link exists yet; href="#" until /start goes live. -->
+      <a class="btn-primary" href="#">
+        <span>text cashbff on whatsapp</span>
         <span class="arrow" aria-hidden="true">→</span>
       </a>
-
-      <p class="secondary-link">already set up? <button class="as-link" id="add-btn" type="button">open in claude →</button></p>
-
-      <div class="toast" id="toast" role="status" aria-live="polite">URL copied. paste it in the claude.ai dialog.</div>
+      <!-- price/trial copy uses the locked Terms values ($12.99/mo or $99/yr, 3-day free trial); exact live price pending final Stripe reconciliation. Home keeps it to the high-level "safe to try" line. -->
+      <p class="secondary-link">safe to try. yes, really. <a href="/is-cashbff-legit">(here's why →)</a></p>
     </section>
 
-    <section class="steps" aria-label="how it works">
-      <div class="step">
-        <div class="step__num">1</div>
-        <div class="step__title">connect your bank.</div>
+    <section class="felt">
+      <p>you took your cards out of apple pay so you'd stop tapping without thinking. your banking app has been sitting there, unopened, longer than you'd admit. you've downloaded and quit every budgeting app, because opening it means looking, and looking feels like shame.</p>
+      <p>that's not you being bad with money. that's you never having a safe way to look.</p>
+      <p>cashbff is the safe way to look.</p>
+    </section>
+
+    <section aria-label="how it works">
+      <div class="eyebrow">how it works<span class="period">.</span></div>
+      <div class="steps">
+        <div class="step">
+          <div class="step__num">1</div>
+          <div class="step__title">text it, like you'd text a friend.</div>
+          <div class="step__sub">no app to download. cashbff lives in whatsapp, the chat you already have open.</div>
+        </div>
+        <div class="step">
+          <div class="step__num">2</div>
+          <div class="step__title">connect your accounts.</div>
+          <!-- [[PLAID CLAIMS: confirm]] "bank login stays between you, your bank, and plaid" reflects the standard Plaid link flow; keep qualified, legal-confirm before hardening. -->
+          <div class="step__sub">it links through plaid, the same service behind apps like venmo and chime. your bank login stays between you, your bank, and plaid.</div>
+        </div>
+        <div class="step">
+          <div class="step__num">3</div>
+          <div class="step__title">get one easy win.</div>
+          <div class="step__sub">it does the looking and hands you something you can actually do today. you decide what happens next.</div>
+        </div>
       </div>
-      <div class="step">
-        <div class="step__num">2</div>
-        <div class="step__title">try it free.</div>
+      <a class="link-quiet" href="/how-it-works">see exactly how it works →</a>
+    </section>
+
+    <section class="section" style="margin-top:4rem;" aria-labelledby="what-it-does">
+      <h2 id="what-it-does">what it actually does<span class="period">.</span></h2>
+      <p>you go live your life. cashbff keeps an eye on what's quietly draining your money and tells you in plain language. ask it anything, any time.</p>
+      <ul class="ledger">
+        <li>the subscription you forgot you were paying.</li>
+        <li>how much breathing room you've actually got before rent.</li>
+        <li>the day things get tight, before they do.</li>
+        <li>the payment that saves you the most on interest, so you stop paying the banks more than you have to.</li>
+      </ul>
+      <p class="muted">it finds it and flags it. you do the cancelling, the paying, the deciding. cashbff never moves money out of your accounts, because it's your money.</p>
+      <!-- [[$54 ANECDOTE]] real but person not yet asked: using anonymized in-story framing per Daksh's decision. -->
+      <p class="muted">one early user found about $54 a month in subscriptions they'd forgotten about, in the first conversation. (individual result, your numbers will be your own.)</p>
+    </section>
+
+    <section class="section" aria-labelledby="on-your-side">
+      <h2 id="on-your-side">it's on your side, for real<span class="period">.</span></h2>
+      <p>most money apps make their money when you're broke, on the advances, the fees, the late charges. cashbff doesn't do any of that. it makes money one way: a flat subscription. it has nothing to gain from you staying stuck.</p>
+      <p class="muted">it's not a lender. it doesn't move your money. it finds the cash you're already losing and hands you the win to keep it.</p>
+      <a class="inline-link" href="/is-cashbff-legit">is cashbff legit? short answer, yes →</a>
+    </section>
+
+    <section class="final-cta">
+      <p class="above">you're more okay than you think. let's go look together.</p>
+      <div class="cta-row">
+        <!-- [[WA_LINK]] pending Meta verification. -->
+        <a class="btn-primary" href="#">
+          <span>text cashbff on whatsapp</span>
+          <span class="arrow" aria-hidden="true">→</span>
+        </a>
       </div>
-      <div class="step">
-        <div class="step__num">3</div>
-        <div class="step__title">open in claude.</div>
-      </div>
+      <!-- price/trial: locked Terms values are $12.99/mo or $99/yr with a 3-day free trial; exact live price pending final Stripe reconciliation. Keeping the high-level "cancel any time" line here. -->
+      <p class="secondary-line">cancel any time.</p>
     </section>
 
     <footer class="footer">
-      <a href="/mcp">how it works</a><span class="sep">·</span><a href="/security">security</a><span class="sep">·</span><a href="/privacy">privacy</a><span class="sep">·</span><a href="/terms">terms</a><span class="sep">·</span><a href="/pricing">pricing</a><span class="sep">·</span>Built by <a href="https://khannadaksh.com" rel="me">Daksh Khanna</a><span class="sep">·</span>Khanna's LLC
+      <!-- privacy/terms links gated by the separate legal branch (policy + ToS rewrite). Pointing trust to /is-cashbff-legit until those ship. -->
+      <a href="/how-it-works">how it works</a><span class="sep">·</span><a href="/is-cashbff-legit">is cashbff legit?</a><span class="sep">·</span><a href="/pricing">pricing</a><span class="sep">·</span><a href="/start">start</a><span class="sep">·</span>Built by <a href="https://khannadaksh.com" rel="me">Daksh Khanna</a><span class="sep">·</span>Khanna's LLC
+      <p class="updated">last updated may 2026.</p>
     </footer>
 
   </main>
 
+  <!-- auth-banner.js still routes already-logged-in users to the dashboard. The old talk.js "open in chat" flow is intentionally dropped: the product is now the WhatsApp agent. -->
   <script src="/assets/js/auth-banner.js" defer></script>
-  <script src="/assets/js/talk.js" defer></script>
 </body>
 </html>

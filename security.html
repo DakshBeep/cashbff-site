@@ -14,7 +14,7 @@
   <script src="/assets/js/sentry-init.js"></script>
 
   <title>CashBFF Security, how your bank data is protected</title>
-  <meta name="description" content="How CashBFF protects your money and data: bank access through Plaid, AES-256-GCM encryption at rest, OAuth sign-in, read-only by default, and you approve every write. Built on the Model Context Protocol for Claude.">
+  <meta name="description" content="How CashBFF protects your money and data: bank access through Plaid, AES-256-GCM encryption at rest, secure sign-in, read-first by design, and you approve every change.">
   <meta property="og:title" content="CashBFF Security, how your bank data is protected">
   <meta property="og:image" content="https://cashbff.com/icon.png">
   <meta name="twitter:card" content="summary">
@@ -30,7 +30,7 @@
     "@type": "Organization",
     "name": "CashBFF",
     "url": "https://cashbff.com",
-    "description": "CashBFF is a remote MCP server that connects your bank to Claude through Plaid. Bank data is protected with AES-256-GCM encryption at rest, OAuth sign-in, and a read-only-by-default permission model.",
+    "description": "CashBFF is the money-nerd best friend you text on WhatsApp, connected to your accounts through Plaid. Bank data is protected with AES-256-GCM encryption at rest and secure sign-in, and it is read-first by design: the only changes it makes are to entries you set up yourself, and only after you confirm.",
     "founder": {
       "@type": "Person",
       "name": "Daksh Khanna",
@@ -41,6 +41,10 @@
         "https://twitter.com/khannacloud"
       ]
     },
+    "sameAs": [
+      "https://khannadaksh.com",
+      "https://www.linkedin.com/in/khannadaksh"
+    ],
     "contactPoint": {
       "@type": "ContactPoint",
       "contactType": "security",
@@ -243,9 +247,9 @@
       <a href="/" class="wordmark">cashbff</a>
       <nav class="nav" aria-label="primary">
         <a href="/">home</a>
-        <a href="/mcp">how it works</a>
+        <a href="/how-it-works">how it works</a>
         <a href="/pricing">pricing</a>
-        <a href="/signup">sign in</a>
+        <a href="/start">start</a>
       </nav>
     </header>
 
@@ -255,9 +259,9 @@
         with cashbff<span class="period">.</span>
       </h1>
       <p class="lede">
-        CashBFF is a remote MCP server that connects your bank to Claude through Plaid. It is
-        designed to be careful with your money and your data, and this page explains exactly how
-        it protects you.
+        CashBFF is the money-nerd best friend you text on WhatsApp, connected to your accounts
+        through Plaid. It is designed to be careful with your money and your data, and this page
+        explains exactly how it protects you.
       </p>
     </section>
 
@@ -286,8 +290,8 @@
       <p>
         By default, CashBFF reads your money and reports back. It sees your balances, transactions,
         recurring expenses, scheduled forecasts, and the last four digits of an account, which is
-        everything Claude needs to answer questions like how much you have or whether you can
-        afford something. Your money stays exactly where it is.
+        everything it needs to answer questions like how much you have or whether you can
+        afford something. It never moves money out of your accounts. Your money stays exactly where it is.
       </p>
     </section>
 
@@ -301,18 +305,18 @@
     </section>
 
     <section class="section" aria-labelledby="signin">
-      <h2 id="signin">how you sign in<span class="period">.</span></h2>
+      <h2 id="signin">how you connect<span class="period">.</span></h2>
       <p>
-        You connect CashBFF inside Claude through an OAuth consent screen. Claude completes the
-        handshake and keeps a session for you, so the connection is clear, scoped, and yours to
-        manage. Access uses a session token rather than any password you type.
+        You set CashBFF up by texting it on WhatsApp and linking your accounts through Plaid's
+        secure consent screen. The connection is clear, scoped, and yours to manage. Access uses a
+        secure token from Plaid rather than any password you type.
       </p>
     </section>
 
     <section class="section" aria-labelledby="control">
       <h2 id="control">you stay in control<span class="period">.</span></h2>
       <p>
-        You can remove CashBFF from Claude's connectors whenever you like, which ends its access.
+        You can disconnect your accounts whenever you like, which ends its access.
         For how your data is collected, used, and retained, see our
         <a href="/privacy" style="text-decoration:underline">privacy policy</a>.
       </p>
@@ -326,14 +330,15 @@
         and we will respond.
       </p>
       <div class="cta">
-        <a class="btn-primary" href="/signup"><span>start now</span><span aria-hidden="true">&rarr;</span></a>
-        <a class="link-quiet" href="/mcp">see how it works</a>
+        <!-- [[WA_LINK]] pending Meta verification: no wa.me link exists yet; href="#" until /start goes live. -->
+        <a class="btn-primary" href="#"><span>text cashbff on whatsapp</span><span aria-hidden="true">&rarr;</span></a>
+        <a class="link-quiet" href="/how-it-works">see how it works</a>
       </div>
       <p class="updated">Last updated May 2026.</p>
     </section>
 
     <footer class="footer">
-      <a href="/mcp">how it works</a><span class="sep">·</span><a href="/privacy">privacy</a><span class="sep">·</span><a href="/terms">terms</a><span class="sep">·</span><a href="/pricing">pricing</a><span class="sep">·</span>Built by <a href="https://khannadaksh.com" rel="me">Daksh Khanna</a><span class="sep">·</span>Khanna's LLC
+      <a href="/how-it-works">how it works</a><span class="sep">·</span><a href="/privacy">privacy</a><span class="sep">·</span><a href="/terms">terms</a><span class="sep">·</span><a href="/pricing">pricing</a><span class="sep">·</span>Built by <a href="https://khannadaksh.com" rel="me">Daksh Khanna</a><span class="sep">·</span>Khanna's LLC
     </footer>
 
   </main>

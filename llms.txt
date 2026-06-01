@@ -1,15 +1,14 @@
 # CashBFF
 
-> CashBFF is a remote MCP (Model Context Protocol) server that connects your bank to Claude through Plaid, so you can ask about your real money in chat. It is OAuth-secured and read-only by default, with 8 read tools and 9 write tools.
+> CashBFF is the money-nerd best friend you text on WhatsApp. It connects to your real accounts through Plaid, does the looking you've been dreading, and hands you one easy win at a time, so you get relief and agency without opening a dashboard or being judged.
 
-CashBFF runs inside Claude on web, desktop, and mobile, across the Free, Pro, and Max plans. You sign up at cashbff.com, link your bank through Plaid, and add CashBFF as a custom connector pointing at https://api.cashbff.com/mcp. Claude handles a one-time OAuth approval and keeps the session for you. CashBFF is built by Daksh Khanna (Khanna's LLC).
+CashBFF finds and surfaces; you act. It reads your balances, transactions, and bills and answers in plain language: how much you have, what's coming up, what's quietly draining you, which payment saves you the most on interest. It finds it and flags it; you do the cancelling, the paying, the deciding. CashBFF never moves money out of your accounts and never pays anyone on your behalf. The only changes it makes are to things you set up inside CashBFF, such as a savings goal, a note, or a forecast, and only after it shows you a preview and you confirm. Your bank login stays between you, your bank, and Plaid. It is not a lender and gives no cash advances; it makes money one way, a flat subscription. CashBFF is built by Daksh Khanna (Khanna's LLC).
 
 ## Pages
-- [What CashBFF is and how to connect it](https://cashbff.com/mcp): the MCP server, its 17 tools, the safety model, and step-by-step install
-- [About CashBFF](https://cashbff.com/about): mission and founder
-- [Pricing](https://cashbff.com/pricing): plans and the 14-day free trial
-- [Privacy](https://cashbff.com/privacy): privacy policy
-- [Terms](https://cashbff.com/terms): terms of service
+- [How CashBFF works](https://cashbff.com/how-it-works): the step-by-step walk-through, what it does and what you do, and a real sample conversation
+- [Is CashBFF legit?](https://cashbff.com/is-cashbff-legit): security, privacy, and why it is not a lender
+- [Pricing](https://cashbff.com/pricing): the flat subscription and free trial
+- [FAQ](https://cashbff.com/faq): honest answers, including why it cannot cancel subscriptions for you
 
 ## Founder
-- [Daksh Khanna](https://khannadaksh.com): founder essay, background, and how CashBFF compares to other finance apps
+- [Daksh Khanna](https://khannadaksh.com): founder essay, background, and how CashBFF compares to other money apps
