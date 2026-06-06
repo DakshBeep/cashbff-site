@@ -324,11 +324,9 @@
 
     <section class="cta" id="cta" hidden>
       <!-- The primary button's href + text + id are filled in by home-status.js
-           based on (talk_status, has_bank). For the trial / plaid paths the JS
-           sets href + lets the browser navigate normally. On the fully-set-up
-           path there's no live CTA yet (the WhatsApp number is gated on Meta
-           verification — wa.me doesn't exist), so the JS hides the button and
-           shows an "all set" confirmation instead. -->
+           based on (talk_status, has_bank). Trial / plaid paths set an internal
+           href and navigate normally. The fully-set-up path now points at the
+           live wa.me WhatsApp link (the 909), opened in a new tab. -->
       <a class="btn-primary" id="primary-cta" href="/start">
         <span id="primary-cta-label">continue</span>
         <span class="arrow" aria-hidden="true">→</span>

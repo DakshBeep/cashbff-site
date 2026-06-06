@@ -135,16 +135,14 @@
         hideButton: false
       };
     }
-    // Fully set up: subscribed + bank linked. There's no live CTA here yet —
-    // the WhatsApp number is gated on Meta business verification (wa.me
-    // doesn't exist), so we hide the button and just confirm "you're all
-    // set". When the number goes live, set href to the wa.me link and flip
-    // hideButton to false (and give it a label like "open whatsapp").
+    // Fully set up: subscribed + bank linked. The WhatsApp line is live (the
+    // 909), so the primary CTA opens a chat with cashbff on WhatsApp (warm
+    // prefill); render() opens external hand-offs in a new tab.
     return {
-      label: "",
-      href: "",
-      helper: "you're all set. we'll text you from cashbff on whatsapp when it's ready.",
-      hideButton: true
+      label: "open cashbff on whatsapp",
+      href: "https://wa.me/19096555215?text=hey%20cashbff",
+      helper: "you're all set. tap below to start texting cashbff on whatsapp.",
+      hideButton: false
     };
   }
 
@@ -190,12 +188,18 @@
     if (helperEl) helperEl.textContent = choice.helper || "";
     if (ctaEl) {
       if (choice.hideButton) {
-        // Fully-set-up state: no live CTA yet (WhatsApp number gated on Meta
-        // verification). Hide the button; the helper line carries the message.
+        // Defensive: a future state could still hide the button and let the
+        // helper line carry the message on its own.
         ctaEl.hidden = true;
       } else {
         if (labelEl) labelEl.textContent = choice.label;
         ctaEl.setAttribute("href", choice.href);
+        // External hand-offs (the wa.me WhatsApp link) open in a new tab so the
+        // dashboard stays put; internal routes navigate in place.
+        if (/^https?:\/\//.test(choice.href)) {
+          ctaEl.setAttribute("target", "_blank");
+          ctaEl.setAttribute("rel", "noopener noreferrer");
+        }
       }
     }
 
