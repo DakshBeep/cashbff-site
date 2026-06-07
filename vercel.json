@@ -8,7 +8,6 @@
       "destination": "https://cashbff.com/:path*",
       "permanent": true
     },
-    { "source": "/signup", "destination": "/start", "permanent": true },
     { "source": "/security", "destination": "/is-cashbff-legit#security", "permanent": true },
     { "source": "/mcp", "destination": "/how-it-works", "permanent": true },
     { "source": "/mcp.html", "destination": "/how-it-works", "permanent": true },
@@ -21,7 +20,6 @@
     },
     { "source": "/talk", "destination": "/", "permanent": true },
     { "source": "/talk.html", "destination": "/", "permanent": true },
-    { "source": "/signup.html", "destination": "/start", "permanent": true }
   ],
   "headers": [
     {

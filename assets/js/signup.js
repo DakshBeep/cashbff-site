@@ -385,20 +385,33 @@
     trialBtn.textContent = 'opening…';
     hideBanner();
 
-    // Prefer the cached user_id; fall back to /api/me if it isn't there yet.
+    // Require a resolved uid before navigating to Stripe.
+    // If we navigate without client_reference_id the Stripe webhook cannot map
+    // the payment to a user, creating an orphan subscription the user can never
+    // access. Better to block the click than let that happen.
     let uid = cachedUserId;
     if (!uid) {
       const me = await fetchMe();
       if (me.ok && me.data && me.data.user_id) uid = me.data.user_id;
     }
 
-    track('signup_trial_started', { has_user_id: Boolean(uid) });
-
-    let url = STRIPE_PAYMENT_LINK;
-    if (uid) {
-      const sep = url.includes('?') ? '&' : '?';
-      url = url + sep + 'client_reference_id=' + encodeURIComponent(uid);
+    if (!uid) {
+      // Could not resolve user — abort and surface a clear recoverable error.
+      trialBtn.disabled = false;
+      trialBtn.textContent = orig;
+      showBanner(
+        'something went wrong identifying your account. please refresh and try again, or contact daksh@cashbff.com if it keeps happening.',
+        'error'
+      );
+      track('signup_trial_blocked_no_uid', {});
+      return;
     }
+
+    track('signup_trial_started', { has_user_id: true });
+
+    const sep = STRIPE_PAYMENT_LINK.includes('?') ? '&' : '?';
+    const url = STRIPE_PAYMENT_LINK + sep + 'client_reference_id=' + encodeURIComponent(uid);
+
     // SAME-tab navigation: the redirect from Stripe lands back on /signup?subscribed=1
     // and our smart routing pushes the user into STATE_PLAID.
     window.location.href = url;
