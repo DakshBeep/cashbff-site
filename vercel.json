@@ -19,7 +19,7 @@
       "permanent": false
     },
     { "source": "/talk", "destination": "/", "permanent": true },
-    { "source": "/talk.html", "destination": "/", "permanent": true },
+    { "source": "/talk.html", "destination": "/", "permanent": true }
   ],
   "headers": [
     {
