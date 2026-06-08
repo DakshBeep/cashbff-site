@@ -334,15 +334,16 @@
         verifyOtpBtn.textContent = orig;
         return;
       }
-      // Cookie is now set. Hand off to the trial step.
+      // Cookie is now set. Re-run the smart router instead of hard-forcing the
+      // trial step: an ALREADY-subscribed user (a returning payer who had no live
+      // session) is recognized from their talk_status and routed to /home or
+      // bank-connect, NOT asked to pay again (which would risk a second charge).
+      // A brand-new user (no talk_status) still falls through to STATE_TRIAL
+      // inside decideStartingState(), which also caches user_id for Stripe.
       track('signup_otp_verified', {});
-      // Pre-fetch /api/me so the Stripe button is instant when the user clicks.
-      fetchMe().then((me) => {
-        if (me.ok && me.data && (me.data.user_id || me.data.id)) cachedUserId = me.data.user_id || me.data.id;
-      }).catch(() => {});
-      showState(STATE_TRIAL);
       verifyOtpBtn.disabled = false;
       verifyOtpBtn.textContent = orig;
+      await decideStartingState();
     } catch (_) {
       showBanner('network hiccup. try again in a sec.', 'error');
       verifyOtpBtn.disabled = false;
