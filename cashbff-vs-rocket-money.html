@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/png" href="/icon.png">
+  <link rel="apple-touch-icon" href="/icon.png">
+  <meta name="theme-color" content="#014751">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <!-- Sentry browser SDK: forwards JS errors + unhandled rejections to our Sentry project. -->
+  <script
+    src="https://js.sentry-cdn.com/2d45e7a7cdc726451c61d775aa22fbf2.min.js"
+    crossorigin="anonymous"
+  ></script>
+  <script src="/assets/js/sentry-init.js"></script>
+
+  <title>CashBFF vs Rocket Money: the honest comparison (2026)</title>
+  <meta name="description" content="cashbff vs rocket money, honestly: rocket money cancels subscriptions for you and negotiates bills. cashbff doesn't, on purpose. which one fits depends on who you want holding the wheel.">
+  <meta property="og:title" content="CashBFF vs Rocket Money: the honest comparison (2026)">
+  <meta property="og:image" content="https://cashbff.com/icon.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:image" content="https://cashbff.com/icon.png">
+  <meta property="og:description" content="cashbff vs rocket money, honestly: rocket money cancels subscriptions for you and negotiates bills. cashbff doesn't, on purpose. which one fits depends on who you want holding the wheel.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://cashbff.com/cashbff-vs-rocket-money">
+  <link rel="canonical" href="https://cashbff.com/cashbff-vs-rocket-money">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "CashBFF vs Rocket Money: the honest comparison (2026)",
+    "description": "An honest comparison of CashBFF and Rocket Money: pricing, subscription cancellation, bill negotiation, and which kind of person each app actually fits.",
+    "url": "https://cashbff.com/cashbff-vs-rocket-money",
+    "datePublished": "2026-06-11",
+    "dateModified": "2026-06-11",
+    "author": { "@type": "Person", "name": "Daksh Khanna", "url": "https://khannadaksh.com" },
+    "publisher": {
+      "@type": "Organization",
+      "name": "CashBFF",
+      "url": "https://cashbff.com",
+      "logo": { "@type": "ImageObject", "url": "https://cashbff.com/icon.png" }
+    }
+  }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- PostHog product analytics. CSP-safe (no eval). -->
+  <script src="/assets/js/posthog-init.js" defer></script>
+  <!-- Ahrefs Web Analytics: cookieless analytics + verification. -->
+  <script src="https://analytics.ahrefs.com/analytics.js" data-key="VVGz3n14q6Xh0BWgHrV3hw" async></script>
+  <!-- Vercel Analytics + Speed Insights. -->
+  <script src="/assets/js/vercel-analytics-init.js" defer></script>
+  <script defer src="/_vercel/insights/script.js"></script>
+
+  <style>
+    @font-face {
+      font-family: 'Greed Condensed';
+      src: url('/fonts/GreedCondensed-Bold.woff2') format('woff2');
+      font-weight: 700;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Greed Condensed';
+      src: url('/fonts/GreedCondensed-Medium.woff2') format('woff2');
+      font-weight: 500;
+      font-display: swap;
+    }
+
+    :root {
+      --vanilla: #FCFAF2;
+      --off-black: #1A1717;
+      --cash-green: #014751;
+      --hairline: rgba(26, 23, 23, 0.12);
+      --soft-ink: rgba(26, 23, 23, 0.62);
+
+      --font-display: 'Greed Condensed', 'Archivo Narrow', 'Arial Narrow', Impact, sans-serif;
+      --font-body: 'Instrument Sans', system-ui, -apple-system, sans-serif;
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font-body);
+      background: var(--vanilla);
+      color: var(--off-black);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      line-height: 1.5;
+      min-height: 100dvh;
+    }
+    a { color: inherit; text-decoration: none; }
+    button { font-family: inherit; cursor: pointer; border: none; background: none; }
+
+    .stage {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 1.5rem 1.5rem 4rem;
+      display: flex;
+      flex-direction: column;
+      min-height: 100dvh;
+    }
+
+    .bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      margin-bottom: 4rem;
+    }
+    .wordmark {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.5rem;
+      letter-spacing: -0.02em;
+      color: var(--cash-green);
+      text-transform: lowercase;
+    }
+    .nav { display: flex; gap: 1.4rem; font-size: 0.9rem; font-weight: 500; }
+    .nav a { opacity: 0.7; transition: opacity .15s; }
+    .nav a:hover { opacity: 1; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .hero {
+      margin: 0 0 2.4rem;
+      opacity: 0;
+      animation: fadeIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.05s forwards;
+    }
+    .headline {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: clamp(2.6rem, 8vw, 4.5rem);
+      line-height: 0.95;
+      letter-spacing: -0.02em;
+      text-transform: lowercase;
+      color: var(--off-black);
+      margin-bottom: 1.4rem;
+    }
+    .headline .period { color: var(--cash-green); }
+    .lede {
+      font-size: clamp(1.02rem, 1.8vw, 1.18rem);
+      line-height: 1.6;
+      max-width: 60ch;
+      margin-bottom: 1rem;
+    }
+    .lede:last-child { margin-bottom: 0; }
+    .lede.muted { color: var(--soft-ink); }
+
+    .section {
+      margin: 0 0 3rem;
+      opacity: 0;
+      animation: fadeIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.18s forwards;
+    }
+    .section h2 {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: clamp(1.6rem, 4vw, 2.1rem);
+      letter-spacing: -0.02em;
+      text-transform: lowercase;
+      margin-bottom: 1.1rem;
+      scroll-margin-top: 1.5rem;
+    }
+    .section h2 .period { color: var(--cash-green); }
+    .section p { max-width: 60ch; margin-bottom: 0.9rem; line-height: 1.6; }
+    .section p:last-child { margin-bottom: 0; }
+    .section .muted { color: var(--soft-ink); }
+
+    /* ── comparison table ── */
+    .table-wrap { overflow-x: auto; margin: 0 0 1.1rem; }
+    .compare {
+      width: 100%;
+      min-width: 560px;
+      border-collapse: collapse;
+      font-size: 0.93rem;
+      line-height: 1.5;
+    }
+    .compare th, .compare td {
+      text-align: left;
+      vertical-align: top;
+      padding: 0.8rem 1rem 0.8rem 0;
+      border-bottom: 1px solid var(--hairline);
+    }
+    .compare thead th {
+      font-weight: 700;
+      font-size: 0.95rem;
+      border-bottom: 1px solid var(--off-black);
+    }
+    .compare tbody th { font-weight: 600; width: 11.5rem; }
+    .compare td { color: var(--soft-ink); }
+    .compare td strong { color: var(--off-black); }
+
+    .cta { margin: 0.4rem 0 0; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+    .btn-primary {
+      background: var(--off-black);
+      color: var(--vanilla);
+      font-weight: 700;
+      font-size: 1.05rem;
+      padding: 0.95rem 1.9rem;
+      border-radius: 14px;
+      text-transform: lowercase;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      transition: transform .12s ease, opacity .15s;
+    }
+    .btn-primary:hover { opacity: 0.92; transform: translateY(-1px); }
+    .btn-primary:active { transform: translateY(1px); }
+    .link-quiet { font-size: 0.95rem; opacity: 0.7; text-decoration: underline; text-decoration-color: var(--hairline); text-underline-offset: 3px; }
+    .link-quiet:hover { opacity: 1; text-decoration-color: var(--off-black); }
+    .inline-link {
+      text-decoration: underline;
+      text-decoration-color: var(--hairline);
+      text-underline-offset: 3px;
+      transition: text-decoration-color .15s;
+    }
+    .inline-link:hover { text-decoration-color: var(--off-black); }
+
+    .updated { font-size: 0.8rem; color: var(--soft-ink); margin-top: 2rem; }
+
+    .footer {
+      margin-top: auto;
+      padding-top: 2.5rem;
+      font-size: 0.85rem;
+      opacity: 0.5;
+      line-height: 1.7;
+      border-top: 1px solid var(--hairline);
+    }
+    .footer a {
+      text-decoration: underline;
+      text-decoration-color: var(--hairline);
+      text-underline-offset: 3px;
+      transition: text-decoration-color .15s, opacity .15s;
+    }
+    .footer a:hover { text-decoration-color: var(--off-black); opacity: 1; }
+    .footer .sep { margin: 0 0.5rem; opacity: 0.5; }
+
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="stage">
+
+    <header class="bar">
+      <a href="/" class="wordmark">cashbff</a>
+      <nav class="nav" aria-label="primary">
+        <a href="/">home</a>
+        <a href="/how-it-works">how it works</a>
+        <a href="/is-cashbff-legit">is cashbff legit?</a>
+        <a href="/start">start</a>
+      </nav>
+    </header>
+
+    <section class="hero">
+      <h1 class="headline">
+        cashbff vs rocket money<span class="period">.</span>
+      </h1>
+      <p class="lede">honest version first: rocket money is a genuinely capable app, and for some people it's the better pick. the real difference isn't features, it's philosophy. rocket money does things for you (cancels, negotiates, auto-saves). cashbff does the looking for you and keeps the doing in your hands, in a whatsapp chat, with zero notifications.</p>
+      <p class="lede muted">here's the side-by-side, with the parts most comparisons leave out.</p>
+    </section>
+
+    <section class="section" aria-labelledby="table-h">
+      <h2 id="table-h">the side-by-side<span class="period">.</span></h2>
+      <!-- COMPETITOR CLAIMS, verified live 2026-06-11:
+           - "Let us cancel your subscriptions for you" + concierge bill negotiation + budgeting,
+             credit score, net worth, automated savings: https://www.rocketmoney.com/ (homepage).
+           - Free tier ("free to download and use"), Premium "you choose what to pay on a sliding
+             scale" with 7-day trial, bill negotiation "one-time fee of 35-60% of your first year's
+             savings": https://help.rocketmoney.com/en/articles/2217739-how-much-does-rocket-money-cost
+           - Premium price range commonly $7-$14/mo per their published slider (third-party 2026
+             reviews corroborate; the help center says prices "can vary at times and across platforms").
+           CashBFF claims: $12.99/mo or $99/yr, 3-day free trial (Terms, live at /terms + /pricing). -->
+      <div class="table-wrap">
+        <table class="compare">
+          <thead>
+            <tr>
+              <th scope="col">&nbsp;</th>
+              <th scope="col">cashbff</th>
+              <th scope="col">rocket money</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">what it is</th>
+              <td><strong>a money friend you text on whatsapp.</strong> it reads your accounts and answers in plain language.</td>
+              <td><strong>a full budgeting app</strong> with a dashboard: subscriptions, budgets, credit score, net worth.</td>
+            </tr>
+            <tr>
+              <th scope="row">where you use it</th>
+              <td>whatsapp, the chat you already have open. nothing new to download.</td>
+              <td>its own app (and website).</td>
+            </tr>
+            <tr>
+              <th scope="row">price</th>
+              <td>$12.99 a month or $99 a year, flat. 3 days free first.</td>
+              <td>free tier; premium is a pay-what-you-pick slider (typically $7 to $14 a month), 7-day trial.</td>
+            </tr>
+            <tr>
+              <th scope="row">cancels subscriptions for you</th>
+              <td><strong>no.</strong> it finds them and walks you through cancelling. your account, your click.</td>
+              <td><strong>yes.</strong> premium includes a cancellation concierge that does it for you.</td>
+            </tr>
+            <tr>
+              <th scope="row">negotiates your bills</th>
+              <td>no. it flags the bill that looks high; the call stays yours.</td>
+              <td>yes, their concierge negotiates, for a one-time fee of 35 to 60% of your first year's savings.</td>
+            </tr>
+            <tr>
+              <th scope="row">moves your money</th>
+              <td><strong>never.</strong> it reads and reports back. money only moves when you move it.</td>
+              <td>yes, optional automated savings transfers.</td>
+            </tr>
+            <tr>
+              <th scope="row">lends you money</th>
+              <td>no. not a lender, no advances, ever.</td>
+              <td>no cash advances either.</td>
+            </tr>
+            <tr>
+              <th scope="row">how it reaches you</th>
+              <td><strong>it doesn't, until you text.</strong> zero notifications, zero nagging. you set the pace.</td>
+              <td>app notifications and alerts (credit changes, bills, budgets).</td>
+            </tr>
+            <tr>
+              <th scope="row">bank connection</th>
+              <td>read-only through plaid. your login stays between you, your bank, and plaid.</td>
+              <td>also connects through plaid.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="muted">both columns checked against rocket money's live site and help center on june 11, 2026. if we got something wrong, email <a class="inline-link" href="mailto:daksh@cashbff.com">daksh@cashbff.com</a> and we'll fix it.</p>
+    </section>
+
+    <section class="section" aria-labelledby="pick-rm">
+      <h2 id="pick-rm">when rocket money is the better pick<span class="period">.</span></h2>
+      <p>if what you want is a service that takes tasks off your plate entirely (cancel this, negotiate that) and you like having a dashboard to scroll, rocket money does that well, and the free tier is a real free tier. no notes.</p>
+    </section>
+
+    <section class="section" aria-labelledby="pick-cb">
+      <h2 id="pick-cb">when cashbff is the better pick<span class="period">.</span></h2>
+      <p>if the dashboard is the problem, pick cashbff. if you've downloaded budgeting apps before and quietly stopped opening them, because opening them means looking and looking feels like bad news, another dashboard won't fix that. a friend in your texts might.</p>
+      <p>cashbff connects to your real accounts, does the looking you've been dreading, and answers when you ask: what's safe to spend, what's quietly draining you, when money gets tight. it finds it and flags it; you do the cancelling, the paying, the deciding. and it stays quiet until you text it, which is the point. calm, consistent looking is how <a class="inline-link" href="/money-dysmorphia">the bad-news feeling</a> actually goes away.</p>
+      <div class="cta" style="margin-top:1.4rem;">
+        <!-- Tokenized wa.me CTA, unique to /cashbff-vs-rocket-money (see docs/wa-prefill-registry.md). -->
+        <a class="btn-primary" href="https://wa.me/19096555215?text=hey%20cashbff%2C%20came%20from%20the%20rocket%20money%20comparison"><span>text cashbff on whatsapp</span><span aria-hidden="true">&rarr;</span></a>
+        <a class="link-quiet" href="/start">or start here</a>
+      </div>
+      <p class="muted" style="margin-top:1rem;">wondering if it's safe to connect your bank? <a class="inline-link" href="/is-cashbff-legit">here's the honest answer</a>. also comparing <a class="inline-link" href="/cashbff-vs-cleo">cleo</a>, <a class="inline-link" href="/cashbff-vs-monarch-money">monarch</a>, or <a class="inline-link" href="/cashbff-vs-era">era</a>?</p>
+      <p class="updated">last updated june 11, 2026. competitor details re-checked on every update.</p>
+    </section>
+
+    <footer class="footer">
+      <a href="/how-it-works">how it works</a><span class="sep">·</span><a href="/is-cashbff-legit">is cashbff legit?</a><span class="sep">·</span><a href="/pricing">pricing</a><span class="sep">·</span><a href="/start">start</a><span class="sep">·</span><a href="/privacy">privacy</a><span class="sep">·</span><a href="/terms">terms</a><span class="sep">·</span>Built by <a href="https://khannadaksh.com" rel="me">Daksh Khanna</a><span class="sep">·</span>Khanna's LLC
+    </footer>
+
+  </main>
+</body>
+</html>
