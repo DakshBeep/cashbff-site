@@ -460,6 +460,9 @@
     @media (prefers-reduced-motion: reduce) {
       .hero::before, .hero::after { animation: none; }
       .has-reveal-js .reveal { opacity: 1; transform: none; transition: none; }
+      /* the original pages animate .hero/.cta/.felt from opacity:0; with
+         animations disabled they would stay invisible. Force them on. */
+      .hero, .cta, .felt, .plans, .plans-foot, .section, .faq-group { opacity: 1 !important; }
     }
   </style>
 </head>
