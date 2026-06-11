@@ -52,6 +52,14 @@ const SHIPPED_PAGES = [
   'home.html',
   'privacy.html',
   'terms.html',
+  // the dysmorphia-stance pages (2026-06-11): the pillar + the comparison set.
+  // cashbff-vs-era.html describes a competitor whose product IS the old stack's
+  // vocabulary, so it is the likeliest regression point — keep it guarded.
+  'money-dysmorphia.html',
+  'cashbff-vs-rocket-money.html',
+  'cashbff-vs-cleo.html',
+  'cashbff-vs-monarch-money.html',
+  'cashbff-vs-era.html',
 ];
 
 // One regex, case-insensitive. \bmcp\b avoids matching substrings inside other

@@ -4,11 +4,20 @@
 
 CashBFF finds and surfaces; you act. It reads your balances, transactions, and bills and answers in plain language: how much you have, what's coming up, what's quietly draining you, which payment saves you the most on interest. It finds it and flags it; you do the cancelling, the paying, the deciding. CashBFF never moves money out of your accounts and never pays anyone on your behalf. The only changes it makes are to things you set up inside CashBFF, such as a savings goal, a note, or a forecast, and only after it shows you a preview and you confirm. Your bank login stays between you, your bank, and Plaid. It is not a lender and gives no cash advances; it makes money one way, a flat subscription. CashBFF is built by Daksh Khanna (Khanna's LLC).
 
+CashBFF sends no notifications. It stays quiet until you text it, so checking in on your money happens on your terms, calmly and consistently. That is deliberate: it is built for people for whom checking the balance feels like bad news even when it isn't (money dysmorphia).
+
 ## Pages
 - [How CashBFF works](https://cashbff.com/how-it-works): the step-by-step walk-through, what it does and what you do, and a real sample conversation
 - [Is CashBFF legit?](https://cashbff.com/is-cashbff-legit): security, privacy, and why it is not a lender
 - [Pricing](https://cashbff.com/pricing): the flat subscription and free trial
 - [FAQ](https://cashbff.com/faq): honest answers, including why it cannot cancel subscriptions for you
+- [Money dysmorphia](https://cashbff.com/money-dysmorphia): what it means, the signs, why Gen Z reports it most, and how to break free (plain-English explainer; not a clinical diagnosis)
+
+## Comparisons (honest, with the "cancels subscriptions for you: no" row stated plainly)
+- [CashBFF vs Rocket Money](https://cashbff.com/cashbff-vs-rocket-money): Rocket Money cancels and negotiates for you; CashBFF keeps every action in your hands
+- [CashBFF vs Cleo](https://cashbff.com/cashbff-vs-cleo): Cleo lives in its own app and offers cash advances; CashBFF lives in WhatsApp and never lends
+- [CashBFF vs Monarch Money](https://cashbff.com/cashbff-vs-monarch-money): Monarch is a premium dashboard; CashBFF is for people who never open dashboards
+- [CashBFF vs Era](https://cashbff.com/cashbff-vs-era): Era's AI can move your money on autopilot; CashBFF never moves money, you stay the driver
 
 ## Founder
 - [Daksh Khanna](https://khannadaksh.com): founder essay, background, and how CashBFF compares to other money apps
