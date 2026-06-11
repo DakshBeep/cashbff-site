@@ -343,19 +343,141 @@
       * { animation: none !important; transition: none !important; }
     }
   </style>
+
+  <!-- ── 2026-06-11 redesign layer ──────────────────────────────────────────
+       Presentation only: every word of body copy, every heading, every schema
+       block, and every URL is unchanged. This block restyles the shared chrome
+       (sticky nav, buttons, footer), adds calm ambient motion to the hero, and
+       arms scroll-reveals (see /assets/js/reveal.js; content is never hidden
+       without JS). Palette: the brand tokens already in this repo (vanilla,
+       off-black, cash-green) plus the electric-green + periwinkle accents from
+       the dynamic-era prototypes (home-bloom*.html). -->
+  <style>
+    :root {
+      --electric-green: #D3FFB4;
+      --periwinkle: #C5B6F1;
+      --card: #FFFFFF;
+    }
+    html, body { overflow-x: clip; }
+    body { font-size: 1.03rem; display: flex; flex-direction: column; }
+    a:focus-visible, button:focus-visible { outline: 2px solid var(--cash-green); outline-offset: 3px; border-radius: 4px; }
+
+    /* sticky top bar */
+    .topbar {
+      position: sticky; top: 0; z-index: 40;
+      background: rgba(252, 250, 242, 0.88);
+      -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+      border-bottom: 1px solid transparent;
+      transition: border-color .25s ease, box-shadow .25s ease;
+    }
+    .topbar.is-scrolled { border-bottom-color: var(--hairline); box-shadow: 0 6px 24px -18px rgba(26,23,23,.35); }
+    .topbar__inner {
+      max-width: 960px; margin: 0 auto; padding: .85rem 1.5rem;
+      display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    }
+    .topbar .wordmark { font-size: 1.45rem; }
+    .topbar .nav { display: flex; align-items: center; gap: 1.3rem; font-size: .9rem; font-weight: 500; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    .topbar .nav::-webkit-scrollbar { display: none; }
+    .topbar .nav a { opacity: .72; white-space: nowrap; }
+    .topbar .nav a:hover, .topbar .nav a[aria-current="page"] { opacity: 1; }
+    .topbar .nav a.nav-cta {
+      opacity: 1; background: var(--cash-green); color: var(--vanilla);
+      font-weight: 600; padding: .42rem 1.05rem; border-radius: 999px;
+      transition: transform .12s ease, opacity .15s;
+    }
+    .topbar .nav a.nav-cta:hover { opacity: .92; transform: translateY(-1px); }
+    @media (max-width: 640px) { .topbar .nav { gap: 1rem; font-size: .86rem; } .topbar__inner { padding: .8rem 1.1rem; } }
+
+    /* stage sits under the bar now */
+    .stage { min-height: calc(100dvh - 62px); padding-top: 2.25rem; max-width: 760px; }
+
+    /* hero: calm ambient color behind the headline */
+    .hero { position: relative; z-index: 0; }
+    .hero::before, .hero::after {
+      content: ''; position: absolute; border-radius: 50%;
+      filter: blur(72px); z-index: -1; pointer-events: none;
+    }
+    .hero::before {
+      width: 24rem; height: 24rem; background: var(--electric-green); opacity: .42;
+      top: -10rem; right: -13rem; animation: orbA 18s ease-in-out infinite alternate;
+    }
+    .hero::after {
+      width: 19rem; height: 19rem; background: var(--periwinkle); opacity: .26;
+      top: 3rem; left: -12rem; animation: orbB 22s ease-in-out infinite alternate;
+    }
+    @keyframes orbA { from { transform: translate3d(0,0,0) scale(1); } to { transform: translate3d(-2.5rem, 1.5rem, 0) scale(1.07); } }
+    @keyframes orbB { from { transform: translate3d(0,0,0) scale(1); } to { transform: translate3d(2rem, -1.25rem, 0) scale(1.05); } }
+
+    /* primary CTA: the path to WhatsApp is THE action on every page */
+    .btn-primary {
+      background: var(--cash-green); color: var(--vanilla);
+      border-radius: 999px; padding: 1.05rem 2.1rem; font-size: 1.1rem;
+      box-shadow: 0 14px 30px -16px rgba(1, 71, 81, .55);
+      transition: transform .15s ease, box-shadow .2s ease, background-color .15s ease;
+    }
+    .btn-primary:hover { opacity: 1; transform: translateY(-2px); background: #02555F; box-shadow: 0 20px 42px -16px rgba(1,71,81,.6); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary .arrow { transition: transform .15s ease; }
+    .btn-primary:hover .arrow { transform: translateX(3px); }
+
+    /* scroll reveals: armed only when reveal.js runs (html.has-reveal-js) */
+    .cta, .felt, .section { opacity: 1; animation: none; }
+    .has-reveal-js .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1); }
+    .has-reveal-js .reveal.is-in { opacity: 1; transform: none; }
+
+    /* roomier reading type */
+    .sub, .felt { font-size: clamp(1.05rem, 1.9vw, 1.2rem); }
+    .section p { font-size: clamp(1.02rem, 1.8vw, 1.15rem); }
+    .section h2, .eyebrow { font-size: clamp(1.8rem, 4.5vw, 2.4rem); }
+
+    /* the 3 steps as soft cards with green number chips */
+    .steps { gap: 1rem; }
+    .step {
+      background: var(--card);
+      border: 1px solid var(--hairline);
+      border-radius: 18px;
+      padding: 1.3rem 1.25rem 1.4rem;
+      gap: 0.55rem;
+      box-shadow: 0 18px 40px -36px rgba(26, 23, 23, .5);
+      transition: transform .2s ease, box-shadow .2s ease;
+    }
+    .step:hover { transform: translateY(-3px); box-shadow: 0 24px 48px -34px rgba(26, 23, 23, .55); }
+    .step__num {
+      width: 2.4rem; height: 2.4rem;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--electric-green); color: var(--cash-green);
+      border-radius: 10px; font-size: 1.4rem;
+    }
+    .step__title { font-size: 1.05rem; }
+    .step__sub { font-size: .92rem; opacity: .7; }
+
+    /* ledger lines breathe a little more */
+    .ledger li { padding: .85rem 0; font-size: 1.02rem; }
+
+    /* footer: keep it quiet but readable, with the legal links */
+    .footer { font-size: .88rem; line-height: 1.9; padding-top: 2.25rem; opacity: 1; color: var(--soft-ink); }
+
+    @media (prefers-reduced-motion: reduce) {
+      .hero::before, .hero::after { animation: none; }
+      .has-reveal-js .reveal { opacity: 1; transform: none; transition: none; }
+    }
+  </style>
 </head>
 <body>
-  <main class="stage">
-
-    <header class="bar">
+  <header class="topbar">
+    <div class="topbar__inner">
       <a href="/" class="wordmark">cashbff</a>
       <nav class="nav" aria-label="primary">
+        <a href="/" aria-current="page">home</a>
         <a href="/how-it-works">how it works</a>
-        <a href="/is-cashbff-legit">is cashbff legit?</a>
         <a href="/pricing">pricing</a>
-        <a href="/start">start</a>
+        <a href="/money-dysmorphia">money dysmorphia</a>
+        <a href="/start" class="nav-cta">start</a>
       </nav>
-    </header>
+    </div>
+  </header>
+
+  <main class="stage">
 
     <section class="hero">
       <h1 class="headline">
@@ -380,7 +502,7 @@
       <p>cashbff is the safe way to look.</p>
     </section>
 
-    <section aria-label="how it works">
+    <section aria-label="how it works" class="reveal">
       <div class="eyebrow">how it works<span class="period">.</span></div>
       <div class="steps">
         <div class="step">
@@ -403,7 +525,7 @@
       <a class="link-quiet" href="/how-it-works">see exactly how it works →</a>
     </section>
 
-    <section class="section" style="margin-top:4rem;" aria-labelledby="what-it-does">
+    <section class="section reveal" style="margin-top:4rem;" aria-labelledby="what-it-does">
       <h2 id="what-it-does">what it actually does<span class="period">.</span></h2>
       <p>you go live your life. cashbff keeps an eye on what's quietly draining your money and tells you in plain language. ask it anything, any time.</p>
       <ul class="ledger">
@@ -417,7 +539,7 @@
       <p class="muted">one early user found about $54 a month in subscriptions they'd forgotten about, in the first conversation. (individual result, your numbers will be your own.)</p>
     </section>
 
-    <section class="section" aria-labelledby="quiet">
+    <section class="section reveal" aria-labelledby="quiet">
       <h2 id="quiet">it stays quiet until you text<span class="period">.</span></h2>
       <!-- Stance weave (2026-06-11): the no-notifications truth IS the calm-forecasting feature.
            True today: the WhatsApp agent only ever replies, it never initiates. If proactive
@@ -426,14 +548,14 @@
       <p class="muted">if checking your balance feels like bad news even when it isn't, that feeling has a name. <a class="inline-link" href="/money-dysmorphia">money dysmorphia, explained →</a></p>
     </section>
 
-    <section class="section" aria-labelledby="on-your-side">
+    <section class="section reveal" aria-labelledby="on-your-side">
       <h2 id="on-your-side">it's on your side, for real<span class="period">.</span></h2>
       <p>most money apps make their money when you're broke, on the advances, the fees, the late charges. cashbff doesn't do any of that. it makes money one way: a flat subscription. it has nothing to gain from you staying stuck.</p>
       <p class="muted">it's not a lender. it doesn't move your money. it finds the cash you're already losing and hands you the win to keep it.</p>
       <a class="inline-link" href="/is-cashbff-legit">is cashbff legit? short answer, yes →</a>
     </section>
 
-    <section class="final-cta">
+    <section class="final-cta reveal">
       <p class="above">you're more okay than you think. let's go look together.</p>
       <div class="cta-row">
         <!-- [[WA_LINK]] wired 2026-06-05: funnels to /start. -->
@@ -447,8 +569,7 @@
     </section>
 
     <footer class="footer">
-      <!-- privacy/terms links gated by the separate legal branch (policy + ToS rewrite). Pointing trust to /is-cashbff-legit until those ship. -->
-      <a href="/how-it-works">how it works</a><span class="sep">·</span><a href="/is-cashbff-legit">is cashbff legit?</a><span class="sep">·</span><a href="/pricing">pricing</a><span class="sep">·</span><a href="/start">start</a><span class="sep">·</span>Built by <a href="https://khannadaksh.com" rel="me">Daksh Khanna</a><span class="sep">·</span>Khanna's LLC
+      <a href="/how-it-works">how it works</a><span class="sep">·</span><a href="/is-cashbff-legit">is cashbff legit?</a><span class="sep">·</span><a href="/pricing">pricing</a><span class="sep">·</span><a href="/start">start</a><span class="sep">·</span><a href="/privacy">privacy</a><span class="sep">·</span><a href="/terms">terms</a><span class="sep">·</span>Built by <a href="https://khannadaksh.com" rel="me">Daksh Khanna</a><span class="sep">·</span>Khanna's LLC
       <p class="updated">last updated june 2026.</p>
     </footer>
 
@@ -456,5 +577,6 @@
 
   <!-- auth-banner.js still routes already-logged-in users to the dashboard. The old "open in chat" flow is intentionally dropped: the product is now the WhatsApp agent. -->
   <script src="/assets/js/auth-banner.js" defer></script>
+  <script src="/assets/js/reveal.js" defer></script>
 </body>
 </html>

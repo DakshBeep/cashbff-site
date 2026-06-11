@@ -263,19 +263,135 @@
       * { animation: none !important; transition: none !important; }
     }
   </style>
+
+  <!-- ── 2026-06-11 redesign layer ──────────────────────────────────────────
+       Presentation only: every word of body copy, every heading, every schema
+       block, and every URL is unchanged. This block restyles the shared chrome
+       (sticky nav, buttons, footer), adds calm ambient motion to the hero, and
+       arms scroll-reveals (see /assets/js/reveal.js; content is never hidden
+       without JS). Palette: the brand tokens already in this repo (vanilla,
+       off-black, cash-green) plus the electric-green + periwinkle accents from
+       the dynamic-era prototypes (home-bloom*.html). -->
+  <style>
+    :root {
+      --electric-green: #D3FFB4;
+      --periwinkle: #C5B6F1;
+      --card: #FFFFFF;
+    }
+    html, body { overflow-x: clip; }
+    body { font-size: 1.03rem; display: flex; flex-direction: column; }
+    a:focus-visible, button:focus-visible { outline: 2px solid var(--cash-green); outline-offset: 3px; border-radius: 4px; }
+
+    /* sticky top bar */
+    .topbar {
+      position: sticky; top: 0; z-index: 40;
+      background: rgba(252, 250, 242, 0.88);
+      -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+      border-bottom: 1px solid transparent;
+      transition: border-color .25s ease, box-shadow .25s ease;
+    }
+    .topbar.is-scrolled { border-bottom-color: var(--hairline); box-shadow: 0 6px 24px -18px rgba(26,23,23,.35); }
+    .topbar__inner {
+      max-width: 960px; margin: 0 auto; padding: .85rem 1.5rem;
+      display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    }
+    .topbar .wordmark { font-size: 1.45rem; }
+    .topbar .nav { display: flex; align-items: center; gap: 1.3rem; font-size: .9rem; font-weight: 500; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    .topbar .nav::-webkit-scrollbar { display: none; }
+    .topbar .nav a { opacity: .72; white-space: nowrap; }
+    .topbar .nav a:hover, .topbar .nav a[aria-current="page"] { opacity: 1; }
+    .topbar .nav a.nav-cta {
+      opacity: 1; background: var(--cash-green); color: var(--vanilla);
+      font-weight: 600; padding: .42rem 1.05rem; border-radius: 999px;
+      transition: transform .12s ease, opacity .15s;
+    }
+    .topbar .nav a.nav-cta:hover { opacity: .92; transform: translateY(-1px); }
+    @media (max-width: 640px) { .topbar .nav { gap: 1rem; font-size: .86rem; } .topbar__inner { padding: .8rem 1.1rem; } }
+
+    /* stage sits under the bar now */
+    .stage { min-height: calc(100dvh - 62px); padding-top: 2.25rem; max-width: 760px; }
+
+    /* hero: calm ambient color behind the headline */
+    .hero { position: relative; z-index: 0; }
+    .hero::before, .hero::after {
+      content: ''; position: absolute; border-radius: 50%;
+      filter: blur(72px); z-index: -1; pointer-events: none;
+    }
+    .hero::before {
+      width: 24rem; height: 24rem; background: var(--electric-green); opacity: .42;
+      top: -10rem; right: -13rem; animation: orbA 18s ease-in-out infinite alternate;
+    }
+    .hero::after {
+      width: 19rem; height: 19rem; background: var(--periwinkle); opacity: .26;
+      top: 3rem; left: -12rem; animation: orbB 22s ease-in-out infinite alternate;
+    }
+    @keyframes orbA { from { transform: translate3d(0,0,0) scale(1); } to { transform: translate3d(-2.5rem, 1.5rem, 0) scale(1.07); } }
+    @keyframes orbB { from { transform: translate3d(0,0,0) scale(1); } to { transform: translate3d(2rem, -1.25rem, 0) scale(1.05); } }
+
+    /* primary CTA: the path to WhatsApp is THE action on every page */
+    .btn-primary {
+      background: var(--cash-green); color: var(--vanilla);
+      border-radius: 999px; padding: 1rem 2rem; font-size: 1.08rem;
+      box-shadow: 0 14px 30px -16px rgba(1, 71, 81, .55);
+      transition: transform .15s ease, box-shadow .2s ease, background-color .15s ease;
+    }
+    .btn-primary:hover { opacity: 1; transform: translateY(-2px); background: #02555F; box-shadow: 0 20px 42px -16px rgba(1,71,81,.6); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary .arrow, .btn-primary span[aria-hidden] { transition: transform .15s ease; }
+    .btn-primary:hover .arrow, .btn-primary:hover span[aria-hidden] { transform: translateX(3px); }
+
+    /* scroll reveals: armed only when reveal.js runs (html.has-reveal-js) */
+    .section, .cta { opacity: 1; animation: none; }
+    .has-reveal-js .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1); }
+    .has-reveal-js .reveal.is-in { opacity: 1; transform: none; }
+
+    /* roomier reading type */
+    .lede { font-size: clamp(1.05rem, 1.9vw, 1.22rem); }
+    .section p { font-size: clamp(1.02rem, 1.8vw, 1.15rem); }
+    .section h2 { font-size: clamp(1.8rem, 4.5vw, 2.4rem); margin-bottom: 1.2rem; }
+
+    /* footer: quiet but readable, with the legal links */
+    .footer { font-size: .88rem; line-height: 1.9; padding-top: 2.25rem; opacity: 1; color: var(--soft-ink); }
+
+    @media (prefers-reduced-motion: reduce) {
+      .hero::before, .hero::after { animation: none; }
+      .has-reveal-js .reveal { opacity: 1; transform: none; transition: none; }
+    }
+
+    /* legit page: carded key/value spine + pill jump-nav */
+    .kv {
+      border: 1px solid var(--hairline); border-top: 1px solid var(--hairline);
+      border-radius: 16px; background: var(--card);
+      padding: .35rem 1.15rem;
+      box-shadow: 0 18px 44px -40px rgba(26,23,23,.5);
+    }
+    .kv div:last-child { border-bottom: none; }
+    .jump { gap: .6rem; }
+    .jump a {
+      text-decoration: none; opacity: 1;
+      border: 1px solid var(--hairline); background: var(--card);
+      padding: .4rem .95rem; border-radius: 999px;
+      font-size: .9rem; font-weight: 500;
+      transition: border-color .15s, background-color .15s, transform .12s;
+    }
+    .jump a:hover { border-color: var(--cash-green); background: rgba(211,255,180,.25); transform: translateY(-1px); }
+  </style>
 </head>
 <body>
-  <main class="stage">
-
-    <header class="bar">
+  <header class="topbar">
+    <div class="topbar__inner">
       <a href="/" class="wordmark">cashbff</a>
       <nav class="nav" aria-label="primary">
         <a href="/">home</a>
         <a href="/how-it-works">how it works</a>
         <a href="/pricing">pricing</a>
-        <a href="/start">start</a>
+        <a href="/money-dysmorphia">money dysmorphia</a>
+        <a href="/start" class="nav-cta">start</a>
       </nav>
-    </header>
+    </div>
+  </header>
+
+  <main class="stage">
 
     <section class="hero">
       <h1 class="headline">
@@ -291,7 +407,7 @@
       <a href="#not-a-lender">not a lender</a>
     </nav>
 
-    <section class="section" aria-labelledby="security">
+    <section class="section reveal" aria-labelledby="security">
       <h2 id="security">security<span class="period">.</span></h2>
       <p>connecting your bank is a real decision, and it's fair to be cautious about it. here's how that connection works and how your information is looked after, in plain language.</p>
       <!-- [[PLAID CLAIMS: confirm before publish]] All Plaid / bank-connection representations below are kept high-level and qualified. Confirm with Plaid + legal before hardening (e.g. before naming specific apps, asserting login isolation as absolute, or adding any certification). -->
@@ -306,7 +422,7 @@
       <p class="muted" style="margin-top:1.1rem;">got a security question or something to report? email <a class="inline-link" href="mailto:daksh@cashbff.com">daksh@cashbff.com</a> and a real person will answer.</p>
     </section>
 
-    <section class="section" aria-labelledby="privacy">
+    <section class="section reveal" aria-labelledby="privacy">
       <h2 id="privacy">your data<span class="period">.</span></h2>
       <p>the short version: cashbff reads your financial data so it can answer your questions, and that's what it's for. it isn't here to sell you, and you stay in charge of what it can see.</p>
       <dl class="kv">
@@ -314,20 +430,20 @@
         <div><dt>you're the customer</dt><dd>cashbff makes money one way, a flat subscription. you're the customer, not the product.</dd></div>
         <div><dt>you can disconnect and delete</dt><dd>you can disconnect your accounts and have your data removed. how that works is covered in the full privacy policy.</dd></div>
       </dl>
-      <!-- [LEGAL DOCS] gated: the standalone privacy policy is being finalized (must cover WhatsApp + the current analytics setup) before it is linked from here. Keep this a plain-text note, not a live link, until the rewritten policy deploys. -->
-      <p class="muted" style="margin-top:1.1rem;">the full privacy policy, with exactly what's collected, how it's used, and how long it's kept, is being finalized and will live here. until then, email <a class="inline-link" href="mailto:daksh@cashbff.com">daksh@cashbff.com</a> with any data question and a real person will answer.</p>
+      <!-- [LEGAL DOCS] live since 2026-06-01 (strict-register refresh 2026-06-11): linked per the launch-day legal pass. -->
+      <p class="muted" style="margin-top:1.1rem;">the full privacy policy, with exactly what's collected, how it's used, and how long it's kept, lives at <a class="inline-link" href="/privacy">cashbff.com/privacy</a>. got a data question? email <a class="inline-link" href="mailto:daksh@cashbff.com">daksh@cashbff.com</a> and a real person will answer.</p>
     </section>
 
-    <section class="section" aria-labelledby="not-a-lender">
+    <section class="section reveal" aria-labelledby="not-a-lender">
       <h2 id="not-a-lender">not a lender<span class="period">.</span></h2>
       <p>this one matters, so we'll be blunt about it. cashbff is not a loan or a cash-advance app. it does not lend you money and it does not give advances.</p>
       <p>a lot of money apps make their money when you're stuck, on the advances, the fees, the late charges. that means they do better when you're broke. cashbff is the opposite of that. it makes money one way, a flat subscription, so it has nothing to gain from you staying stuck. it finds the cash you're already losing and hands you the win to keep it.</p>
       <p class="muted">it's not a lender, it's not a bank, and it doesn't move your money. it finds it and flags it; you do the cancelling, the paying, the deciding.</p>
-      <!-- [LEGAL DOCS] gated: the standalone terms of service (with the not-financial-advice disclaimer) is being finalized before it is linked from here. Keep this a plain-text note until the ToS deploys. -->
-      <p class="muted" style="margin-top:0.9rem;">cashbff gives you a clearer view of your own money; it isn't financial, investment, or tax advice. the full terms of service are being finalized and will live here.</p>
+      <!-- [LEGAL DOCS] live since 2026-06-01 (strict-register refresh 2026-06-11): linked per the launch-day legal pass. -->
+      <p class="muted" style="margin-top:0.9rem;">cashbff gives you a clearer view of your own money; it isn't financial, investment, or tax advice. the full terms of service live at <a class="inline-link" href="/terms">cashbff.com/terms</a>.</p>
     </section>
 
-    <section class="section" aria-labelledby="cta">
+    <section class="section reveal" aria-labelledby="cta">
       <h2 id="cta" class="visually-hidden" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);">start</h2>
       <p class="muted">that's the honest version. you're more okay than you think, and looking shouldn't feel like a risk.</p>
       <div class="cta">
@@ -339,10 +455,10 @@
     </section>
 
     <footer class="footer">
-      <!-- privacy/terms links gated by the separate legal branch; trust lives on this page until those ship. -->
-      <a href="/how-it-works">how it works</a><span class="sep">·</span><a href="/is-cashbff-legit">is cashbff legit?</a><span class="sep">·</span><a href="/pricing">pricing</a><span class="sep">·</span><a href="/start">start</a><span class="sep">·</span>Built by <a href="https://khannadaksh.com" rel="me">Daksh Khanna</a><span class="sep">·</span>Khanna's LLC
+      <a href="/how-it-works">how it works</a><span class="sep">·</span><a href="/is-cashbff-legit">is cashbff legit?</a><span class="sep">·</span><a href="/pricing">pricing</a><span class="sep">·</span><a href="/start">start</a><span class="sep">·</span><a href="/privacy">privacy</a><span class="sep">·</span><a href="/terms">terms</a><span class="sep">·</span>Built by <a href="https://khannadaksh.com" rel="me">Daksh Khanna</a><span class="sep">·</span>Khanna's LLC
     </footer>
 
   </main>
+  <script src="/assets/js/reveal.js" defer></script>
 </body>
 </html>

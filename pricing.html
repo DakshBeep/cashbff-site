@@ -338,19 +338,133 @@
       * { animation: none !important; transition: none !important; }
     }
   </style>
+
+  <!-- ── 2026-06-11 redesign layer ──────────────────────────────────────────
+       Presentation only: every word of body copy, every heading, every schema
+       block, and every URL is unchanged. This block restyles the shared chrome
+       (sticky nav, buttons, footer), adds calm ambient motion to the hero, and
+       arms scroll-reveals (see /assets/js/reveal.js; content is never hidden
+       without JS). Palette: the brand tokens already in this repo (vanilla,
+       off-black, cash-green) plus the electric-green + periwinkle accents from
+       the dynamic-era prototypes (home-bloom*.html). -->
+  <style>
+    :root {
+      --electric-green: #D3FFB4;
+      --periwinkle: #C5B6F1;
+      --card: #FFFFFF;
+    }
+    html, body { overflow-x: clip; }
+    body { font-size: 1.03rem; display: flex; flex-direction: column; }
+    a:focus-visible, button:focus-visible { outline: 2px solid var(--cash-green); outline-offset: 3px; border-radius: 4px; }
+
+    /* sticky top bar */
+    .topbar {
+      position: sticky; top: 0; z-index: 40;
+      background: rgba(252, 250, 242, 0.88);
+      -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+      border-bottom: 1px solid transparent;
+      transition: border-color .25s ease, box-shadow .25s ease;
+    }
+    .topbar.is-scrolled { border-bottom-color: var(--hairline); box-shadow: 0 6px 24px -18px rgba(26,23,23,.35); }
+    .topbar__inner {
+      max-width: 960px; margin: 0 auto; padding: .85rem 1.5rem;
+      display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    }
+    .topbar .wordmark { font-size: 1.45rem; }
+    .topbar .nav { display: flex; align-items: center; gap: 1.3rem; font-size: .9rem; font-weight: 500; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    .topbar .nav::-webkit-scrollbar { display: none; }
+    .topbar .nav a { opacity: .72; white-space: nowrap; }
+    .topbar .nav a:hover, .topbar .nav a[aria-current="page"] { opacity: 1; }
+    .topbar .nav a.nav-cta {
+      opacity: 1; background: var(--cash-green); color: var(--vanilla);
+      font-weight: 600; padding: .42rem 1.05rem; border-radius: 999px;
+      transition: transform .12s ease, opacity .15s;
+    }
+    .topbar .nav a.nav-cta:hover { opacity: .92; transform: translateY(-1px); }
+    @media (max-width: 640px) { .topbar .nav { gap: 1rem; font-size: .86rem; } .topbar__inner { padding: .8rem 1.1rem; } }
+
+    /* stage sits under the bar now */
+    .stage { min-height: calc(100dvh - 62px); padding-top: 2.25rem; max-width: 760px; }
+
+    /* hero: calm ambient color behind the headline */
+    .hero { position: relative; z-index: 0; }
+    .hero::before, .hero::after {
+      content: ''; position: absolute; border-radius: 50%;
+      filter: blur(72px); z-index: -1; pointer-events: none;
+    }
+    .hero::before {
+      width: 24rem; height: 24rem; background: var(--electric-green); opacity: .42;
+      top: -10rem; right: -13rem; animation: orbA 18s ease-in-out infinite alternate;
+    }
+    .hero::after {
+      width: 19rem; height: 19rem; background: var(--periwinkle); opacity: .26;
+      top: 3rem; left: -12rem; animation: orbB 22s ease-in-out infinite alternate;
+    }
+    @keyframes orbA { from { transform: translate3d(0,0,0) scale(1); } to { transform: translate3d(-2.5rem, 1.5rem, 0) scale(1.07); } }
+    @keyframes orbB { from { transform: translate3d(0,0,0) scale(1); } to { transform: translate3d(2rem, -1.25rem, 0) scale(1.05); } }
+
+    /* primary CTA: the path to WhatsApp is THE action on every page */
+    .btn-primary {
+      background: var(--cash-green); color: var(--vanilla);
+      border-radius: 999px; padding: 1rem 2rem; font-size: 1.08rem;
+      box-shadow: 0 14px 30px -16px rgba(1, 71, 81, .55);
+      transition: transform .15s ease, box-shadow .2s ease, background-color .15s ease;
+    }
+    .btn-primary:hover { opacity: 1; transform: translateY(-2px); background: #02555F; box-shadow: 0 20px 42px -16px rgba(1,71,81,.6); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary .arrow, .btn-primary span[aria-hidden] { transition: transform .15s ease; }
+    .btn-primary:hover .arrow, .btn-primary:hover span[aria-hidden] { transform: translateX(3px); }
+
+    /* scroll reveals: armed only when reveal.js runs (html.has-reveal-js) */
+    .section, .cta { opacity: 1; animation: none; }
+    .has-reveal-js .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1); }
+    .has-reveal-js .reveal.is-in { opacity: 1; transform: none; }
+
+    /* roomier reading type */
+    .lede { font-size: clamp(1.05rem, 1.9vw, 1.22rem); }
+    .section p { font-size: clamp(1.02rem, 1.8vw, 1.15rem); }
+    .section h2 { font-size: clamp(1.8rem, 4.5vw, 2.4rem); margin-bottom: 1.2rem; }
+
+    /* footer: quiet but readable, with the legal links */
+    .footer { font-size: .88rem; line-height: 1.9; padding-top: 2.25rem; opacity: 1; color: var(--soft-ink); }
+
+    @media (prefers-reduced-motion: reduce) {
+      .hero::before, .hero::after { animation: none; }
+      .has-reveal-js .reveal { opacity: 1; transform: none; transition: none; }
+    }
+
+    /* pricing: plans as elevated cards; yearly carries the electric accent */
+    .plans, .plans-foot { opacity: 1; animation: none; }
+    .plan {
+      background: var(--card);
+      border-radius: 22px;
+      padding: 1.9rem 1.7rem;
+      box-shadow: 0 24px 56px -44px rgba(26,23,23,.55);
+      transition: transform .2s ease, box-shadow .2s ease;
+    }
+    .plan:hover { transform: translateY(-3px); box-shadow: 0 30px 60px -42px rgba(26,23,23,.6); }
+    .plans .plan:nth-child(2) {
+      background: linear-gradient(160deg, rgba(211,255,180,.34), rgba(252,250,242,0) 55%), var(--card);
+      border-color: rgba(1,71,81,.28);
+    }
+    .plan .btn-primary { font-size: 1rem; padding: .95rem 1.7rem; }
+  </style>
 </head>
 <body>
-  <main class="stage">
-
-    <header class="bar">
+  <header class="topbar">
+    <div class="topbar__inner">
       <a href="/" class="wordmark">cashbff</a>
       <nav class="nav" aria-label="primary">
         <a href="/">home</a>
         <a href="/how-it-works">how it works</a>
-        <a href="/is-cashbff-legit">is cashbff legit?</a>
-        <a href="/start">start</a>
+        <a href="/pricing" aria-current="page">pricing</a>
+        <a href="/money-dysmorphia">money dysmorphia</a>
+        <a href="/start" class="nav-cta">start</a>
       </nav>
-    </header>
+    </div>
+  </header>
+
+  <main class="stage">
 
     <section class="hero">
       <h1 class="headline">
@@ -403,7 +517,7 @@
 
     <p class="plans-foot">same cashbff either way. yearly just saves you a little. no surprise fees, no price that goes up when money's tight.</p>
 
-    <section class="section" aria-labelledby="get">
+    <section class="section reveal" aria-labelledby="get">
       <h2 id="get">what you get<span class="period">.</span></h2>
       <div class="ledger">
         <p class="ledger__line"><span class="lead">the money-nerd best friend you text on whatsapp.</span></p>
@@ -415,7 +529,7 @@
       <p class="muted" style="margin-top:1.1rem;">it finds it and flags it. you do the cancelling, the paying, the deciding. cashbff never moves money out of your accounts, because it's your money.</p>
     </section>
 
-    <section class="section" aria-labelledby="model">
+    <section class="section reveal" aria-labelledby="model">
       <h2 id="model">why it's on your side<span class="period">.</span></h2>
       <p>you're the customer, not the product. there are no advances to sell you, no fees that climb when you're stretched, and nothing to gain from you staying stuck. you pay one flat price, and we tell you before you're ever charged.</p>
       <p class="muted">it's not a lender. it doesn't move your money. it finds the cash you're already losing and hands you the win to keep it. still deciding? here's <a class="inline-link" href="/is-cashbff-legit">why it's legit →</a></p>
@@ -423,8 +537,7 @@
     </section>
 
     <footer class="footer">
-      <!-- privacy/terms links gated by the separate legal branch; trust points to /is-cashbff-legit until those ship. -->
-      <a href="/how-it-works">how it works</a><span class="sep">·</span><a href="/is-cashbff-legit">is cashbff legit?</a><span class="sep">·</span><a href="/pricing">pricing</a><span class="sep">·</span><a href="/start">start</a><span class="sep">·</span>Built by <a href="https://khannadaksh.com" rel="me">Daksh Khanna</a><span class="sep">·</span>Khanna's LLC
+      <a href="/how-it-works">how it works</a><span class="sep">·</span><a href="/is-cashbff-legit">is cashbff legit?</a><span class="sep">·</span><a href="/pricing">pricing</a><span class="sep">·</span><a href="/start">start</a><span class="sep">·</span><a href="/privacy">privacy</a><span class="sep">·</span><a href="/terms">terms</a><span class="sep">·</span>Built by <a href="https://khannadaksh.com" rel="me">Daksh Khanna</a><span class="sep">·</span>Khanna's LLC
     </footer>
 
   </main>
@@ -439,5 +552,6 @@
        Replaces the old retired old-stack checkout flow; the
        client_reference_id contract the backend expects is preserved here. -->
   <script src="/assets/js/pricing-checkout.js" defer></script>
+  <script src="/assets/js/reveal.js" defer></script>
 </body>
 </html>

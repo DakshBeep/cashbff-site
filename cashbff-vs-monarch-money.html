@@ -244,19 +244,131 @@
       * { animation: none !important; transition: none !important; }
     }
   </style>
+
+  <!-- ── 2026-06-11 redesign layer ──────────────────────────────────────────
+       Presentation only: every word of body copy, every heading, every schema
+       block, and every URL is unchanged. This block restyles the shared chrome
+       (sticky nav, buttons, footer), adds calm ambient motion to the hero, and
+       arms scroll-reveals (see /assets/js/reveal.js; content is never hidden
+       without JS). Palette: the brand tokens already in this repo (vanilla,
+       off-black, cash-green) plus the electric-green + periwinkle accents from
+       the dynamic-era prototypes (home-bloom*.html). -->
+  <style>
+    :root {
+      --electric-green: #D3FFB4;
+      --periwinkle: #C5B6F1;
+      --card: #FFFFFF;
+    }
+    html, body { overflow-x: clip; }
+    body { font-size: 1.03rem; display: flex; flex-direction: column; }
+    a:focus-visible, button:focus-visible { outline: 2px solid var(--cash-green); outline-offset: 3px; border-radius: 4px; }
+
+    /* sticky top bar */
+    .topbar {
+      position: sticky; top: 0; z-index: 40;
+      background: rgba(252, 250, 242, 0.88);
+      -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+      border-bottom: 1px solid transparent;
+      transition: border-color .25s ease, box-shadow .25s ease;
+    }
+    .topbar.is-scrolled { border-bottom-color: var(--hairline); box-shadow: 0 6px 24px -18px rgba(26,23,23,.35); }
+    .topbar__inner {
+      max-width: 960px; margin: 0 auto; padding: .85rem 1.5rem;
+      display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    }
+    .topbar .wordmark { font-size: 1.45rem; }
+    .topbar .nav { display: flex; align-items: center; gap: 1.3rem; font-size: .9rem; font-weight: 500; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    .topbar .nav::-webkit-scrollbar { display: none; }
+    .topbar .nav a { opacity: .72; white-space: nowrap; }
+    .topbar .nav a:hover, .topbar .nav a[aria-current="page"] { opacity: 1; }
+    .topbar .nav a.nav-cta {
+      opacity: 1; background: var(--cash-green); color: var(--vanilla);
+      font-weight: 600; padding: .42rem 1.05rem; border-radius: 999px;
+      transition: transform .12s ease, opacity .15s;
+    }
+    .topbar .nav a.nav-cta:hover { opacity: .92; transform: translateY(-1px); }
+    @media (max-width: 640px) { .topbar .nav { gap: 1rem; font-size: .86rem; } .topbar__inner { padding: .8rem 1.1rem; } }
+
+    /* stage sits under the bar now */
+    .stage { min-height: calc(100dvh - 62px); padding-top: 2.25rem; max-width: 760px; }
+
+    /* hero: calm ambient color behind the headline */
+    .hero { position: relative; z-index: 0; }
+    .hero::before, .hero::after {
+      content: ''; position: absolute; border-radius: 50%;
+      filter: blur(72px); z-index: -1; pointer-events: none;
+    }
+    .hero::before {
+      width: 24rem; height: 24rem; background: var(--electric-green); opacity: .42;
+      top: -10rem; right: -13rem; animation: orbA 18s ease-in-out infinite alternate;
+    }
+    .hero::after {
+      width: 19rem; height: 19rem; background: var(--periwinkle); opacity: .26;
+      top: 3rem; left: -12rem; animation: orbB 22s ease-in-out infinite alternate;
+    }
+    @keyframes orbA { from { transform: translate3d(0,0,0) scale(1); } to { transform: translate3d(-2.5rem, 1.5rem, 0) scale(1.07); } }
+    @keyframes orbB { from { transform: translate3d(0,0,0) scale(1); } to { transform: translate3d(2rem, -1.25rem, 0) scale(1.05); } }
+
+    /* primary CTA: the path to WhatsApp is THE action on every page */
+    .btn-primary {
+      background: var(--cash-green); color: var(--vanilla);
+      border-radius: 999px; padding: 1rem 2rem; font-size: 1.08rem;
+      box-shadow: 0 14px 30px -16px rgba(1, 71, 81, .55);
+      transition: transform .15s ease, box-shadow .2s ease, background-color .15s ease;
+    }
+    .btn-primary:hover { opacity: 1; transform: translateY(-2px); background: #02555F; box-shadow: 0 20px 42px -16px rgba(1,71,81,.6); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary .arrow, .btn-primary span[aria-hidden] { transition: transform .15s ease; }
+    .btn-primary:hover .arrow, .btn-primary:hover span[aria-hidden] { transform: translateX(3px); }
+
+    /* scroll reveals: armed only when reveal.js runs (html.has-reveal-js) */
+    .section, .cta { opacity: 1; animation: none; }
+    .has-reveal-js .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1); }
+    .has-reveal-js .reveal.is-in { opacity: 1; transform: none; }
+
+    /* roomier reading type */
+    .lede { font-size: clamp(1.05rem, 1.9vw, 1.22rem); }
+    .section p { font-size: clamp(1.02rem, 1.8vw, 1.15rem); }
+    .section h2 { font-size: clamp(1.8rem, 4.5vw, 2.4rem); margin-bottom: 1.2rem; }
+
+    /* footer: quiet but readable, with the legal links */
+    .footer { font-size: .88rem; line-height: 1.9; padding-top: 2.25rem; opacity: 1; color: var(--soft-ink); }
+
+    @media (prefers-reduced-motion: reduce) {
+      .hero::before, .hero::after { animation: none; }
+      .has-reveal-js .reveal { opacity: 1; transform: none; transition: none; }
+    }
+
+    /* comparison: the side-by-side as a scannable card, cashbff column tinted */
+    .table-wrap {
+      background: var(--card); border: 1px solid var(--hairline); border-radius: 18px;
+      padding: .4rem 1.1rem; box-shadow: 0 22px 52px -44px rgba(26,23,23,.55);
+    }
+    .compare thead th { font-size: 1rem; padding-top: 1rem; }
+    .compare thead th:nth-child(2) { color: var(--cash-green); }
+    .compare tbody tr:last-child th, .compare tbody tr:last-child td { border-bottom: none; }
+    .compare td:first-of-type {
+      background: rgba(211,255,180,.16);
+      padding-left: .65rem; padding-right: .9rem;
+      color: var(--off-black);
+    }
+  </style>
 </head>
 <body>
-  <main class="stage">
-
-    <header class="bar">
+  <header class="topbar">
+    <div class="topbar__inner">
       <a href="/" class="wordmark">cashbff</a>
       <nav class="nav" aria-label="primary">
         <a href="/">home</a>
         <a href="/how-it-works">how it works</a>
-        <a href="/is-cashbff-legit">is cashbff legit?</a>
-        <a href="/start">start</a>
+        <a href="/pricing">pricing</a>
+        <a href="/money-dysmorphia">money dysmorphia</a>
+        <a href="/start" class="nav-cta">start</a>
       </nav>
-    </header>
+    </div>
+  </header>
+
+  <main class="stage">
 
     <section class="hero">
       <h1 class="headline">
@@ -266,7 +378,7 @@
       <p class="lede muted">here's the side-by-side, fairly.</p>
     </section>
 
-    <section class="section" aria-labelledby="table-h">
+    <section class="section reveal" aria-labelledby="table-h">
       <h2 id="table-h">the side-by-side<span class="period">.</span></h2>
       <!-- COMPETITOR CLAIMS, checked 2026-06-11:
            - "Your first week is on us" (7-day trial), Core about $99/yr, WELCOME 30% promo, household
@@ -338,12 +450,12 @@
       <p class="muted">checked against monarch's live pricing page on june 11, 2026. spot an error? email <a class="inline-link" href="mailto:daksh@cashbff.com">daksh@cashbff.com</a> and we'll fix it.</p>
     </section>
 
-    <section class="section" aria-labelledby="pick-monarch">
+    <section class="section reveal" aria-labelledby="pick-monarch">
       <h2 id="pick-monarch">when monarch is the better pick<span class="period">.</span></h2>
       <p>if you genuinely enjoy sitting down with your money, want every account, investment, and goal in one gorgeous view, or you're managing money together with a partner, monarch is excellent at exactly that. people who use it, love it.</p>
     </section>
 
-    <section class="section" aria-labelledby="pick-cb">
+    <section class="section reveal" aria-labelledby="pick-cb">
       <h2 id="pick-cb">when cashbff is the better pick<span class="period">.</span></h2>
       <p>the catch with every dashboard is the same: it only works if you open it. if you're the person whose banking app has sat unopened longer than you'd admit, because <a class="inline-link" href="/money-dysmorphia">checking the balance feels like bad news</a>, a more beautiful dashboard doesn't fix the looking problem. it's still a door you have to open alone.</p>
       <p>cashbff removes the door. it connects to your real accounts, does the looking for you, and answers when you ask. no screen full of charts deciding how your day goes, just a friend in your texts who already looked. it finds it and flags it; you do the deciding. and it stays quiet until you text it.</p>
@@ -361,5 +473,6 @@
     </footer>
 
   </main>
+  <script src="/assets/js/reveal.js" defer></script>
 </body>
 </html>

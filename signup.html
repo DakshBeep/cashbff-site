@@ -567,18 +567,65 @@
       .plaid-flight__pulse { background: var(--cash-green); animation: none; }
     }
   </style>
+
+  <!-- ── 2026-06-11 redesign layer ──────────────────────────────────────────
+       Presentation only: funnel markup, ids, and the signup.js state machine
+       are untouched. Sticky minimal bar + the site-wide green pill CTA so the
+       funnel matches the redesigned marketing pages. -->
+  <style>
+    :root {
+      --electric-green: #D3FFB4;
+      --periwinkle: #C5B6F1;
+      --card: #FFFFFF;
+    }
+    html, body { overflow-x: clip; }
+    body { display: flex; flex-direction: column; }
+    a:focus-visible, button:focus-visible { outline: 2px solid var(--cash-green); outline-offset: 3px; border-radius: 4px; }
+
+    .topbar {
+      position: sticky; top: 0; z-index: 40;
+      background: rgba(252, 250, 242, 0.88);
+      -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+      border-bottom: 1px solid transparent;
+      transition: border-color .25s ease, box-shadow .25s ease;
+    }
+    .topbar.is-scrolled { border-bottom-color: var(--hairline); box-shadow: 0 6px 24px -18px rgba(26,23,23,.35); }
+    .topbar__inner {
+      max-width: 960px; margin: 0 auto; padding: .85rem 1.5rem;
+      display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    }
+    .topbar .wordmark { font-size: 1.45rem; }
+    .topbar .nav { display: flex; align-items: center; gap: 1.3rem; font-size: .9rem; font-weight: 500; }
+    .topbar .nav a { opacity: .72; white-space: nowrap; }
+    .topbar .nav a:hover { opacity: 1; }
+
+    .stage { min-height: calc(100dvh - 62px); padding-top: 2.25rem; }
+
+    .btn-primary {
+      background: var(--cash-green); color: var(--vanilla);
+      border-radius: 999px;
+      box-shadow: 0 14px 30px -16px rgba(1, 71, 81, .55);
+      transition: transform .15s ease, box-shadow .2s ease, background-color .15s ease;
+    }
+    .btn-primary:hover:not(:disabled) { opacity: 1; transform: translateY(-2px); background: #02555F; box-shadow: 0 20px 42px -16px rgba(1,71,81,.6); }
+    .btn-primary:disabled { box-shadow: none; }
+
+    .footer { font-size: .85rem; line-height: 1.9; padding-top: 2.25rem; opacity: 1; color: var(--soft-ink); }
+  </style>
 </head>
 <body>
 
-  <main class="stage">
-
-    <!-- ── top bar ────────────────────────────────── -->
-    <header class="bar">
+  <!-- ── top bar (sticky, funnel-minimal) ─────────── -->
+  <header class="topbar">
+    <div class="topbar__inner">
       <a href="/" class="wordmark" aria-label="cashbff home">cashbff</a>
       <nav class="nav" aria-label="primary">
         <a href="/pricing">pricing</a>
       </nav>
-    </header>
+    </div>
+  </header>
+
+  <main class="stage">
 
     <!-- card-stage / card-name kept as hidden stubs for any legacy hooks. -->
     <span id="card-stage" class="visually-hidden" aria-hidden="true"></span>
@@ -864,5 +911,6 @@
 
   <script src="/assets/js/auth-banner.js" defer></script>
   <script src="/assets/js/signup.js" defer></script>
+  <script src="/assets/js/reveal.js" defer></script>
 </body>
 </html>
