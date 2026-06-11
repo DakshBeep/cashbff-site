@@ -31,8 +31,8 @@
   {
     "@context": "https://schema.org",
     "@type": "Article",
-    "headline": "money dysmorphia: when checking your balance feels like bad news, even when it isn't",
-    "description": "Money dysmorphia is a distorted view of your own finances: feeling broke, anxious, or behind even when the numbers say you are okay. What it means, the signs, why Gen Z reports it most, and how to break free.",
+    "headline": "money dysmorphia. that restlessness has a name.",
+    "description": "Money dysmorphia is persistent financial self-perception that either partly or wholly resists correction from the outside world. The two forms (the avoider and the checker), the signs, why Gen Z reports it most, and how to break free.",
     "url": "https://cashbff.com/money-dysmorphia",
     "datePublished": "2026-06-11",
     "dateModified": "2026-06-11",
@@ -57,42 +57,42 @@
     "mainEntity": [
       {
         "@type": "Question",
-        "name": "What is money dysmorphia?",
+        "name": "what is money dysmorphia?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Money dysmorphia is a distorted view of your own finances: feeling broke, anxious, or behind even when the numbers say you are okay (or feeling fine when you are not). The feeling about your money and the facts of your money stop matching. It is not a clinical diagnosis; it is a widely recognized pattern, and in a 2023 Credit Karma survey 29% of Americans said they experience it."
+          "text": "money dysmorphia is persistent financial self-perception that either partly or wholly resists correction from the outside world. in plain words: a distorted view of your own finances. you can feel broke, anxious, or behind even when the numbers say you're okay, or feel fine when you're not. the feeling about your money and the facts of your money stop matching, and the feeling wins. it's not a clinical diagnosis, but it is extremely common: in a 2023 credit karma survey, 29% of americans said they experience it, including 43% of gen z, and 95% of those said it actively hurt their finances: held them back from saving, pushed them to overspend, or led them into more debt."
         }
       },
       {
         "@type": "Question",
-        "name": "Is money dysmorphia a real diagnosis?",
+        "name": "is money dysmorphia a real diagnosis?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "No. Money dysmorphia is not a clinical diagnosis and does not appear in the DSM. It is a popular term for a real, common pattern: a persistent gap between how your finances feel and what they actually are. If money stress is taking over your life, a licensed therapist or an accredited financial counselor is the right person to talk to."
+          "text": "no. money dysmorphia is not a clinical diagnosis and it doesn't appear in the dsm. no one can formally diagnose you with it. it's a name people gave to a real, common pattern: a persistent gap between how your finances feel and what they actually are. naming it still helps, because a thing with a name is a thing you can work on. if money stress is taking over your life, a licensed therapist or an accredited financial counselor is the right person to talk to."
         }
       },
       {
         "@type": "Question",
-        "name": "What are the signs of money dysmorphia?",
+        "name": "what are the signs of money dysmorphia?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Common signs: checking your balance feels like opening bad news, so you avoid it; you feel broke even when your account is fine; you compare your finances to what you see online and always come up short; you swing between not looking at all and obsessively checking; and the anxiety does not change much when the actual numbers do."
+          "text": "the common signs: checking your balance feels like opening bad news, so you mostly don't. you feel broke on days your account is objectively fine. you compare your money to what you see online and always come up short. you swing between total avoidance and obsessive checking, with no calm middle. you've downloaded and quit more than one budgeting app because opening it felt like being graded. and good financial news doesn't make you feel better for more than a minute. it shows up in two forms: the avoider, who never looks at the banking app, and the checker, who looks all the time and still feels the restlessness. a few of these, most weeks, is the pattern."
         }
       },
       {
         "@type": "Question",
-        "name": "Why is money dysmorphia so common in Gen Z?",
+        "name": "why is money dysmorphia so common in gen z?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "In Credit Karma's survey, 43% of Gen Z and 41% of millennials reported money dysmorphia, against 29% of Americans overall. Gen Z grew up comparing their real finances to everyone else's highlight reel online, started earning in an expensive economy, and got handed money apps that mostly alert, alarm, and upsell. Constant comparison plus constant pinging keeps the feeling and the facts disconnected."
+          "text": "in credit karma's survey, 43% of gen z and 41% of millennials reported money dysmorphia, against 29% of americans overall and 25% of gen x. that's not because younger people are worse with money. three things stacked up: the comparison machine (gen z grew up comparing their real finances to everyone else's highlight reel, every day, from their pocket), an expensive start (beginning your earning years into high rent and high prices means even doing well doesn't feel like doing well), and tools that profit from the panic (most money apps are built to ping you, alarm you, and upsell you while you're scared, because an anxious user is a retained user)."
         }
       },
       {
         "@type": "Question",
-        "name": "How do you break free from money dysmorphia?",
+        "name": "how do you break free from money dysmorphia?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "The pattern feeds on not looking, so the way out is making looking cheap and calm: get the real numbers in front of you regularly, in a way that does not spike your anxiety; replace doomscroll comparison with your own actual forecast (what you have, what is coming, what is safe to spend); and talk about it, with a friend, a counselor, or a tool that answers plainly. Consistency is what closes the gap between the feeling and the facts."
+          "text": "money dysmorphia feeds on not looking: every day you avoid the number, your imagination fills it in, and your imagination is meaner than your bank account. the way out is not discipline or a stricter budget, it's making looking cheap, calm, and regular. get the real numbers in front of you once, gently, with zero judgment. replace comparison with your own forecast: what's safe to spend this week, when money gets tight, what payday actually covers. make checking in small, boring, and consistent instead of a monthly panic-audit. and talk about it out loud: ask friends, people, subreddits what money dysmorphia means for them, because the effects are the same but the causes are so varied. shame survives in silence, and the pattern loses most of its power the first time the number gets said out loud and nothing bad happens."
         }
       }
     ]
@@ -420,6 +420,23 @@
     .jump a:hover { border-color: var(--periwinkle); background: rgba(197,182,241,.18); transform: translateY(-1px); }
     .hero::after { opacity: .34; }
     .ledger li { padding: .85rem 0; font-size: 1.02rem; }
+
+    /* faq accordion: question visible, answer folded but real DOM content at load
+       (native details/summary, no JS), mirrored word-for-word in the FAQPage schema. */
+    .faq-acc { max-width: 60ch; }
+    .faq-acc details { border-bottom: 1px solid var(--hairline); }
+    .faq-acc details:first-of-type { border-top: 1px solid var(--hairline); }
+    .faq-acc summary {
+      list-style: none; cursor: pointer; padding: .95rem 0;
+      display: flex; align-items: baseline; justify-content: space-between; gap: 1rem;
+    }
+    .faq-acc summary::-webkit-details-marker { display: none; }
+    .faq-acc summary h3 { font-size: 1.02rem; font-weight: 600; margin: 0; }
+    .faq-acc summary::after { content: '+'; color: var(--cash-green); font-weight: 700; flex-shrink: 0; }
+    .faq-acc details[open] summary::after { content: '\2212'; }
+    .faq-acc .faq-a { padding: 0 0 1.1rem; color: var(--soft-ink); line-height: 1.6; }
+    .faq-acc .faq-a p { margin-bottom: .7rem; max-width: 60ch; }
+    .faq-acc .faq-a p:last-child { margin-bottom: 0; }
   </style>
 </head>
 <body>
@@ -440,107 +457,106 @@
 
     <section class="hero">
       <h1 class="headline">
-        money dysmorphia: when checking your balance feels like bad news, even when it isn't<span class="period">.</span>
+        money dysmorphia<span class="period">.</span> that restlessness has a name<span class="period">.</span>
       </h1>
-      <!-- AEO: the one-sentence definition sits in the first 100 words, AI-Overview target. -->
-      <p class="lede">money dysmorphia is a distorted view of your own finances: feeling broke, anxious, or behind even when the numbers say you're okay (or feeling fine when you're not). the feeling about your money and the facts of your money stop matching. it's not a clinical diagnosis, but it is extremely common: in a 2023 credit karma survey, 29% of americans said they experience it, including 43% of gen z.</p>
-      <p class="lede muted">this page is the plain-english version: what it means, what it feels like, the signs, why younger people have it worst, and how to actually break free.</p>
-    </section>
-
-    <nav class="jump" aria-label="on this page">
-      <a href="#meaning">what it means</a>
-      <a href="#feels-like">what it feels like</a>
-      <a href="#signs">the signs</a>
-      <a href="#gen-z">why gen z</a>
-      <a href="#break-free">how to break free</a>
-      <a href="#faq">faq</a>
-    </nav>
-
-    <section class="section reveal" aria-labelledby="meaning">
-      <h2 id="meaning">what money dysmorphia means<span class="period">.</span></h2>
-      <p>the simplest definition: a persistent gap between how your money feels and what your money is. your account can be fine while your stomach says emergency. you can be quietly building savings and still feel like you're one coffee away from broke. that gap, held long enough, is money dysmorphia.</p>
-      <p>to be honest with you up front: money dysmorphia is not a clinical diagnosis. you won't find it in the dsm, and no one can formally diagnose you with it. it's a name people gave to a real, common pattern, and naming it helps, because a thing with a name is a thing you can work on.</p>
+      <!-- AEO: Daksh's one-sentence definition sits in the first 100 words, AI-Overview target. -->
+      <p class="lede">money dysmorphia is persistent financial self-perception that either partly or wholly resists correction from the outside world. in plain words: how your money feels stops matching what your money is, and no number on the screen talks you out of it.</p>
       <!-- Stat sources (verified live 2026-06-11):
            Credit Karma / Qualtrics survey of 1,006 US adults, Dec 18-26 2023:
            29% of Americans, 43% of Gen Z, 41% of millennials report money dysmorphia;
-           95% of those say it negatively impacts their finances.
+           95% of those say it negatively impacts their finances (held back from saving, overspending, more debt).
            https://www.creditkarma.com/about/commentary/gen-z-and-millennials-are-obsessed-with-the-idea-of-being-rich-and-it-could-be-leading-to-money-dysmorphia
            https://www.cnbc.com/2024/03/13/nearly-half-of-young-adults-have-money-dysmorphia-survey-finds.html -->
-      <p>it's also not rare. in the <a class="inline-link" href="https://www.creditkarma.com/about/commentary/gen-z-and-millennials-are-obsessed-with-the-idea-of-being-rich-and-it-could-be-leading-to-money-dysmorphia" rel="noopener" target="_blank">credit karma survey</a> that put the term on the map, 29% of americans said they experience money dysmorphia, and 95% of those said it actively hurts their finances: held them back from saving, pushed them to overspend, or led them into more debt. the distortion isn't just a feeling. it makes real money decisions worse.</p>
+      <p class="lede muted">it isn't a clinical diagnosis. it is huge: <a class="inline-link" href="https://www.creditkarma.com/about/commentary/gen-z-and-millennials-are-obsessed-with-the-idea-of-being-rich-and-it-could-be-leading-to-money-dysmorphia" rel="noopener" target="_blank">95% of people who experience it</a> say it hurts their actual finances. the overspending, the debt, the staying there.</p>
     </section>
 
-    <section class="section reveal" aria-labelledby="feels-like">
-      <h2 id="feels-like">what it feels like<span class="period">.</span></h2>
-      <p>it feels like your banking app is a door you don't open. not because you're lazy, because behind it is a number that gets to decide how your whole day goes.</p>
-      <p>it feels like doing the math in your head at checkout, getting a fine answer, and buying the cheaper thing anyway with a knot in your chest. like skipping plans with friends and telling them you're busy, because being outside means spending. like watching people your age post trips and apartments and feeling certain, with zero evidence, that everyone has it figured out except you.</p>
-      <p>and the strangest part: the feeling barely moves when the numbers do. a good month doesn't fix it. a raise doesn't fix it. because the problem was never only the balance. it's that you stopped trusting your own picture of it.</p>
-      <p class="muted">if you recognized yourself in any of that, you're in very normal company. nearly half of people under 30 report the same thing.</p>
+    <section class="section reveal" aria-labelledby="forms">
+      <h2 id="forms">it comes in two forms<span class="period">.</span></h2>
+      <p>the avoider never opens the banking app. not lazy, protective: behind that icon is a number that gets to decide how the whole day goes.</p>
+      <p>the checker is the opposite, and that was me. the app was open. i had just about enough money. and the restlessness still crept over my money picture.</p>
+      <p class="muted">different doors, same room: the feeling refuses the facts.</p>
+    </section>
+
+    <section class="section reveal" aria-labelledby="not-look">
+      <h2 id="not-look">it's okay to not look<span class="period">.</span></h2>
+      <p>avoiding the number isn't failure, it's your brain protecting you. the muscle worth building isn't discipline. it's a calm way to look, and the grace to not, on the days you can't.</p>
     </section>
 
     <section class="section reveal" aria-labelledby="signs">
       <h2 id="signs">signs you might have it<span class="period">.</span></h2>
       <ul class="ledger">
-        <li>checking your balance feels like opening bad news, so you mostly don't.</li>
-        <li>you feel broke on days your account is objectively fine.</li>
-        <li>you compare your money to what you see online, and you always come up short.</li>
-        <li>you swing between total avoidance and obsessive checking, with no calm middle.</li>
-        <li>you've downloaded (and quit) more than one budgeting app, because opening it felt like being graded.</li>
-        <li>good financial news doesn't actually make you feel better for more than a minute.</li>
+        <li>checking your balance feels like opening bad news.</li>
+        <li>you feel broke on days the account is fine.</li>
+        <li>you swing between never looking and checking on loop.</li>
+        <li>good money news doesn't make you feel better.</li>
       </ul>
-      <p class="muted">a few of these, most weeks, is the pattern. it doesn't mean something is wrong with you. it means your picture of your money needs rebuilding, gently.</p>
+      <p class="muted">a few of these, most weeks, is the pattern.</p>
     </section>
 
-    <section class="section reveal" aria-labelledby="gen-z">
-      <h2 id="gen-z">why gen z got hit hardest<span class="period">.</span></h2>
-      <p>in the credit karma numbers, gen z reports money dysmorphia at 43% and millennials at 41%, against 25% of gen x. that's not because younger people are worse with money. three things stacked up:</p>
-      <p><strong>the comparison machine.</strong> gen z is the first generation to grow up comparing their real finances to everyone else's highlight reel, every day, from their pocket. nobody posts their credit card balance. everybody posts the trip.</p>
-      <p><strong>an expensive start.</strong> starting your earning years into high rent and high prices means even doing well doesn't feel like doing well. almost half of gen z in the survey said they feel behind financially.</p>
-      <p><strong>tools that profit from the panic.</strong> most money apps are built to ping you, alarm you, and upsell you while you're scared. fear keeps you opening the app. an anxious user is a retained user. so the tools that were supposed to help became one more source of dread.</p>
-    </section>
-
-    <section class="section reveal" aria-labelledby="break-free">
-      <h2 id="break-free">how to break free<span class="period">.</span></h2>
-      <p>money dysmorphia feeds on not looking. every day you avoid the number, your imagination fills it in, and your imagination is meaner than your bank account. so the way out is not discipline or a stricter budget. it's making looking cheap, calm, and regular.</p>
-      <h3>1. get the real numbers in front of you, gently.</h3>
-      <p>once, with zero judgment, see what's actually true: what you have, what leaves every month, what's quietly draining you. most people find the truth is more boring and more okay than the dread suggested.</p>
-      <h3>2. replace comparison with a forecast.</h3>
-      <p>the antidote to "everyone is doing better than me" is not more willpower, it's your own forward picture: what's safe to spend this week, when money gets tight, what payday actually covers. a calm forecast of your finances gives the feeling and the facts a place to meet.</p>
-      <h3>3. make checking in boring.</h3>
-      <p>the goal isn't checking more, it's checking calmer. small, consistent, low-stakes looks beat the monthly panic-audit every time. consistency is what retrains the dread out of the number.</p>
-      <h3>4. talk about it out loud.</h3>
-      <p>shame survives in silence. say the number to one person who won't judge it, a friend, an accredited financial counselor, a therapist if the stress runs deeper. money dysmorphia loses most of its power the first time the number gets said out loud and nothing bad happens.</p>
+    <section class="section reveal" aria-labelledby="helped">
+      <h2 id="helped">what actually helped<span class="period">.</span></h2>
+      <p>the usual advice, just track what's coming and analyse, doesn't get people like us. what helped me: asking people what money dysmorphia means for them. friends, subreddits, the group chat. same effects, wildly varied causes.</p>
+      <p>so look to the left and just ask. stay kind.</p>
     </section>
 
     <section class="section reveal" aria-labelledby="where-cashbff-fits">
-      <h2 id="where-cashbff-fits">where cashbff fits (and where it doesn't)<span class="period">.</span></h2>
-      <!-- /do/ COPY-TEST (one surface only, per the stance run): the "financial counselor" one-liner
-           is being copy-tested HERE and nowhere else. If it lands flat or reads overclaim-y, swap the
-           line back to "the money-nerd best friend you text on whatsapp." Keep the honesty pairing
-           (not a licensed counselor) regardless. -->
-      <p>this is the part of the page where it's fair to ask what we're selling. so, plainly: cashbff is the financial counselor for your money dysmorphia, in the friend sense, not the clinical one. it's not a licensed counselor, a therapist, or a financial advisor. it's the money-nerd best friend you text on whatsapp.</p>
-      <p>it connects to your real accounts and does the looking you've been dreading: what you have, what's coming, what's quietly draining you. then it answers in plain language when you ask. it finds it and flags it; you do the cancelling, the paying, the deciding. it never moves money out of your accounts.</p>
-      <p>and the part built specifically for this page's problem: cashbff sends no notifications and does no nagging. it stays quiet until you text it, so checking in happens on your terms, at your pace. that's on purpose. calm, consistent looking is the whole treatment, and a tool that pings you into panic would just be the old problem in a new app.</p>
-      <p class="muted">if money stress is taking over your daily life, please talk to a real person too: a licensed therapist or an accredited financial counselor (afc). cashbff gives you a clearer view of your own money; it isn't therapy, and it isn't financial, investment, or tax advice.</p>
+      <h2 id="where-cashbff-fits">where cashbff fits<span class="period">.</span></h2>
+      <p>cashbff is the money-nerd best friend you text on whatsapp. it does the looking and hands you one easy win, then stays quiet until you text. no pings, no nagging, no grades.</p>
+      <p>it finds it and flags it. you do the cancelling, the paying, the deciding. it never moves money out of your accounts.</p>
+      <p class="muted">it's not a licensed counselor, a therapist, or a financial advisor. if money stress is running your days, please talk to a real person too: a licensed therapist or an accredited financial counselor.</p>
+      <p class="muted">tried the other apps? see <a class="inline-link" href="/cashbff-vs-cleo">cashbff vs cleo</a>, <a class="inline-link" href="/cashbff-vs-rocket-money">vs rocket money</a>, <a class="inline-link" href="/cashbff-vs-monarch-money">vs monarch</a>, or <a class="inline-link" href="/cashbff-vs-era">vs era</a>.</p>
+    </section>
+
+    <section class="section reveal" aria-labelledby="faq">
+      <h2 id="faq">money dysmorphia faq<span class="period">.</span></h2>
+      <!-- Progressive disclosure (2026-06-11 voice rewrite): the long query-coverage answers
+           moved INTO this native details/summary accordion. Real DOM content at load, real h3
+           headings, mirrored word-for-word in the FAQPage schema in <head>. -->
+      <div class="faq-acc">
+        <details>
+          <summary><h3>what is money dysmorphia?</h3></summary>
+          <div class="faq-a">
+            <p>money dysmorphia is persistent financial self-perception that either partly or wholly resists correction from the outside world. in plain words: a distorted view of your own finances. you can feel broke, anxious, or behind even when the numbers say you're okay, or feel fine when you're not. the feeling about your money and the facts of your money stop matching, and the feeling wins.</p>
+            <p>it's not a clinical diagnosis, but it is extremely common: in a 2023 credit karma survey, 29% of americans said they experience it, including 43% of gen z, and 95% of those said it actively hurt their finances: held them back from saving, pushed them to overspend, or led them into more debt.</p>
+          </div>
+        </details>
+        <details>
+          <summary><h3>is money dysmorphia a real diagnosis?</h3></summary>
+          <div class="faq-a">
+            <p>no. money dysmorphia is not a clinical diagnosis and it doesn't appear in the dsm. no one can formally diagnose you with it. it's a name people gave to a real, common pattern: a persistent gap between how your finances feel and what they actually are. naming it still helps, because a thing with a name is a thing you can work on. if money stress is taking over your life, a licensed therapist or an accredited financial counselor is the right person to talk to.</p>
+          </div>
+        </details>
+        <details>
+          <summary><h3>what are the signs of money dysmorphia?</h3></summary>
+          <div class="faq-a">
+            <p>the common signs: checking your balance feels like opening bad news, so you mostly don't. you feel broke on days your account is objectively fine. you compare your money to what you see online and always come up short. you swing between total avoidance and obsessive checking, with no calm middle. you've downloaded and quit more than one budgeting app because opening it felt like being graded. and good financial news doesn't make you feel better for more than a minute.</p>
+            <p>it shows up in two forms: the avoider, who never looks at the banking app, and the checker, who looks all the time and still feels the restlessness. a few of these, most weeks, is the pattern.</p>
+          </div>
+        </details>
+        <details>
+          <summary><h3>why is money dysmorphia so common in gen z?</h3></summary>
+          <div class="faq-a">
+            <p>in credit karma's survey, 43% of gen z and 41% of millennials reported money dysmorphia, against 29% of americans overall and 25% of gen x. that's not because younger people are worse with money. three things stacked up: the comparison machine (gen z grew up comparing their real finances to everyone else's highlight reel, every day, from their pocket), an expensive start (beginning your earning years into high rent and high prices means even doing well doesn't feel like doing well), and tools that profit from the panic (most money apps are built to ping you, alarm you, and upsell you while you're scared, because an anxious user is a retained user).</p>
+          </div>
+        </details>
+        <details>
+          <summary><h3>how do you break free from money dysmorphia?</h3></summary>
+          <div class="faq-a">
+            <p>money dysmorphia feeds on not looking: every day you avoid the number, your imagination fills it in, and your imagination is meaner than your bank account. the way out is not discipline or a stricter budget, it's making looking cheap, calm, and regular.</p>
+            <p>get the real numbers in front of you once, gently, with zero judgment. replace comparison with your own forecast: what's safe to spend this week, when money gets tight, what payday actually covers. make checking in small, boring, and consistent instead of a monthly panic-audit. and talk about it out loud: ask friends, people, subreddits what money dysmorphia means for them, because the effects are the same but the causes are so varied. shame survives in silence, and the pattern loses most of its power the first time the number gets said out loud and nothing bad happens.</p>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <section class="section reveal" aria-label="start">
+      <!-- The close, his way: companionship line, then the button, then quiet. -->
+      <p>working on my money dysmorphia changed the way i experience my financial choices. yours can too. and please remember: you're NOT alone.</p>
       <div class="cta" style="margin-top:1.4rem;">
         <!-- Tokenized wa.me CTA, unique to /money-dysmorphia (see docs/wa-prefill-registry.md). -->
         <a class="btn-primary" href="https://wa.me/19096555215?text=hey%20cashbff%2C%20checking%20my%20balance%20always%20feels%20like%20bad%20news"><span>text cashbff about it</span><span aria-hidden="true">&rarr;</span></a>
         <a class="link-quiet" href="/is-cashbff-legit">is it safe? here's the honest answer</a>
       </div>
-      <p class="muted" style="margin-top:1rem;">curious how it compares to the apps you've already tried? see <a class="inline-link" href="/cashbff-vs-cleo">cashbff vs cleo</a>, <a class="inline-link" href="/cashbff-vs-rocket-money">vs rocket money</a>, <a class="inline-link" href="/cashbff-vs-monarch-money">vs monarch</a>, or <a class="inline-link" href="/cashbff-vs-era">vs era</a>.</p>
-    </section>
-
-    <section class="section reveal" aria-labelledby="faq">
-      <h2 id="faq">money dysmorphia faq<span class="period">.</span></h2>
-      <h3>what is money dysmorphia?</h3>
-      <p class="muted">a distorted view of your own finances: feeling broke, anxious, or behind even when the numbers say you're okay (or feeling fine when you're not). the feeling and the facts stop matching.</p>
-      <h3>is money dysmorphia a real diagnosis?</h3>
-      <p class="muted">no. it's not a clinical diagnosis and it isn't in the dsm. it's a popular name for a real, common pattern. if money stress is taking over, a licensed therapist or accredited financial counselor is the right person to talk to.</p>
-      <h3>what are the signs of money dysmorphia?</h3>
-      <p class="muted">avoiding your balance because it feels like bad news, feeling broke when your account is fine, constant comparison to people online, swinging between avoidance and obsessive checking, and good news not actually making you feel better.</p>
-      <h3>why is money dysmorphia so common in gen z?</h3>
-      <p class="muted">43% of gen z report it, per credit karma. growing up inside the comparison machine, starting to earn in an expensive economy, and using money apps built to alarm and upsell all keep the feeling and the facts disconnected.</p>
-      <h3>how do you break free from money dysmorphia?</h3>
-      <p class="muted">make looking cheap and calm: get the real numbers in front of you, replace comparison with your own forecast, make checking in boring and consistent, and say the number out loud to someone who won't judge it.</p>
     </section>
 
     <footer class="footer">
