@@ -628,8 +628,12 @@
             <span class="arrow" aria-hidden="true">→</span>
           </button>
 
-          <p class="micro">
-            by continuing you agree to our <a href="/terms">terms</a>.
+          <!-- Consent line (G3, 2026-06-11): links to BOTH documents so the
+               terms' "affirmative action... with links to both documents" claim
+               is true. signup.js captures a consent event (with timestamp +
+               policy version) when the user continues. -->
+          <p class="micro" id="consent-line">
+            by continuing you agree to the <a href="/terms">terms</a> and <a href="/privacy">privacy policy</a>.
           </p>
 
           <p class="secondary">

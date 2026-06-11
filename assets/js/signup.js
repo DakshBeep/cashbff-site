@@ -291,6 +291,19 @@
       showBanner("that number doesn't look right. give it another try?", 'error');
       return;
     }
+    // Consent record (G3, 2026-06-11): the visible line under this button says
+    // "by continuing you agree to the terms and privacy policy" (links to both).
+    // Tapping "send code" with a valid number IS the affirmative action, so we
+    // capture the consent event here, with an explicit timestamp and the policy
+    // version. PostHog later aliases this anon id to the user_id on identify(),
+    // tying the record to the account. No DB columns by design (Daksh's call).
+    track('consent_terms_agreed', {
+      consented_at: new Date().toISOString(),
+      terms_version: '2026-06-11',
+      privacy_version: '2026-06-11',
+      method: 'signup_send_code',
+      page: '/signup',
+    });
     sendOtpBtn.disabled = true;
     const orig = sendOtpBtn.textContent;
     sendOtpBtn.textContent = 'sending…';

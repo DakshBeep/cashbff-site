@@ -57,12 +57,14 @@
       --periwinkle: #C5B6F1;
       --off-black: #1A1717;
       --vanilla: #FCFAF2;
+      --hairline: rgba(26, 23, 23, 0.12);
+      --soft-ink: rgba(26, 23, 23, 0.62);
       --font-display: 'Greed Condensed', 'Archivo Narrow', 'Arial Narrow', Impact, sans-serif;
       --font-body: 'Instrument Sans', system-ui, -apple-system, sans-serif;
     }
 
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-    html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+    html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; scroll-behavior: smooth; }
     body {
       font-family: var(--font-body);
       background: var(--vanilla);
@@ -73,147 +75,243 @@
       flex-direction: column;
     }
     a { color: var(--cash-green); }
-    a:hover { opacity: 0.7; }
-
-    .stage {
-      max-width: 720px;
-      width: 100%;
-      margin: 0 auto;
-      padding: 1.5rem 2rem 0;
-      flex-shrink: 0;
+    a:hover { opacity: 0.75; }
+    a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--cash-green);
+      outline-offset: 3px;
+      border-radius: 4px;
     }
-    .bar {
+
+    /* ── sticky top bar (site chrome) ─────────────── */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      background: rgba(252, 250, 242, 0.88);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-bottom: 1px solid transparent;
+      transition: border-color .25s ease, box-shadow .25s ease;
+    }
+    .topbar.is-scrolled {
+      border-bottom-color: var(--hairline);
+      box-shadow: 0 6px 24px -18px rgba(26, 23, 23, 0.35);
+    }
+    .topbar__inner {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0.85rem 1.5rem;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 1rem;
     }
     .wordmark {
       font-family: var(--font-display);
       font-weight: 700;
-      font-size: 1.5rem;
+      font-size: 1.45rem;
       letter-spacing: -0.02em;
       color: var(--cash-green);
       text-decoration: none;
+      text-transform: lowercase;
+      flex-shrink: 0;
     }
-    .bar__back {
-      font-size: 0.72rem;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
+    .nav {
+      display: flex;
+      align-items: center;
+      gap: 1.3rem;
+      font-size: 0.9rem;
+      font-weight: 500;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .nav::-webkit-scrollbar { display: none; }
+    .nav a { color: var(--off-black); opacity: 0.72; text-decoration: none; white-space: nowrap; transition: opacity .15s; }
+    .nav a:hover { opacity: 1; }
+    .nav a.nav-cta {
+      opacity: 1;
+      background: var(--cash-green);
+      color: var(--vanilla);
       font-weight: 600;
-      opacity: 0.45;
-      color: var(--off-black);
-      text-decoration: none;
-      transition: opacity 0.2s ease;
+      padding: 0.42rem 1.05rem;
+      border-radius: 999px;
+      transition: transform .12s ease, opacity .15s;
     }
-    .bar__back:hover { opacity: 1; color: var(--cash-green); }
+    .nav a.nav-cta:hover { opacity: 0.92; transform: translateY(-1px); }
+    @media (max-width: 640px) {
+      .nav { gap: 1rem; font-size: 0.86rem; }
+    }
 
-    .content {
-      max-width: 36rem;
+    /* ── document box ─────────────────────────────── */
+    .stage {
       width: 100%;
+      max-width: 56rem;
       margin: 0 auto;
-      padding: 3rem 2rem 4rem;
+      padding: 2.5rem 1.5rem 4rem;
       flex: 1;
     }
-    .content__title {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: clamp(2.5rem, 7vw, 3.75rem);
-      line-height: 0.95;
-      letter-spacing: -0.02em;
-      text-transform: lowercase;
-      color: var(--off-black);
-      margin-bottom: 0.4rem;
+    .doc {
+      background: #FFFFFF;
+      border: 1px solid var(--hairline);
+      border-radius: 20px;
+      padding: clamp(1.6rem, 5vw, 3.25rem);
+      box-shadow: 0 24px 60px -48px rgba(26, 23, 23, 0.4);
     }
-    .content__title .period { color: var(--cash-green); }
-    .content__sub {
-      font-size: 1rem;
-      opacity: 0.55;
-      margin-bottom: 2.5rem;
-      line-height: 1.5;
-    }
-    .content h2 {
-      font-family: var(--font-display);
-      font-weight: 500;
-      font-size: 1.25rem;
-      text-transform: lowercase;
-      letter-spacing: 0.005em;
+    .doc__eyebrow {
+      font-size: 0.74rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      font-weight: 600;
       color: var(--cash-green);
-      margin: 2.25rem 0 0.6rem;
+      margin-bottom: 0.8rem;
     }
-    .content p {
+    .doc__title {
+      font-family: var(--font-body);
+      font-weight: 700;
+      font-size: clamp(1.9rem, 5vw, 2.6rem);
+      line-height: 1.1;
+      letter-spacing: -0.015em;
+      color: var(--off-black);
+      margin-bottom: 0.5rem;
+    }
+    .doc__meta {
+      font-size: 0.92rem;
+      color: var(--soft-ink);
+      margin-bottom: 1.9rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--hairline);
+    }
+    .doc__summary {
+      background: rgba(1, 71, 81, 0.045);
+      border-left: 3px solid var(--cash-green);
+      border-radius: 0 12px 12px 0;
+      padding: 1.05rem 1.25rem;
+      font-size: 0.95rem;
+      line-height: 1.7;
+      color: #3a3838;
+      margin-bottom: 1.4rem;
+    }
+    .doc__summary strong { color: var(--off-black); font-weight: 600; }
+    .doc__notice {
+      background: #FFFFFF;
+      border: 1.5px solid var(--cash-green);
+      border-radius: 12px;
+      padding: 1.05rem 1.25rem;
+      font-size: 0.95rem;
+      line-height: 1.7;
+      color: var(--off-black);
+      margin-bottom: 2.1rem;
+    }
+    .doc__notice strong { font-weight: 700; }
+    .doc h2 {
+      font-family: var(--font-body);
+      font-weight: 700;
+      font-size: 1.14rem;
+      letter-spacing: -0.005em;
+      color: var(--cash-green);
+      margin: 2.4rem 0 0.7rem;
+      scroll-margin-top: 5rem;
+    }
+    .doc p {
       font-size: 0.95rem;
       color: #3a3838;
       margin-bottom: 0.85rem;
-      line-height: 1.7;
+      line-height: 1.75;
+      max-width: 72ch;
     }
-    .content p strong {
+    .doc p strong {
       color: var(--off-black);
       font-weight: 600;
     }
-    .content ul {
-      padding-left: 1.25rem;
+    .doc ul {
+      padding-left: 1.3rem;
       margin: 0.5rem 0 1rem;
+      max-width: 72ch;
     }
-    .content li {
+    .doc li {
       font-size: 0.95rem;
       color: #3a3838;
-      margin-bottom: 0.4rem;
-      line-height: 1.65;
+      margin-bottom: 0.45rem;
+      line-height: 1.7;
     }
+    .doc li strong { color: var(--off-black); font-weight: 600; }
 
     .updated {
       display: block;
       margin-top: 3rem;
       padding-top: 1.25rem;
-      border-top: 1px solid rgba(1, 71, 81, 0.08);
-      font-size: 0.78rem;
-      opacity: 0.45;
+      border-top: 1px solid var(--hairline);
+      font-size: 0.8rem;
+      color: var(--soft-ink);
       letter-spacing: 0.02em;
     }
 
+    /* ── page footer (site chrome) ────────────────── */
     .page-foot {
       flex-shrink: 0;
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
-      gap: 1.25rem;
-      font-size: 0.72rem;
-      opacity: 0.4;
-      padding: 1rem 2rem 1.75rem;
+      align-items: center;
+      gap: 0.6rem 1.1rem;
+      font-size: 0.78rem;
+      color: var(--soft-ink);
+      padding: 1.25rem 2rem 2rem;
+      border-top: 1px solid var(--hairline);
     }
-    .page-foot a { color: inherit; text-decoration: none; }
+    .page-foot a { color: inherit; text-decoration: underline; text-decoration-color: var(--hairline); text-underline-offset: 3px; }
     .page-foot a:hover { opacity: 1; color: var(--cash-green); }
 
     @media (max-width: 480px) {
-      .stage { padding: 1.25rem 1.25rem 0; }
-      .content { padding: 2rem 1.25rem 3rem; }
-      .content h2 { margin-top: 1.85rem; }
+      .stage { padding: 1.5rem 1rem 3rem; }
+      .doc h2 { margin-top: 2rem; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; transition: none !important; }
     }
   </style>
 </head>
 <body>
 
-  <div class="stage">
-    <header class="bar">
+  <header class="topbar">
+    <div class="topbar__inner">
       <a href="/" class="wordmark" aria-label="cashbff home">cashbff</a>
-      <a href="/" class="bar__back">&larr; home</a>
-    </header>
-  </div>
+      <nav class="nav" aria-label="primary">
+        <a href="/">home</a>
+        <a href="/how-it-works">how it works</a>
+        <a href="/pricing">pricing</a>
+        <a href="/money-dysmorphia">money dysmorphia</a>
+        <a href="/start" class="nav-cta">start</a>
+      </nav>
+    </div>
+  </header>
 
-  <main class="content">
-    <h1 class="content__title">terms<span class="period">.</span></h1>
-    <p class="content__sub"><strong>TL;DR:</strong> cashbff is a money buddy that reads your bank transactions (read-only, through Plaid) and answers your questions over text. It finds and surfaces things about your money. You make the decisions and you act. cashbff does not move, pay, or transfer money, and what it tells you is informational, not financial, investment, tax, or legal advice. By using cashbff you agree to these Terms, you confirm you are at least 18, and you agree to get messages from us (reply STOP to opt out; consent is not required to buy anything). You can cancel a paid plan, disconnect your bank, or ask us to delete your data anytime (we take care of deletions within 30 days).</p>
+  <main class="stage">
+    <article class="doc">
+    <p class="doc__eyebrow">cashbff legal</p>
+    <h1 class="doc__title">Terms of Service</h1>
+    <p class="doc__meta">Effective June 11, 2026. The Service is operated by Khanna's LLC.</p>
 
-    <h2>1. acceptance of these terms</h2>
-    <p>These Terms of Service (the "Terms") are a legal agreement between you and Khannas LLC ("cashbff," "we," "us," or "our"). They govern your access to and use of the cashbff service, including our text messaging assistant, our website, and any related features (together, the "Service").</p>
+    <p class="doc__summary"><strong>Summary:</strong> cashbff is a money buddy that reads your bank transactions (read-only, through Plaid) and answers your questions over text. It finds and surfaces things about your money. You make the decisions and you act. cashbff does not move, pay, or transfer money, and what it tells you is informational, not financial, investment, tax, or legal advice. By using cashbff you agree to these Terms, you confirm you are at least 18, and you agree to get messages from us (reply STOP to opt out; consent is not required to buy anything). You can cancel a paid plan, disconnect your bank, or ask us to delete your data anytime (we take care of deletions within 30 days). These Terms contain a binding individual arbitration provision and a class action waiver (Section 16), which you may opt out of within 30 days.</p>
+
+    <!-- Plain-language accuracy disclaimer (added 2026-06-11, per Daksh's launch-day decision):
+         prominent, near the top, strict register. Pairs with the formal warranty disclaimers in
+         Section 11; this box exists so the practical point is read before anything else. -->
+    <div class="doc__notice">
+      <p><strong>Please read this first.</strong> cashbff is software. It uses automated systems, including artificial intelligence, to read your financial data and answer your questions, and those systems can make mistakes. Balances, amounts, dates, insights, and other outputs may be incomplete, out of date, or incorrect. Verify any number that matters with your bank or provider before you act on it.</p>
+    </div>
+
+    <h2 id="acceptance">1. Acceptance of These Terms</h2>
+    <p>These Terms of Service (the "Terms") are a legal agreement between you and Khanna's LLC ("cashbff," "we," "us," or "our"). They govern your access to and use of the cashbff service, including our text messaging assistant, our website, and any related features (together, the "Service").</p>
     <p>When you sign up, we ask you to agree to these Terms and our <strong>Privacy Policy</strong> by an affirmative action (for example, tapping "Continue" or "I agree" with links to both documents), and we keep a record of that agreement. By taking that action, or by creating an account, sending or receiving messages through the Service, connecting a financial account, or otherwise using the Service, you agree to these Terms and to our Privacy Policy, which is incorporated here by reference. If you do not agree, please do not use the Service.</p>
-    <p>Please also read Section 11 (Disclaimers), Section 12 (Limitation of Liability), and Section 16 (Governing Law and Dispute Resolution) carefully, because they affect your legal rights.</p>
+    <p>Please also read Section 11 (Disclaimers), Section 12 (Limitation of Liability), and Section 16 (Governing Law and Dispute Resolution) carefully, because they affect your legal rights. Section 16 contains an agreement to resolve disputes through binding individual arbitration and a waiver of class actions, together with instructions for opting out within 30 days.</p>
 
-    <h2>2. eligibility</h2>
+    <h2 id="eligibility">2. Eligibility</h2>
     <p>You must be at least 18 years old and able to form a binding contract to use the Service. By using cashbff, you represent that you meet these requirements and that the information you give us is true.</p>
     <p>The Service is intended for users in the United States. We do not direct the Service to anyone under 18, and we do not knowingly collect information from anyone under 18.</p>
 
-    <h2>3. what cashbff is</h2>
+    <h2 id="what-it-is">3. What cashbff Is</h2>
     <p>cashbff is a personal money assistant you talk to through everyday messaging. With your permission, it reads your bank transaction data (read-only, through our partner Plaid) and your messages, and it gives you spending insights, summaries, reminders, and answers to your money questions.</p>
     <p>You can reach cashbff through these channels:</p>
     <ul>
@@ -223,23 +321,23 @@
     </ul>
     <p>The features available to you may depend on your plan and may change over time as we improve the Service.</p>
 
-    <h2>4. what cashbff does and does not do (please read)</h2>
+    <h2 id="does-and-does-not">4. What cashbff Does and Does Not Do (Please Read)</h2>
     <p>This is the most important thing to understand about cashbff.</p>
     <p><strong>cashbff finds and surfaces. You decide and you act.</strong> cashbff reads your transaction data and tells you what it sees: recurring subscriptions it detects, spending patterns, balances, and answers to your questions. It can help you set goals, schedule reminders, and flag reimbursable transactions when you confirm those actions.</p>
     <p><strong>cashbff does not move, pay, or transfer money.</strong> It cannot send payments, cancel subscriptions, close accounts, or move funds for you. Its access to your bank data is read-only. Any action in the real world, such as paying a bill, canceling a service, or moving money, is something you do yourself, directly, through your own bank or provider.</p>
-    <p><strong>cashbff is informational only. It is not professional advice.</strong> The insights, summaries, suggestions, and answers cashbff provides are for general informational purposes. They are not financial, investment, tax, accounting, or legal advice, and they are not a recommendation to buy, sell, or hold any product or to take any specific financial action. cashbff is not a bank, a money transmitter, a broker-dealer, an investment adviser, or a financial planner. For advice about your specific situation, please talk to a qualified professional. You are responsible for your own financial decisions.</p>
+    <p><strong>cashbff is informational only. It is not professional advice.</strong> The insights, summaries, suggestions, and answers cashbff provides are for general informational purposes. They are not financial, investment, tax, accounting, or legal advice, and they are not a recommendation to buy, sell, or hold any product or to take any specific financial action. cashbff is not a bank, a money transmitter, a broker-dealer, an investment adviser, or a financial planner. cashbff is not a licensed financial advisor, counselor, or therapist. For advice about your specific situation, please talk to a qualified professional. You are responsible for your own financial decisions.</p>
 
-    <h2>5. messaging consent and rates (sms and whatsapp)</h2>
+    <h2 id="messaging">5. Messaging Consent and Rates (SMS and WhatsApp)</h2>
     <p>cashbff is a messaging service, so using it means exchanging messages with us. By providing your phone number and using the Service, you consent to receive recurring messages from cashbff related to your account and the Service, sent through SMS and, where you use it, WhatsApp. These can include automated messages. <strong>Consent to receive automated messages is not a condition of purchasing anything.</strong></p>
     <p><strong>Message and data rates may apply</strong>, depending on your mobile or messaging plan. Message frequency varies based on how you use the Service.</p>
-    <p><strong>Opting out.</strong> For SMS, you can reply <strong>STOP</strong> at any time to stop receiving messages, and <strong>START</strong> to resume. Reply <strong>HELP</strong> for help. For WhatsApp, you can opt out by telling us to stop or by using the equivalent in-channel option. Opting out of messages may limit or end your ability to use the Service, since the Service works through messaging.</p>
+    <p><strong>Opting out.</strong> For SMS, you can reply <strong>STOP</strong> at any time to stop receiving messages, and <strong>START</strong> to resume. Reply <strong>HELP</strong> for help. Opting out of messages may limit or end your ability to use the Service, since the Service works through messaging.</p>
     <p>Your mobile carrier and WhatsApp are not liable for delayed or undelivered messages.</p>
 
-    <h2>6. your account and accurate information</h2>
+    <h2 id="account">6. Your Account and Accurate Information</h2>
     <p>To use the Service, you verify your identity with your phone number using a one-time passcode. You are responsible for keeping access to your phone number and account secure, and for activity that happens through your account. Please tell us promptly if you believe your account has been used without your permission.</p>
     <p>You agree to give us information that is accurate and current, and to keep it up to date. cashbff relies on the data you provide and the transaction data from the financial accounts you connect. If that information is inaccurate or out of date, the insights cashbff gives you may be inaccurate too.</p>
 
-    <h2>7. acceptable use</h2>
+    <h2 id="acceptable-use">7. Acceptable Use</h2>
     <p>When you use cashbff, you agree not to:</p>
     <ul>
       <li>Use the Service for any unlawful purpose, or in violation of these Terms or any applicable law.</li>
@@ -252,12 +350,12 @@
     </ul>
     <p>We may investigate and take action, including suspending or terminating access, if we reasonably believe you have violated this section.</p>
 
-    <h2>8. message content and how we access it</h2>
+    <h2 id="message-content">8. Message Content and How We Access It</h2>
     <p>To provide the Service, we process your conversations to understand your questions and generate responses. <strong>We may store and retain your messages and related content to operate, maintain, and improve the Service.</strong> Storage and retention practices can differ by channel and may change as the Service evolves.</p>
-    <p>Our team does not routinely read the content of your messages. Access to your message content occurs only where needed to provide or maintain the Service, to investigate abuse, security, or technical issues, to comply with law or legal process, or with your consent.</p>
+    <p>Our team does not routinely read the content of your messages. Access to your message content occurs only where needed to provide or maintain the Service, to support you, to study how the Service is used so we can improve it (product improvement and research), to investigate abuse, security, or technical issues, to comply with law or legal process, or with your consent.</p>
     <p>For more detail on what we collect, how we use it, the third parties involved, and your choices, please see our <strong>Privacy Policy</strong>.</p>
 
-    <h2>9. third-party services</h2>
+    <h2 id="third-party">9. Third-Party Services</h2>
     <p>cashbff relies on trusted third-party providers to deliver the Service. These currently include:</p>
     <ul>
       <li><strong>Plaid</strong>, which connects your financial accounts and handles bank authentication so you can share read-only transaction data with cashbff. We never receive your bank login credentials. Plaid handles your data under its own End User Privacy Policy.</li>
@@ -267,56 +365,82 @@
     </ul>
     <p>When you connect or use these services, their own terms and privacy policies apply to their handling of your information, in addition to ours. We are not responsible for the acts, omissions, or policies of third-party providers, and your use of a connected service (such as your bank or an AI assistant) is between you and that provider. We may add, remove, or change providers as the Service evolves.</p>
 
-    <h2>10. subscriptions, billing, cancellation, and refunds</h2>
+    <h2 id="billing">10. Subscriptions, Billing, Cancellation, and Refunds</h2>
     <p>Some features of cashbff require a paid subscription, the "Talk" plan. Before you are charged, we show the price, the billing interval, and the trial terms, and we ask you to agree to the recurring charge. The Talk plan costs $12.99 per month, or $99 per year (which works out to about $8.25 per month). New subscribers get a 3-day free trial. If you do not cancel before the trial ends, your plan begins and your payment method is charged the price you selected, then renews automatically as described below. Prices are in US dollars and do not include any taxes that may apply.</p>
     <p><strong>Auto-renewal.</strong> Paid subscriptions renew automatically at the end of each billing period at the then-current price, until you cancel. By subscribing, you authorize us, through Stripe, to charge your payment method on a recurring basis for the applicable fees, including any applicable taxes, until you cancel. Stripe retains your payment history under its own policy.</p>
     <p><strong>Cancellation.</strong> You can cancel your subscription at any time, easily and online. Open your billing settings through cashbff to manage or cancel your plan in the Stripe customer portal, or message us and we will help you cancel. When you cancel, your paid access continues until the end of the current billing period, and it does not renew after that. If you cancel during the 3-day free trial, you are not charged.</p>
     <p><strong>Refunds.</strong> The 3-day free trial is there so you can decide before you pay. Except where required by law, payments are non-refundable, and canceling does not entitle you to a refund for the current billing period.</p>
     <p><strong>Changes to pricing.</strong> We may change our prices or plans. If we change the price of a subscription you hold, we will give you advance notice, and the change will take effect on your next billing period. If you do not agree to the new price, you may cancel before it takes effect.</p>
 
-    <h2>11. disclaimers of warranties</h2>
+    <h2 id="disclaimers">11. Disclaimers of Warranties</h2>
     <p>In plain terms: we work hard to make cashbff reliable and useful, but we cannot promise it is perfect, always available, or error-free, so please use it accordingly.</p>
     <p>The Service is provided on an <strong>"as is" and "as available"</strong> basis, without warranties of any kind. To the fullest extent permitted by law, we disclaim all warranties, whether express, implied, or statutory, including any implied warranties of merchantability, fitness for a particular purpose, title, and non-infringement.</p>
     <p>We do not warrant that the Service will be uninterrupted, timely, secure, or error-free, that any insights, categorizations, subscription detections, or other outputs will be accurate or complete, or that defects will be corrected. cashbff depends on data from third parties (including Plaid and your financial institutions) and on AI-generated outputs, which can be incomplete or wrong. You use the Service, and rely on its outputs, at your own discretion and risk.</p>
     <p>Nothing in these Terms excludes any warranty or right that cannot be excluded under applicable law.</p>
 
-    <h2>12. limitation of liability</h2>
+    <h2 id="liability">12. Limitation of Liability</h2>
     <p>To the fullest extent permitted by law, in no event will cashbff or its officers, directors, employees, or agents be liable for any indirect, incidental, special, consequential, exemplary, or punitive damages, or for any loss of profits, revenue, data, goodwill, or other intangible losses, arising out of or relating to your use of (or inability to use) the Service, even if we have been advised of the possibility of such damages.</p>
     <p>To the fullest extent permitted by law, our total liability for all claims arising out of or relating to the Service or these Terms will not exceed the greater of (a) the total amount you paid us for the Service in the twelve months before the event giving rise to the claim, or (b) one hundred U.S. dollars ($100).</p>
     <p>Some jurisdictions do not allow certain limitations, so some of the above may not apply to you. In that case, our liability is limited to the greatest extent permitted by law.</p>
 
-    <h2>13. indemnification</h2>
+    <h2 id="indemnification">13. Indemnification</h2>
     <p>To the extent permitted by law, you agree to indemnify and hold harmless cashbff and its officers, directors, employees, and agents from and against any claims, liabilities, damages, losses, and expenses, including reasonable attorneys' fees, arising out of or related to your misuse of the Service, your violation of these Terms, your violation of any law or the rights of a third party, or information or accounts you provided or connected without authorization.</p>
 
-    <h2>14. changes to these terms</h2>
+    <h2 id="changes">14. Changes to These Terms</h2>
     <p>We may update these Terms from time to time. When we make material changes, we will update the "Last updated" date and take reasonable steps to notify you, for example by message through the Service or by posting notice on our website. Changes take effect when posted, unless we say otherwise. Your continued use of the Service after the changes take effect means you accept the updated Terms. If you do not agree, please stop using the Service.</p>
 
-    <h2>15. termination</h2>
+    <h2 id="termination">15. Termination</h2>
     <p>You can stop using the Service at any time. You can disconnect your bank connection whenever you want, which removes your Plaid access token and cached transactions, and you can revoke access through Plaid directly. You can also request deletion of your data as described in our Privacy Policy.</p>
     <p>We may suspend or terminate your access to the Service, in whole or in part, at any time, with or without notice, if we reasonably believe you have violated these Terms, if needed to protect the Service or other users, or for other legitimate business or legal reasons. Sections that by their nature should survive termination (including Sections 4, 11, 12, 13, and 16) will survive.</p>
 
-    <h2>16. governing law and dispute resolution</h2>
-    <p>These Terms are governed by the laws of the State of California, without regard to its conflict-of-laws rules.</p>
-    <p>You and cashbff agree to first try to resolve any dispute informally by contacting us. If we cannot resolve it within a reasonable time, the dispute will be subject to the exclusive jurisdiction and venue of the state and federal courts located in Los Angeles County, California, and you and cashbff consent to personal jurisdiction there, except that either of us may bring a qualifying claim in small claims court.</p>
+    <!-- ARBITRATION AGREEMENT (added 2026-06-11). This is a deliberate reversal of the earlier
+         courts-only stance, decided by the founder on launch day: binding individual arbitration
+         under the AAA Consumer Arbitration Rules, with the small-claims carve-out preserved, a
+         Los Angeles County seat, a 30-day opt-out window, and a class action waiver. Drafted for
+         enforceability: conspicuous notice in the Summary and in Section 1, mutual obligations,
+         consumer-rules fee allocation, a delegation clause with the class-waiver question reserved
+         to courts, and severability with a class-waiver backstop.
+         COUNSEL SHOULD REVIEW AND BLESS THIS SECTION before it is relied on in any dispute.
+         Specific items for counsel: (1) registering this consumer clause with the AAA Consumer
+         Clause Registry (registration is required for AAA to administer consumer cases);
+         (2) California public-injunctive-relief doctrine (McGill v. Citibank) and whether the
+         carve-out below is adequate; (3) interaction with the $100 / trailing-12-months liability
+         cap in Section 12; (4) whether to add an express jury-trial waiver for court proceedings
+         (omitted here because predispute contractual jury waivers are generally unenforceable
+         under California law outside arbitration); (5) assent strength at signup (clickwrap
+         record via the consent line and consent event at /signup, shipped 2026-06-11). -->
+    <h2 id="disputes">16. Governing Law and Dispute Resolution (Arbitration Agreement and Class Action Waiver)</h2>
+    <p><strong>Please read this Section 16 carefully. It requires you and cashbff to resolve most disputes through binding individual arbitration rather than in court, and it waives the right to bring or participate in a class action. You have the right to opt out within 30 days, as described below.</strong></p>
+    <p><strong>Governing law.</strong> These Terms are governed by the laws of the State of California, without regard to its conflict-of-laws rules.</p>
+    <p><strong>Informal resolution first.</strong> You and cashbff agree to first try to resolve any dispute informally. Either party may start that process by sending the other a written notice that describes the dispute and the relief sought (to us: <strong>daksh@cashbff.com</strong>). You and cashbff agree to negotiate in good faith for at least 30 days from receipt of that notice before starting arbitration or any court proceeding permitted by this Section.</p>
+    <p><strong>Agreement to arbitrate.</strong> Except as described under "Exceptions" below, you and cashbff each agree that any dispute, claim, or controversy arising out of or relating to these Terms, the Privacy Policy, or the Service, including its formation, breach, termination, enforcement, interpretation, or validity, will be resolved by <strong>final and binding arbitration between you and cashbff on an individual basis</strong>, and not in court. The arbitration will be administered by the American Arbitration Association ("AAA") under its Consumer Arbitration Rules then in effect (available at adr.org), as modified by this Section. The Federal Arbitration Act governs the interpretation and enforcement of this arbitration agreement.</p>
+    <p><strong>Exceptions.</strong> This arbitration agreement does not require arbitration of: (a) an individual claim within the jurisdiction of a small claims court, which either you or cashbff may bring in a small claims court of competent jurisdiction instead of arbitration; and (b) any claim or request for relief that, under applicable law, cannot be required to be arbitrated or waived (including, where applicable law so provides, a claim for public injunctive relief), which may be pursued in a court of competent jurisdiction after the arbitrable claims have been resolved in arbitration.</p>
+    <p><strong>Arbitration procedure.</strong> The arbitration will be conducted by a single neutral arbitrator. The seat of the arbitration is Los Angeles County, California. Consistent with the AAA Consumer Arbitration Rules, hearings may proceed by videoconference, by written submissions, or in person at a location reasonably convenient to you. Arbitration fees and costs are allocated as provided in the AAA Consumer Arbitration Rules. The arbitrator will issue a reasoned written decision, may award the same individual relief that a court could award (including individual injunctive or declaratory relief where available by law), and judgment on the award may be entered in any court of competent jurisdiction.</p>
+    <p><strong>Delegation.</strong> The arbitrator, and not any court, has exclusive authority to resolve any dispute relating to the interpretation, applicability, enforceability, or formation of this arbitration agreement, except that a court of competent jurisdiction decides any dispute about the validity or enforceability of the class action waiver below.</p>
+    <p><strong>Class action waiver.</strong> You and cashbff each agree that disputes may be brought against the other <strong>only in an individual capacity</strong>, and not as a plaintiff or class member in any purported class, collective, consolidated, private attorney general, or other representative proceeding. The arbitrator may not consolidate more than one person's claims and may not preside over any form of class or representative proceeding. If a court or arbitrator of competent jurisdiction finally determines that this class action waiver is unenforceable as to a particular claim or request for relief, then that claim or request, and only that one, will proceed in court under the "Court proceedings" paragraph below, and the remainder of this Section remains in full force.</p>
+    <p><strong>Your right to opt out.</strong> You may opt out of this arbitration agreement and the class action waiver, and they will not apply to you, by emailing <strong>daksh@cashbff.com</strong> with the subject line <strong>"Arbitration opt-out"</strong> within 30 days of the date you first accept these Terms, including your name and the phone number associated with your account. Opting out does not affect any other provision of these Terms, and we will not treat you differently for opting out.</p>
+    <p><strong>Court proceedings.</strong> Any dispute that this Section permits to proceed in court (including where you have validly opted out, and excluding qualifying small claims) will be subject to the exclusive jurisdiction and venue of the state and federal courts located in Los Angeles County, California, and you and cashbff consent to personal jurisdiction there.</p>
+    <p><strong>Survival.</strong> This Section 16 survives termination of these Terms and of your account.</p>
 
-    <h2>17. contact us</h2>
+    <h2 id="contact">17. Contact Us</h2>
     <p>Questions about these Terms? You can text cashbff or email us at <strong>daksh@cashbff.com</strong>. For data deletion requests, email <strong>daksh@cashbff.com</strong> with the subject "Data deletion request," and we take care of it within 30 days.</p>
-    <p>cashbff. Your money buddy, not your data broker.</p>
 
-    <p>See also our <a href="privacy.html">Privacy Policy</a>.</p>
+    <p>See also our <a href="/privacy">Privacy Policy</a>.</p>
 
-    <span class="updated">Last updated: June 1, 2026.</span>
+    <span class="updated">Last updated: June 11, 2026.</span>
+    </article>
   </main>
 
   <footer class="page-foot">
     <span>&copy; 2026 cashbff</span>
     <span>&middot;</span>
-    <a href="privacy.html">privacy</a>
+    <a href="/privacy">privacy</a>
     <span>&middot;</span>
-    <a href="terms.html">terms</a>
+    <a href="/terms">terms</a>
     <span>&middot;</span>
     <a href="mailto:daksh@cashbff.com">daksh@cashbff.com</a> <span>&middot;</span> Built by <a href="https://khannadaksh.com" rel="me">Daksh Khanna</a> <span>&middot;</span> Khanna's LLC
   </footer>
 
+  <script src="/assets/js/reveal.js" defer></script>
 </body>
 </html>

@@ -16,7 +16,6 @@
   <meta name="twitter:image" content="https://cashbff.com/icon.png">
   <link rel="canonical" href="https://cashbff.com/privacy">
 
-  <!-- Favicon (best-effort. falls back gracefully if missing) -->
   <link rel="icon" type="image/png" href="/icon.png">
   <link rel="apple-touch-icon" href="/icon.png">
   <meta name="theme-color" content="#014751">
@@ -58,12 +57,14 @@
       --periwinkle: #C5B6F1;
       --off-black: #1A1717;
       --vanilla: #FCFAF2;
+      --hairline: rgba(26, 23, 23, 0.12);
+      --soft-ink: rgba(26, 23, 23, 0.62);
       --font-display: 'Greed Condensed', 'Archivo Narrow', 'Arial Narrow', Impact, sans-serif;
       --font-body: 'Instrument Sans', system-ui, -apple-system, sans-serif;
     }
 
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-    html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+    html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; scroll-behavior: smooth; }
     body {
       font-family: var(--font-body);
       background: var(--vanilla);
@@ -74,140 +75,216 @@
       flex-direction: column;
     }
     a { color: var(--cash-green); }
-    a:hover { opacity: 0.7; }
-
-    /* ── Top bar ───────────────────────────────────── */
-    .stage {
-      max-width: 720px;
-      width: 100%;
-      margin: 0 auto;
-      padding: 1.5rem 2rem 0;
-      flex-shrink: 0;
+    a:hover { opacity: 0.75; }
+    a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--cash-green);
+      outline-offset: 3px;
+      border-radius: 4px;
     }
-    .bar {
+
+    /* ── sticky top bar (site chrome) ─────────────── */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      background: rgba(252, 250, 242, 0.88);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-bottom: 1px solid transparent;
+      transition: border-color .25s ease, box-shadow .25s ease;
+    }
+    .topbar.is-scrolled {
+      border-bottom-color: var(--hairline);
+      box-shadow: 0 6px 24px -18px rgba(26, 23, 23, 0.35);
+    }
+    .topbar__inner {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0.85rem 1.5rem;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 1rem;
     }
     .wordmark {
       font-family: var(--font-display);
       font-weight: 700;
-      font-size: 1.5rem;
+      font-size: 1.45rem;
       letter-spacing: -0.02em;
       color: var(--cash-green);
       text-decoration: none;
+      text-transform: lowercase;
+      flex-shrink: 0;
     }
-    .bar__back {
-      font-size: 0.72rem;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
+    .nav {
+      display: flex;
+      align-items: center;
+      gap: 1.3rem;
+      font-size: 0.9rem;
+      font-weight: 500;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .nav::-webkit-scrollbar { display: none; }
+    .nav a { color: var(--off-black); opacity: 0.72; text-decoration: none; white-space: nowrap; transition: opacity .15s; }
+    .nav a:hover { opacity: 1; }
+    .nav a.nav-cta {
+      opacity: 1;
+      background: var(--cash-green);
+      color: var(--vanilla);
       font-weight: 600;
-      opacity: 0.45;
-      color: var(--off-black);
-      text-decoration: none;
-      transition: opacity 0.2s ease;
+      padding: 0.42rem 1.05rem;
+      border-radius: 999px;
+      transition: transform .12s ease, opacity .15s;
     }
-    .bar__back:hover { opacity: 1; color: var(--cash-green); }
+    .nav a.nav-cta:hover { opacity: 0.92; transform: translateY(-1px); }
+    @media (max-width: 640px) {
+      .nav { gap: 1rem; font-size: 0.86rem; }
+    }
 
-    /* ── Content ───────────────────────────────────── */
-    .content {
-      max-width: 36rem;
+    /* ── document box ─────────────────────────────── */
+    .stage {
       width: 100%;
+      max-width: 56rem;
       margin: 0 auto;
-      padding: 3rem 2rem 4rem;
+      padding: 2.5rem 1.5rem 4rem;
       flex: 1;
     }
-    .content__title {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: clamp(2.5rem, 7vw, 3.75rem);
-      line-height: 0.95;
-      letter-spacing: -0.02em;
-      text-transform: lowercase;
-      color: var(--off-black);
-      margin-bottom: 0.4rem;
+    .doc {
+      background: #FFFFFF;
+      border: 1px solid var(--hairline);
+      border-radius: 20px;
+      padding: clamp(1.6rem, 5vw, 3.25rem);
+      box-shadow: 0 24px 60px -48px rgba(26, 23, 23, 0.4);
     }
-    .content__title .period { color: var(--cash-green); }
-    .content__sub {
-      font-size: 1rem;
-      opacity: 0.55;
-      margin-bottom: 2.5rem;
-      line-height: 1.5;
-    }
-    .content h2 {
-      font-family: var(--font-display);
-      font-weight: 500;
-      font-size: 1.25rem;
-      letter-spacing: 0.005em;
+    .doc__eyebrow {
+      font-size: 0.74rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      font-weight: 600;
       color: var(--cash-green);
-      margin: 2.25rem 0 0.6rem;
+      margin-bottom: 0.8rem;
     }
-    .content p {
+    .doc__title {
+      font-family: var(--font-body);
+      font-weight: 700;
+      font-size: clamp(1.9rem, 5vw, 2.6rem);
+      line-height: 1.1;
+      letter-spacing: -0.015em;
+      color: var(--off-black);
+      margin-bottom: 0.5rem;
+    }
+    .doc__meta {
+      font-size: 0.92rem;
+      color: var(--soft-ink);
+      margin-bottom: 1.9rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--hairline);
+    }
+    .doc__summary {
+      background: rgba(1, 71, 81, 0.045);
+      border-left: 3px solid var(--cash-green);
+      border-radius: 0 12px 12px 0;
+      padding: 1.05rem 1.25rem;
+      font-size: 0.95rem;
+      line-height: 1.7;
+      color: #3a3838;
+      margin-bottom: 2.1rem;
+    }
+    .doc__summary strong { color: var(--off-black); font-weight: 600; }
+    .doc h2 {
+      font-family: var(--font-body);
+      font-weight: 700;
+      font-size: 1.14rem;
+      letter-spacing: -0.005em;
+      color: var(--cash-green);
+      margin: 2.4rem 0 0.7rem;
+      scroll-margin-top: 5rem;
+    }
+    .doc p {
       font-size: 0.95rem;
       color: #3a3838;
       margin-bottom: 0.85rem;
-      line-height: 1.7;
+      line-height: 1.75;
+      max-width: 72ch;
     }
-    .content p strong {
+    .doc p strong {
       color: var(--off-black);
       font-weight: 600;
     }
-    .content ul {
-      padding-left: 1.25rem;
+    .doc ul {
+      padding-left: 1.3rem;
       margin: 0.5rem 0 1rem;
+      max-width: 72ch;
     }
-    .content li {
+    .doc li {
       font-size: 0.95rem;
       color: #3a3838;
-      margin-bottom: 0.4rem;
-      line-height: 1.65;
+      margin-bottom: 0.45rem;
+      line-height: 1.7;
     }
+    .doc li strong { color: var(--off-black); font-weight: 600; }
 
     .updated {
       display: block;
       margin-top: 3rem;
       padding-top: 1.25rem;
-      border-top: 1px solid rgba(1, 71, 81, 0.08);
-      font-size: 0.78rem;
-      opacity: 0.45;
+      border-top: 1px solid var(--hairline);
+      font-size: 0.8rem;
+      color: var(--soft-ink);
       letter-spacing: 0.02em;
     }
 
-    /* ── Page footer (matches the rest of the site) ── */
+    /* ── page footer (site chrome) ────────────────── */
     .page-foot {
       flex-shrink: 0;
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
-      gap: 1.25rem;
-      font-size: 0.72rem;
-      opacity: 0.4;
-      padding: 1rem 2rem 1.75rem;
+      align-items: center;
+      gap: 0.6rem 1.1rem;
+      font-size: 0.78rem;
+      color: var(--soft-ink);
+      padding: 1.25rem 2rem 2rem;
+      border-top: 1px solid var(--hairline);
     }
-    .page-foot a { color: inherit; text-decoration: none; }
+    .page-foot a { color: inherit; text-decoration: underline; text-decoration-color: var(--hairline); text-underline-offset: 3px; }
     .page-foot a:hover { opacity: 1; color: var(--cash-green); }
 
     @media (max-width: 480px) {
-      .stage { padding: 1.25rem 1.25rem 0; }
-      .content { padding: 2rem 1.25rem 3rem; }
-      .content h2 { margin-top: 1.85rem; }
+      .stage { padding: 1.5rem 1rem 3rem; }
+      .doc h2 { margin-top: 2rem; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; transition: none !important; }
     }
   </style>
 </head>
 <body>
 
-  <div class="stage">
-    <header class="bar">
+  <header class="topbar">
+    <div class="topbar__inner">
       <a href="/" class="wordmark" aria-label="cashbff home">cashbff</a>
-      <a href="/" class="bar__back">&larr; home</a>
-    </header>
-  </div>
+      <nav class="nav" aria-label="primary">
+        <a href="/">home</a>
+        <a href="/how-it-works">how it works</a>
+        <a href="/pricing">pricing</a>
+        <a href="/money-dysmorphia">money dysmorphia</a>
+        <a href="/start" class="nav-cta">start</a>
+      </nav>
+    </div>
+  </header>
 
-  <main class="content">
-    <h1 class="content__title">privacy<span class="period">.</span></h1>
-    <p class="content__sub"><strong>TL;DR:</strong> cashbff reads your bank transactions (read-only, through Plaid) and helps you understand your money over SMS, WhatsApp, and through AI assistants you connect. We use first-party analytics (PostHog and Sentry) that are configured to exclude the content of your messages, so we can see what works and fix bugs. We never sell or share your data, run ads, or use third-party ad trackers. cashbff finds and surfaces things, and only you act on them. We never move, pay, or transfer your money. You can disconnect your bank anytime, and you can ask us to delete your data anytime (we take care of it within 30 days).</p>
+  <main class="stage">
+    <article class="doc">
+    <p class="doc__eyebrow">cashbff legal</p>
+    <h1 class="doc__title">Privacy Policy</h1>
+    <p class="doc__meta">Effective June 11, 2026. The Service is operated by Khanna's LLC.</p>
 
-    <h2>1. what we collect</h2>
+    <p class="doc__summary"><strong>Summary:</strong> cashbff reads your bank transactions (read-only, through Plaid) and helps you understand your money over SMS, WhatsApp, and through AI assistants you connect. We use first-party analytics (PostHog and Sentry) that are configured to exclude the content of your messages, so we can see what works and fix bugs. We never sell or share your data, run ads, or use third-party ad trackers. cashbff finds and surfaces things, and only you act on them. We never move, pay, or transfer your money. You can disconnect your bank anytime, and you can ask us to delete your data anytime (we take care of it within 30 days).</p>
+
+    <h2 id="collect">1. What We Collect</h2>
     <p>We collect only what we need to run cashbff:</p>
     <ul>
       <li><strong>Account and contact info:</strong> your phone number (used for one-time-passcode sign-in) and first name. Some sign-up flows also collect your email address, last name, and date of birth (your date of birth is used to confirm you are at least 18 and, where applicable, to help verify your identity).</li>
@@ -217,17 +294,17 @@
     </ul>
     <p>We do <strong>not</strong> collect your bank login credentials, passwords, full bank account numbers, or Social Security number. Plaid handles the connection to your bank, so we never see your bank login.</p>
 
-    <h2>2. how we use your data</h2>
+    <h2 id="use">2. How We Use Your Data</h2>
     <p>We use your information to run cashbff and to make it better:</p>
     <ul>
       <li><strong>Answer your questions</strong> and respond to what you send us over SMS, WhatsApp, or a connected AI assistant.</li>
       <li><strong>Find and surface insights:</strong> detect recurring subscriptions and bills from your transaction patterns, categorize and summarize your spending, and infer general lifestyle traits to personalize what we tell you.</li>
       <li><strong>Support actions you confirm:</strong> for example, set savings goals, schedule reminders and expected income or expenses, add notes to a transaction, flag transactions as reimbursable, and confirm recurring bills we detect. cashbff finds and surfaces things, and you decide and confirm. cashbff does <strong>not</strong> move, pay, or transfer your money, and it cannot act on a financial change without your explicit confirmation.</li>
-      <li><strong>Improve the product and do research:</strong> we study spending patterns and feature usage to understand what is working and make cashbff better. We do this on <strong>aggregated or de-identified</strong> data (data stripped of details that point to you) wherever the question allows. For example, learning that a share of users have a coffee subscription, rather than pointing at any one person.</li>
+      <li><strong>Improve the product and do research:</strong> we study spending patterns and feature usage to understand what is working and make cashbff better. We do this on <strong>aggregated or de-identified</strong> data (data stripped of details that point to you) wherever the question allows. For example, learning that a share of users have a coffee subscription, rather than pointing at any one person. In the future, we may share what we learn from this research in aggregated or de-identified form (numbers and patterns that cannot identify you). If we ever want to use or share research in a way that could identify you, we will ask for your consent first.</li>
     </ul>
     <p>We do <strong>not</strong> use your personal or financial data to train any artificial-intelligence model of our own. The AI provider that processes your messages on our behalf (see Section 4) states that, under its API terms, it does not train its models on this data by default.</p>
 
-    <h2>3. how you reach cashbff (your channels)</h2>
+    <h2 id="channels">3. How You Reach cashbff (Your Channels)</h2>
     <p>You can use cashbff through more than one channel, and this policy covers all of them. The channel you use does not change your data rights.</p>
     <ul>
       <li><strong>SMS,</strong> through Twilio.</li>
@@ -235,7 +312,7 @@
       <li><strong>Connected AI assistants,</strong> through a secure data-access connection you set up (see Section 4). An AI assistant you connect, such as Claude, can read your money data and perform the same actions you confirm first that are described in Section 2 (for example, set goals, schedule reminders, add transaction notes, mark reimbursables, confirm recurring bills). These actions still require your confirmation, and the assistant cannot move, pay, or transfer money.</li>
     </ul>
 
-    <h2>4. third-party services we rely on</h2>
+    <h2 id="vendors">4. Third-Party Services We Rely On</h2>
     <p>We use a small set of vendors to run cashbff. Each one processes data <strong>on our behalf, under contract,</strong> to deliver the service. They are not permitted to use your data for their own purposes.</p>
     <ul>
       <li><strong>Plaid:</strong> read-only bank access (Transactions scope). Plaid access tokens are encrypted at rest. Plaid processes your data under its own End User Privacy Policy (plaid.com/legal). You can review and revoke your Plaid connections at any time at my.plaid.com.</li>
@@ -249,8 +326,9 @@
     </ul>
     <p>We process and store your data in the United States.</p>
     <p><strong>We do not sell, rent, or share your personal or financial data with anyone for their own purposes. Ever.</strong> The vendors above are service providers, which is different from selling or sharing.</p>
+    <p>Sharing aggregated or de-identified research findings that cannot identify you (see Section 2) is not selling or sharing your data, and we will never present research in a way that points back to you.</p>
 
-    <h2>5. analytics and monitoring (no ad trackers)</h2>
+    <h2 id="analytics">5. Analytics and Monitoring (No Ad Trackers)</h2>
     <p>To see what is working and fix bugs, we use two first-party tools, both configured to exclude the content of your messages:</p>
     <ul>
       <li><strong>PostHog</strong> (product analytics), configured in privacy mode. It captures usage events and per-message AI cost, tokens, and latency. It is configured <strong>not</strong> to capture the content of your messages.</li>
@@ -258,11 +336,11 @@
     </ul>
     <p>We do <strong>not</strong> use third-party advertising trackers, Google Analytics, ad pixels, or cross-site tracking cookies. We have no ads.</p>
 
-    <h2>6. how we handle your messages</h2>
+    <h2 id="messages">6. How We Handle Your Messages</h2>
     <p>We process your conversations to generate responses, and we send your message context to our AI provider to do that (see Section 4). How we store messages can differ by channel and may change as the Service evolves. For example, SMS message bodies are stored so we can keep context across your conversation. We may also store WhatsApp message content to provide and improve the Service. Where a message is only processed in the moment, we still keep a message identifier to avoid duplicates.</p>
-    <p>Our team does <strong>not</strong> routinely read the content of your messages. Access to message content occurs only where needed to provide or maintain the service, to investigate abuse or security issues, to comply with the law or legal process, or with your consent.</p>
+    <p>Our team does <strong>not</strong> routinely read the content of your messages. Today, our team is the founder. A member of our team may access message content where needed to support you or resolve a problem, to study how the Service is used so we can improve it (product improvement and research), to investigate abuse or security issues, to comply with law or legal process, or with your consent.</p>
 
-    <h2>7. data security</h2>
+    <h2 id="security">7. Data Security</h2>
     <p>We treat your financial information as sensitive and maintain administrative, technical, and physical safeguards designed to protect it. Practical steps we take include:</p>
     <ul>
       <li>Plaid access tokens are encrypted at rest using AES-256-GCM.</li>
@@ -273,10 +351,10 @@
     </ul>
     <p>No method of storage or transmission is perfectly secure, and we cannot guarantee absolute security.</p>
 
-    <h2>8. data retention</h2>
+    <h2 id="retention">8. Data Retention</h2>
     <p>We keep your data while your account is active and while you use the service. We retain each type of data only as long as we need it for the purpose we collected it: account and contact info and transaction data for as long as your account is active; message content for as long as needed to provide context and operate the service; and analytics and error data on a rolling basis. When you disconnect your bank, we remove the related Plaid access token and the cached transactions tied to it. You can ask us to delete your data at any time, and we take care of it within 30 days (see Section 9). We may retain limited information where the law requires it, to complete transactions, or to prevent fraud, and routine backups age out on their own schedule. Stripe retains payment history under its own policy.</p>
 
-    <h2>9. your rights and controls</h2>
+    <h2 id="rights">9. Your Rights and Controls</h2>
     <p>You are in control of your data, and we make it easy:</p>
     <ul>
       <li><strong>Delete your data:</strong> email <strong>daksh@cashbff.com</strong> with the subject <strong>"Data deletion request,"</strong> or text cashbff. We take care of it within 30 days.</li>
@@ -289,27 +367,28 @@
     <p><strong>How to exercise your rights.</strong> To make a request to know, access, delete, correct, or receive a copy of your information, email <strong>daksh@cashbff.com</strong> or text cashbff. We will verify your identity before acting on a request, and an authorized agent may submit a request on your behalf with proof of authorization. We respond within the time required by law (generally 45 days, which may be extended where permitted). We will not discriminate against you for exercising your rights.</p>
     <p>Your financial data comes through Plaid and is sensitive. We handle it with care and apply the safeguards described in Section 7. cashbff is not a bank or a financial institution.</p>
 
-    <h2>10. changes to this policy</h2>
-    <p>We may update this policy as cashbff evolves. When we make a material change, we will update the "Last updated" date below and, where appropriate, let you know through the service. The effective date of this version is June 1, 2026.</p>
+    <h2 id="changes">10. Changes to This Policy</h2>
+    <p>We may update this policy as cashbff evolves. When we make a material change, we will update the "Last updated" date below and, where appropriate, let you know through the service. The effective date of this version is June 11, 2026.</p>
 
-    <h2>11. contact</h2>
-    <p>Questions about your privacy? Text cashbff, or email <strong>daksh@cashbff.com</strong>. cashbff is operated by Khannas LLC.</p>
-    <p><strong>cashbff. Your money buddy, not your data broker.</strong></p>
+    <h2 id="contact">11. Contact</h2>
+    <p>Questions about your privacy? Text cashbff, or email <strong>daksh@cashbff.com</strong>. cashbff is operated by Khanna's LLC.</p>
 
-    <p>See also our <a href="terms.html">Terms of Service</a>.</p>
+    <p>See also our <a href="/terms">Terms of Service</a>.</p>
 
-    <span class="updated">Last updated: June 1, 2026.</span>
+    <span class="updated">Last updated: June 11, 2026.</span>
+    </article>
   </main>
 
   <footer class="page-foot">
     <span>&copy; 2026 cashbff</span>
     <span>&middot;</span>
-    <a href="privacy.html">privacy</a>
+    <a href="/privacy">privacy</a>
     <span>&middot;</span>
-    <a href="terms.html">terms</a>
+    <a href="/terms">terms</a>
     <span>&middot;</span>
     <a href="mailto:daksh@cashbff.com">daksh@cashbff.com</a> <span>&middot;</span> Built by <a href="https://khannadaksh.com" rel="me">Daksh Khanna</a> <span>&middot;</span> Khanna's LLC
   </footer>
 
+  <script src="/assets/js/reveal.js" defer></script>
 </body>
 </html>
