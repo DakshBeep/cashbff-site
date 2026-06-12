@@ -101,7 +101,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 
   <!-- PostHog product analytics. CSP-safe (no eval). -->
   <script src="/assets/js/posthog-init.js" defer></script>
@@ -111,332 +111,22 @@
   <script src="/assets/js/vercel-analytics-init.js" defer></script>
   <script defer src="/_vercel/insights/script.js"></script>
 
+  <!-- ── site v2, direction C: bold editorial honesty (2026-06-11) ──────────
+       Presentation only on this page: every word of body copy, every heading,
+       every schema block, every URL is byte-identical to the voice rewrite
+       shipped earlier today. Shared design system: /assets/css/editorial.css. -->
+  <link rel="stylesheet" href="/assets/css/editorial.css">
   <style>
-    @font-face {
-      font-family: 'Greed Condensed';
-      src: url('/fonts/GreedCondensed-Bold.woff2') format('woff2');
-      font-weight: 700;
-      font-display: swap;
+    /* dysmorphia-only: hero pairs the definition with the pull stat */
+    .dys-band { display: grid; grid-template-columns: 1fr; gap: 2rem; align-items: start; margin-top: .4rem; }
+    @media (min-width: 880px) { .dys-band { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 4rem; } }
+    .pull-stat { border-top: 2px solid var(--ink); padding-top: 1rem; max-width: 300px; }
+    .pull-stat .big {
+      font-family: var(--font-display); font-weight: 700; letter-spacing: -0.02em;
+      font-size: clamp(5rem, 13vw, 9rem); line-height: .85; display: block; color: var(--ink);
     }
-    @font-face {
-      font-family: 'Greed Condensed';
-      src: url('/fonts/GreedCondensed-Medium.woff2') format('woff2');
-      font-weight: 500;
-      font-display: swap;
-    }
-
-    :root {
-      --vanilla: #FCFAF2;
-      --off-black: #1A1717;
-      --cash-green: #014751;
-      --hairline: rgba(26, 23, 23, 0.12);
-      --soft-ink: rgba(26, 23, 23, 0.62);
-
-      --font-display: 'Greed Condensed', 'Archivo Narrow', 'Arial Narrow', Impact, sans-serif;
-      --font-body: 'Instrument Sans', system-ui, -apple-system, sans-serif;
-    }
-
-    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
-    body {
-      font-family: var(--font-body);
-      background: var(--vanilla);
-      color: var(--off-black);
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      line-height: 1.5;
-      min-height: 100dvh;
-    }
-    a { color: inherit; text-decoration: none; }
-    button { font-family: inherit; cursor: pointer; border: none; background: none; }
-
-    .stage {
-      max-width: 720px;
-      margin: 0 auto;
-      padding: 1.5rem 1.5rem 4rem;
-      display: flex;
-      flex-direction: column;
-      min-height: 100dvh;
-    }
-
-    /* ── top bar ── */
-    .bar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-shrink: 0;
-      margin-bottom: 4rem;
-    }
-    .wordmark {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: 1.5rem;
-      letter-spacing: -0.02em;
-      color: var(--cash-green);
-      text-transform: lowercase;
-    }
-    .nav { display: flex; gap: 1.4rem; font-size: 0.9rem; font-weight: 500; }
-    .nav a { opacity: 0.7; transition: opacity .15s; }
-    .nav a:hover { opacity: 1; }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(14px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    /* ── hero ── */
-    .hero {
-      margin: 0 0 2.4rem;
-      opacity: 0;
-      animation: fadeIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.05s forwards;
-    }
-    .headline {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: clamp(2.4rem, 7.5vw, 4.2rem);
-      line-height: 0.97;
-      letter-spacing: -0.02em;
-      text-transform: lowercase;
-      color: var(--off-black);
-      margin-bottom: 1.4rem;
-    }
-    .headline .period { color: var(--cash-green); }
-    .lede {
-      font-size: clamp(1.02rem, 1.8vw, 1.18rem);
-      line-height: 1.6;
-      max-width: 60ch;
-      margin-bottom: 1rem;
-    }
-    .lede:last-child { margin-bottom: 0; }
-    .lede.muted { color: var(--soft-ink); }
-
-    /* ── sections ── */
-    .section {
-      margin: 0 0 3rem;
-      opacity: 0;
-      animation: fadeIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.18s forwards;
-    }
-    .section h2 {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: clamp(1.6rem, 4vw, 2.1rem);
-      letter-spacing: -0.02em;
-      text-transform: lowercase;
-      margin-bottom: 1.1rem;
-      scroll-margin-top: 1.5rem;
-    }
-    .section h2 .period { color: var(--cash-green); }
-    .section h3 {
-      font-size: 1.05rem;
-      font-weight: 600;
-      margin: 1.4rem 0 0.5rem;
-      max-width: 60ch;
-    }
-    .section p { max-width: 60ch; margin-bottom: 0.9rem; line-height: 1.6; }
-    .section p:last-child { margin-bottom: 0; }
-    .section .muted { color: var(--soft-ink); }
-    .ledger {
-      list-style: none;
-      margin: 0 0 1.1rem;
-      padding: 0;
-      max-width: 60ch;
-    }
-    .ledger li {
-      padding: 0.7rem 0;
-      border-bottom: 1px solid var(--hairline);
-      line-height: 1.5;
-    }
-    .ledger li:first-child { border-top: 1px solid var(--hairline); }
-
-    /* ── jump nav ── */
-    .jump { display: flex; gap: 1rem; flex-wrap: wrap; margin: 0 0 3rem; font-size: 0.95rem; }
-    .jump a {
-      text-decoration: underline;
-      text-decoration-color: var(--hairline);
-      text-underline-offset: 3px;
-      opacity: 0.75;
-      transition: opacity .15s, text-decoration-color .15s;
-    }
-    .jump a:hover { opacity: 1; text-decoration-color: var(--off-black); }
-
-    /* ── CTA ── */
-    .cta { margin: 0.4rem 0 0; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
-    .btn-primary {
-      background: var(--off-black);
-      color: var(--vanilla);
-      font-weight: 700;
-      font-size: 1.05rem;
-      padding: 0.95rem 1.9rem;
-      border-radius: 14px;
-      text-transform: lowercase;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.6rem;
-      transition: transform .12s ease, opacity .15s;
-    }
-    .btn-primary:hover { opacity: 0.92; transform: translateY(-1px); }
-    .btn-primary:active { transform: translateY(1px); }
-    .link-quiet { font-size: 0.95rem; opacity: 0.7; text-decoration: underline; text-decoration-color: var(--hairline); text-underline-offset: 3px; }
-    .link-quiet:hover { opacity: 1; text-decoration-color: var(--off-black); }
-    .inline-link {
-      text-decoration: underline;
-      text-decoration-color: var(--hairline);
-      text-underline-offset: 3px;
-      transition: text-decoration-color .15s;
-    }
-    .inline-link:hover { text-decoration-color: var(--off-black); }
-
-    .updated { font-size: 0.8rem; color: var(--soft-ink); margin-top: 2rem; }
-
-    /* ── footer ── */
-    .footer {
-      margin-top: auto;
-      padding-top: 2.5rem;
-      font-size: 0.85rem;
-      opacity: 0.5;
-      line-height: 1.7;
-      border-top: 1px solid var(--hairline);
-    }
-    .footer a {
-      text-decoration: underline;
-      text-decoration-color: var(--hairline);
-      text-underline-offset: 3px;
-      transition: text-decoration-color .15s, opacity .15s;
-    }
-    .footer a:hover { text-decoration-color: var(--off-black); opacity: 1; }
-    .footer .sep { margin: 0 0.5rem; opacity: 0.5; }
-
-    @media (prefers-reduced-motion: reduce) {
-      * { animation: none !important; transition: none !important; }
-    }
-  </style>
-
-  <!-- ── 2026-06-11 redesign layer ──────────────────────────────────────────
-       Presentation only: every word of body copy, every heading, every schema
-       block, and every URL is unchanged. This block restyles the shared chrome
-       (sticky nav, buttons, footer), adds calm ambient motion to the hero, and
-       arms scroll-reveals (see /assets/js/reveal.js; content is never hidden
-       without JS). Palette: the brand tokens already in this repo (vanilla,
-       off-black, cash-green) plus the electric-green + periwinkle accents from
-       the dynamic-era prototypes (home-bloom*.html). -->
-  <style>
-    :root {
-      --electric-green: #D3FFB4;
-      --periwinkle: #C5B6F1;
-      --card: #FFFFFF;
-    }
-    html, body { overflow-x: clip; }
-    body { font-size: 1.03rem; display: flex; flex-direction: column; }
-    a:focus-visible, button:focus-visible { outline: 2px solid var(--cash-green); outline-offset: 3px; border-radius: 4px; }
-
-    /* sticky top bar */
-    .topbar {
-      position: sticky; top: 0; z-index: 40;
-      background: rgba(252, 250, 242, 0.88);
-      -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
-      border-bottom: 1px solid transparent;
-      transition: border-color .25s ease, box-shadow .25s ease;
-    }
-    .topbar.is-scrolled { border-bottom-color: var(--hairline); box-shadow: 0 6px 24px -18px rgba(26,23,23,.35); }
-    .topbar__inner {
-      max-width: 960px; margin: 0 auto; padding: .85rem 1.5rem;
-      display: flex; align-items: center; justify-content: space-between; gap: 1rem;
-    }
-    .topbar .wordmark { font-size: 1.45rem; }
-    .topbar .nav { display: flex; align-items: center; gap: 1.3rem; font-size: .9rem; font-weight: 500; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
-    .topbar .nav::-webkit-scrollbar { display: none; }
-    .topbar .nav a { opacity: .72; white-space: nowrap; }
-    .topbar .nav a:hover, .topbar .nav a[aria-current="page"] { opacity: 1; }
-    .topbar .nav a.nav-cta {
-      opacity: 1; background: var(--cash-green); color: var(--vanilla);
-      font-weight: 600; padding: .42rem 1.05rem; border-radius: 999px;
-      transition: transform .12s ease, opacity .15s;
-    }
-    .topbar .nav a.nav-cta:hover { opacity: .92; transform: translateY(-1px); }
-    @media (max-width: 640px) { .topbar .nav { gap: 1rem; font-size: .86rem; } .topbar__inner { padding: .8rem 1.1rem; } }
-
-    /* stage sits under the bar now */
-    .stage { min-height: calc(100dvh - 62px); padding-top: 2.25rem; max-width: 760px; }
-
-    /* hero: calm ambient color behind the headline */
-    .hero { position: relative; z-index: 0; }
-    .hero::before, .hero::after {
-      content: ''; position: absolute; border-radius: 50%;
-      filter: blur(72px); z-index: -1; pointer-events: none;
-    }
-    .hero::before {
-      width: 24rem; height: 24rem; background: var(--electric-green); opacity: .42;
-      top: -10rem; right: -13rem; animation: orbA 18s ease-in-out infinite alternate;
-    }
-    .hero::after {
-      width: 19rem; height: 19rem; background: var(--periwinkle); opacity: .26;
-      top: 3rem; left: -12rem; animation: orbB 22s ease-in-out infinite alternate;
-    }
-    @keyframes orbA { from { transform: translate3d(0,0,0) scale(1); } to { transform: translate3d(-2.5rem, 1.5rem, 0) scale(1.07); } }
-    @keyframes orbB { from { transform: translate3d(0,0,0) scale(1); } to { transform: translate3d(2rem, -1.25rem, 0) scale(1.05); } }
-
-    /* primary CTA: the path to WhatsApp is THE action on every page */
-    .btn-primary {
-      background: var(--cash-green); color: var(--vanilla);
-      border-radius: 999px; padding: 1rem 2rem; font-size: 1.08rem;
-      box-shadow: 0 14px 30px -16px rgba(1, 71, 81, .55);
-      transition: transform .15s ease, box-shadow .2s ease, background-color .15s ease;
-    }
-    .btn-primary:hover { opacity: 1; transform: translateY(-2px); background: #02555F; box-shadow: 0 20px 42px -16px rgba(1,71,81,.6); }
-    .btn-primary:active { transform: translateY(0); }
-    .btn-primary .arrow, .btn-primary span[aria-hidden] { transition: transform .15s ease; }
-    .btn-primary:hover .arrow, .btn-primary:hover span[aria-hidden] { transform: translateX(3px); }
-
-    /* scroll reveals: armed only when reveal.js runs (html.has-reveal-js) */
-    .section, .cta { opacity: 1; animation: none; }
-    .has-reveal-js .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1); }
-    .has-reveal-js .reveal.is-in { opacity: 1; transform: none; }
-
-    /* roomier reading type */
-    .lede { font-size: clamp(1.05rem, 1.9vw, 1.22rem); }
-    .section p { font-size: clamp(1.02rem, 1.8vw, 1.15rem); }
-    .section h2 { font-size: clamp(1.8rem, 4.5vw, 2.4rem); margin-bottom: 1.2rem; }
-
-    /* footer: quiet but readable, with the legal links */
-    .footer { font-size: .88rem; line-height: 1.9; padding-top: 2.25rem; opacity: 1; color: var(--soft-ink); }
-
-    @media (prefers-reduced-motion: reduce) {
-      .hero::before, .hero::after { animation: none; }
-      .has-reveal-js .reveal { opacity: 1; transform: none; transition: none; }
-      /* the original pages animate .hero/.cta/.felt from opacity:0; with
-         animations disabled they would stay invisible. Force them on. */
-      .hero, .cta, .felt, .plans, .plans-foot, .section, .faq-group { opacity: 1 !important; }
-    }
-
-    /* dysmorphia pillar: pill jump-nav with the periwinkle accent */
-    .jump { gap: .6rem; }
-    .jump a {
-      text-decoration: none; opacity: 1;
-      border: 1px solid var(--hairline); background: var(--card);
-      padding: .4rem .95rem; border-radius: 999px;
-      font-size: .9rem; font-weight: 500;
-      transition: border-color .15s, background-color .15s, transform .12s;
-    }
-    .jump a:hover { border-color: var(--periwinkle); background: rgba(197,182,241,.18); transform: translateY(-1px); }
-    .hero::after { opacity: .34; }
-    .ledger li { padding: .85rem 0; font-size: 1.02rem; }
-
-    /* faq accordion: question visible, answer folded but real DOM content at load
-       (native details/summary, no JS), mirrored word-for-word in the FAQPage schema. */
-    .faq-acc { max-width: 60ch; }
-    .faq-acc details { border-bottom: 1px solid var(--hairline); }
-    .faq-acc details:first-of-type { border-top: 1px solid var(--hairline); }
-    .faq-acc summary {
-      list-style: none; cursor: pointer; padding: .95rem 0;
-      display: flex; align-items: baseline; justify-content: space-between; gap: 1rem;
-    }
-    .faq-acc summary::-webkit-details-marker { display: none; }
-    .faq-acc summary h3 { font-size: 1.02rem; font-weight: 600; margin: 0; }
-    .faq-acc summary::after { content: '+'; color: var(--cash-green); font-weight: 700; flex-shrink: 0; }
-    .faq-acc details[open] summary::after { content: '\2212'; }
-    .faq-acc .faq-a { padding: 0 0 1.1rem; color: var(--soft-ink); line-height: 1.6; }
-    .faq-acc .faq-a p { margin-bottom: .7rem; max-width: 60ch; }
-    .faq-acc .faq-a p:last-child { margin-bottom: 0; }
+    .pull-stat .big .pc { color: var(--marigold); }
+    .pull-stat .cap { display: block; font-size: .95rem; color: var(--soft-ink); margin-top: .6rem; max-width: 24ch; }
   </style>
 </head>
 <body>
@@ -455,104 +145,165 @@
 
   <main class="stage">
 
-    <section class="hero">
+    <section class="ed-hero" aria-label="intro">
       <h1 class="headline">
-        money dysmorphia<span class="period">.</span> that restlessness has a name<span class="period">.</span>
+        money dysmorphia<span class="period">.</span><br>
+        <span class="ed-serif"><span class="hl">that restlessness has a name</span><span class="period">.</span></span>
       </h1>
-      <!-- AEO: Daksh's one-sentence definition sits in the first 100 words, AI-Overview target. -->
-      <p class="lede">money dysmorphia is persistent financial self-perception that either partly or wholly resists correction from the outside world. in plain words: how your money feels stops matching what your money is, and no number on the screen talks you out of it.</p>
-      <!-- Stat sources (verified live 2026-06-11):
-           Credit Karma / Qualtrics survey of 1,006 US adults, Dec 18-26 2023:
-           29% of Americans, 43% of Gen Z, 41% of millennials report money dysmorphia;
-           95% of those say it negatively impacts their finances (held back from saving, overspending, more debt).
-           https://www.creditkarma.com/about/commentary/gen-z-and-millennials-are-obsessed-with-the-idea-of-being-rich-and-it-could-be-leading-to-money-dysmorphia
-           https://www.cnbc.com/2024/03/13/nearly-half-of-young-adults-have-money-dysmorphia-survey-finds.html -->
-      <p class="lede muted">it isn't a clinical diagnosis. it is huge: <a class="inline-link" href="https://www.creditkarma.com/about/commentary/gen-z-and-millennials-are-obsessed-with-the-idea-of-being-rich-and-it-could-be-leading-to-money-dysmorphia" rel="noopener" target="_blank">95% of people who experience it</a> say it hurts their actual finances. the overspending, the debt, the staying there.</p>
-    </section>
-
-    <section class="section reveal" aria-labelledby="forms">
-      <h2 id="forms">it comes in two forms<span class="period">.</span></h2>
-      <p>the avoider never opens the banking app. not lazy, protective: behind that icon is a number that gets to decide how the whole day goes.</p>
-      <p>the checker is the opposite, and that was me. the app was open. i had just about enough money. and the restlessness still crept over my money picture.</p>
-      <p class="muted">different doors, same room: the feeling refuses the facts.</p>
-    </section>
-
-    <section class="section reveal" aria-labelledby="not-look">
-      <h2 id="not-look">it's okay to not look<span class="period">.</span></h2>
-      <p>avoiding the number isn't failure, it's your brain protecting you. the muscle worth building isn't discipline. it's a calm way to look, and the grace to not, on the days you can't.</p>
-    </section>
-
-    <section class="section reveal" aria-labelledby="signs">
-      <h2 id="signs">signs you might have it<span class="period">.</span></h2>
-      <ul class="ledger">
-        <li>checking your balance feels like opening bad news.</li>
-        <li>you feel broke on days the account is fine.</li>
-        <li>you swing between never looking and checking on loop.</li>
-        <li>good money news doesn't make you feel better.</li>
-      </ul>
-      <p class="muted">a few of these, most weeks, is the pattern.</p>
-    </section>
-
-    <section class="section reveal" aria-labelledby="helped">
-      <h2 id="helped">what actually helped<span class="period">.</span></h2>
-      <p>the usual advice, just track what's coming and analyse, doesn't get people like us. what helped me: asking people what money dysmorphia means for them. friends, subreddits, the group chat. same effects, wildly varied causes.</p>
-      <p>so look to the left and just ask. stay kind.</p>
-    </section>
-
-    <section class="section reveal" aria-labelledby="where-cashbff-fits">
-      <h2 id="where-cashbff-fits">where cashbff fits<span class="period">.</span></h2>
-      <p>cashbff is the money-nerd best friend you text on whatsapp. it does the looking and hands you one easy win, then stays quiet until you text. no pings, no nagging, no grades.</p>
-      <p>it finds it and flags it. you do the cancelling, the paying, the deciding. it never moves money out of your accounts.</p>
-      <p class="muted">it's not a licensed counselor, a therapist, or a financial advisor. if money stress is running your days, please talk to a real person too: a licensed therapist or an accredited financial counselor.</p>
-      <p class="muted">tried the other apps? see <a class="inline-link" href="/cashbff-vs-cleo">cashbff vs cleo</a>, <a class="inline-link" href="/cashbff-vs-rocket-money">vs rocket money</a>, <a class="inline-link" href="/cashbff-vs-monarch-money">vs monarch</a>, or <a class="inline-link" href="/cashbff-vs-era">vs era</a>.</p>
-    </section>
-
-    <section class="section reveal" aria-labelledby="faq">
-      <h2 id="faq">money dysmorphia faq<span class="period">.</span></h2>
-      <!-- Progressive disclosure (2026-06-11 voice rewrite): the long query-coverage answers
-           moved INTO this native details/summary accordion. Real DOM content at load, real h3
-           headings, mirrored word-for-word in the FAQPage schema in <head>. -->
-      <div class="faq-acc">
-        <details>
-          <summary><h3>what is money dysmorphia?</h3></summary>
-          <div class="faq-a">
-            <p>money dysmorphia is persistent financial self-perception that either partly or wholly resists correction from the outside world. in plain words: a distorted view of your own finances. you can feel broke, anxious, or behind even when the numbers say you're okay, or feel fine when you're not. the feeling about your money and the facts of your money stop matching, and the feeling wins.</p>
-            <p>it's not a clinical diagnosis, but it is extremely common: in a 2023 credit karma survey, 29% of americans said they experience it, including 43% of gen z, and 95% of those said it actively hurt their finances: held them back from saving, pushed them to overspend, or led them into more debt.</p>
-          </div>
-        </details>
-        <details>
-          <summary><h3>is money dysmorphia a real diagnosis?</h3></summary>
-          <div class="faq-a">
-            <p>no. money dysmorphia is not a clinical diagnosis and it doesn't appear in the dsm. no one can formally diagnose you with it. it's a name people gave to a real, common pattern: a persistent gap between how your finances feel and what they actually are. naming it still helps, because a thing with a name is a thing you can work on. if money stress is taking over your life, a licensed therapist or an accredited financial counselor is the right person to talk to.</p>
-          </div>
-        </details>
-        <details>
-          <summary><h3>what are the signs of money dysmorphia?</h3></summary>
-          <div class="faq-a">
-            <p>the common signs: checking your balance feels like opening bad news, so you mostly don't. you feel broke on days your account is objectively fine. you compare your money to what you see online and always come up short. you swing between total avoidance and obsessive checking, with no calm middle. you've downloaded and quit more than one budgeting app because opening it felt like being graded. and good financial news doesn't make you feel better for more than a minute.</p>
-            <p>it shows up in two forms: the avoider, who never looks at the banking app, and the checker, who looks all the time and still feels the restlessness. a few of these, most weeks, is the pattern.</p>
-          </div>
-        </details>
-        <details>
-          <summary><h3>why is money dysmorphia so common in gen z?</h3></summary>
-          <div class="faq-a">
-            <p>in credit karma's survey, 43% of gen z and 41% of millennials reported money dysmorphia, against 29% of americans overall and 25% of gen x. that's not because younger people are worse with money. three things stacked up: the comparison machine (gen z grew up comparing their real finances to everyone else's highlight reel, every day, from their pocket), an expensive start (beginning your earning years into high rent and high prices means even doing well doesn't feel like doing well), and tools that profit from the panic (most money apps are built to ping you, alarm you, and upsell you while you're scared, because an anxious user is a retained user).</p>
-          </div>
-        </details>
-        <details>
-          <summary><h3>how do you break free from money dysmorphia?</h3></summary>
-          <div class="faq-a">
-            <p>money dysmorphia feeds on not looking: every day you avoid the number, your imagination fills it in, and your imagination is meaner than your bank account. the way out is not discipline or a stricter budget, it's making looking cheap, calm, and regular.</p>
-            <p>get the real numbers in front of you once, gently, with zero judgment. replace comparison with your own forecast: what's safe to spend this week, when money gets tight, what payday actually covers. make checking in small, boring, and consistent instead of a monthly panic-audit. and talk about it out loud: ask friends, people, subreddits what money dysmorphia means for them, because the effects are the same but the causes are so varied. shame survives in silence, and the pattern loses most of its power the first time the number gets said out loud and nothing bad happens.</p>
-          </div>
-        </details>
+      <div class="dys-band">
+        <div>
+          <!-- AEO: Daksh's one-sentence definition sits in the first 100 words, AI-Overview target. -->
+          <p class="lede">money dysmorphia is persistent financial self-perception that either partly or wholly resists correction from the outside world. in plain words: how your money feels stops matching what your money is, and no number on the screen talks you out of it.</p>
+          <!-- Stat sources (verified live 2026-06-11):
+               Credit Karma / Qualtrics survey of 1,006 US adults, Dec 18-26 2023:
+               29% of Americans, 43% of Gen Z, 41% of millennials report money dysmorphia;
+               95% of those say it negatively impacts their finances (held back from saving, overspending, more debt).
+               https://www.creditkarma.com/about/commentary/gen-z-and-millennials-are-obsessed-with-the-idea-of-being-rich-and-it-could-be-leading-to-money-dysmorphia
+               https://www.cnbc.com/2024/03/13/nearly-half-of-young-adults-have-money-dysmorphia-survey-finds.html -->
+          <p class="lede muted">it isn't a clinical diagnosis. it is huge: <a class="inline-link" href="https://www.creditkarma.com/about/commentary/gen-z-and-millennials-are-obsessed-with-the-idea-of-being-rich-and-it-could-be-leading-to-money-dysmorphia" rel="noopener" target="_blank">95% of people who experience it</a> say it hurts their actual finances. the overspending, the debt, the staying there.</p>
+        </div>
+        <!-- decorative pull stat: restates the 95% figure already cited (and sourced) in the lede. -->
+        <div class="pull-stat" aria-hidden="true">
+          <span class="big">95<span class="pc">%</span></span>
+          <span class="cap">say it hurts their actual finances.</span>
+        </div>
       </div>
     </section>
 
-    <section class="section reveal" aria-label="start">
+    <section class="sect reveal" aria-labelledby="forms">
+      <div class="sect-grid">
+        <div class="sect-head">
+          <p class="kicker"><span class="idx">01</span> the pattern</p>
+          <h2 id="forms">it comes in two forms<span class="period">.</span></h2>
+          <svg class="illo" width="120" height="84" viewBox="0 0 120 84" fill="none" aria-hidden="true" style="margin-top:1.4rem;">
+            <rect x="8" y="8" width="40" height="68" rx="3" stroke="currentColor" stroke-width="3"/>
+            <circle cx="40" cy="44" r="3" fill="currentColor"/>
+            <path d="M72 76 L 72 8 L 104 16 L 104 84" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>
+            <circle class="warm" cx="98" cy="48" r="3" fill="currentColor"/>
+            <path d="M2 76 L 118 76" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div>
+          <p>the avoider never opens the banking app. not lazy, protective: behind that icon is a number that gets to decide how the whole day goes.</p>
+          <p>the checker is the opposite, and that was me. the app was open. i had just about enough money. and the restlessness still crept over my money picture.</p>
+          <p class="muted">different doors, same room: the feeling refuses the facts.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="sect reveal" aria-labelledby="not-look">
+      <div class="sect-grid">
+        <div class="sect-head">
+          <p class="kicker"><span class="idx">02</span> the permission</p>
+          <h2 id="not-look">it's okay to not look<span class="period">.</span></h2>
+          <svg class="illo" width="120" height="58" viewBox="0 0 120 58" fill="none" aria-hidden="true" style="margin-top:1.4rem;">
+            <path d="M8 14 C 34 46, 86 46, 112 14" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+            <path d="M30 36 L 23 48" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+            <path d="M50 42 L 46 54" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+            <path d="M70 42 L 74 54" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+            <path d="M90 36 L 97 48" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div>
+          <p>avoiding the number isn't failure, it's your brain protecting you. the muscle worth building isn't discipline. it's a calm way to look, and the grace to not, on the days you can't.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="sect reveal" aria-labelledby="signs">
+      <div class="sect-grid">
+        <div class="sect-head">
+          <p class="kicker"><span class="idx">03</span> the mirror</p>
+          <h2 id="signs">signs you might have it<span class="period">.</span></h2>
+        </div>
+        <div>
+          <ul class="ledger">
+            <li>checking your balance feels like opening bad news.</li>
+            <li>you feel broke on days the account is fine.</li>
+            <li>you swing between never looking and checking on loop.</li>
+            <li>good money news doesn't make you feel better.</li>
+          </ul>
+          <p class="muted">a few of these, most weeks, is the pattern.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="sect reveal" aria-labelledby="helped">
+      <div class="sect-grid">
+        <div class="sect-head">
+          <p class="kicker"><span class="idx">04</span> from experience</p>
+          <h2 id="helped">what actually helped<span class="period">.</span></h2>
+        </div>
+        <div>
+          <p>the usual advice, just track what's coming and analyse, doesn't get people like us. what helped me: asking people what money dysmorphia means for them. friends, subreddits, the group chat. same effects, wildly varied causes.</p>
+          <p>so look to the left and just ask. stay kind.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- where cashbff fits runs strict: honest limits, no jokes. -->
+    <section class="ink-block reveal" aria-labelledby="where-cashbff-fits">
+      <p class="kicker"><span class="idx">05</span> the part we say plainly</p>
+      <h2 id="where-cashbff-fits">where cashbff fits<span class="period">.</span></h2>
+      <p>cashbff is the money-nerd best friend you text on whatsapp. it does the looking and hands you one easy win, then stays quiet until you text. no pings, no nagging, no grades.</p>
+      <p>it finds it and flags it. you do the cancelling, the paying, the deciding. it never moves money out of your accounts.</p>
+      <p class="muted" style="color:var(--paper-dim);">it's not a licensed counselor, a therapist, or a financial advisor. if money stress is running your days, please talk to a real person too: a licensed therapist or an accredited financial counselor.</p>
+      <p class="muted" style="color:var(--paper-dim);">tried the other apps? see <a class="inline-link" href="/cashbff-vs-cleo">cashbff vs cleo</a>, <a class="inline-link" href="/cashbff-vs-rocket-money">vs rocket money</a>, <a class="inline-link" href="/cashbff-vs-monarch-money">vs monarch</a>, or <a class="inline-link" href="/cashbff-vs-era">vs era</a>.</p>
+    </section>
+
+    <section class="sect reveal" aria-labelledby="faq" style="border-top:none;padding-top:0;">
+      <div class="sect-grid">
+        <div class="sect-head">
+          <p class="kicker"><span class="idx">06</span> straight answers</p>
+          <h2 id="faq">money dysmorphia faq<span class="period">.</span></h2>
+        </div>
+        <div>
+          <!-- Progressive disclosure (2026-06-11 voice rewrite): the long query-coverage answers
+               moved INTO this native details/summary accordion. Real DOM content at load, real h3
+               headings, mirrored word-for-word in the FAQPage schema in <head>. -->
+          <div class="faq-acc">
+            <details>
+              <summary><h3>what is money dysmorphia?</h3></summary>
+              <div class="faq-a">
+                <p>money dysmorphia is persistent financial self-perception that either partly or wholly resists correction from the outside world. in plain words: a distorted view of your own finances. you can feel broke, anxious, or behind even when the numbers say you're okay, or feel fine when you're not. the feeling about your money and the facts of your money stop matching, and the feeling wins.</p>
+                <p>it's not a clinical diagnosis, but it is extremely common: in a 2023 credit karma survey, 29% of americans said they experience it, including 43% of gen z, and 95% of those said it actively hurt their finances: held them back from saving, pushed them to overspend, or led them into more debt.</p>
+              </div>
+            </details>
+            <details>
+              <summary><h3>is money dysmorphia a real diagnosis?</h3></summary>
+              <div class="faq-a">
+                <p>no. money dysmorphia is not a clinical diagnosis and it doesn't appear in the dsm. no one can formally diagnose you with it. it's a name people gave to a real, common pattern: a persistent gap between how your finances feel and what they actually are. naming it still helps, because a thing with a name is a thing you can work on. if money stress is taking over your life, a licensed therapist or an accredited financial counselor is the right person to talk to.</p>
+              </div>
+            </details>
+            <details>
+              <summary><h3>what are the signs of money dysmorphia?</h3></summary>
+              <div class="faq-a">
+                <p>the common signs: checking your balance feels like opening bad news, so you mostly don't. you feel broke on days your account is objectively fine. you compare your money to what you see online and always come up short. you swing between total avoidance and obsessive checking, with no calm middle. you've downloaded and quit more than one budgeting app because opening it felt like being graded. and good financial news doesn't make you feel better for more than a minute.</p>
+                <p>it shows up in two forms: the avoider, who never looks at the banking app, and the checker, who looks all the time and still feels the restlessness. a few of these, most weeks, is the pattern.</p>
+              </div>
+            </details>
+            <details>
+              <summary><h3>why is money dysmorphia so common in gen z?</h3></summary>
+              <div class="faq-a">
+                <p>in credit karma's survey, 43% of gen z and 41% of millennials reported money dysmorphia, against 29% of americans overall and 25% of gen x. that's not because younger people are worse with money. three things stacked up: the comparison machine (gen z grew up comparing their real finances to everyone else's highlight reel, every day, from their pocket), an expensive start (beginning your earning years into high rent and high prices means even doing well doesn't feel like doing well), and tools that profit from the panic (most money apps are built to ping you, alarm you, and upsell you while you're scared, because an anxious user is a retained user).</p>
+              </div>
+            </details>
+            <details>
+              <summary><h3>how do you break free from money dysmorphia?</h3></summary>
+              <div class="faq-a">
+                <p>money dysmorphia feeds on not looking: every day you avoid the number, your imagination fills it in, and your imagination is meaner than your bank account. the way out is not discipline or a stricter budget, it's making looking cheap, calm, and regular.</p>
+                <p>get the real numbers in front of you once, gently, with zero judgment. replace comparison with your own forecast: what's safe to spend this week, when money gets tight, what payday actually covers. make checking in small, boring, and consistent instead of a monthly panic-audit. and talk about it out loud: ask friends, people, subreddits what money dysmorphia means for them, because the effects are the same but the causes are so varied. shame survives in silence, and the pattern loses most of its power the first time the number gets said out loud and nothing bad happens.</p>
+              </div>
+            </details>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="close-sect reveal" aria-label="start">
       <!-- The close, his way: companionship line, then the button, then quiet. -->
-      <p>working on my money dysmorphia changed the way i experience my financial choices. yours can too. and please remember: you're NOT alone.</p>
-      <div class="cta" style="margin-top:1.4rem;">
+      <p class="pull">working on my money dysmorphia changed the way i experience my financial choices. yours can too. and please remember: <span class="accent">you're NOT alone.</span></p>
+      <div class="cta">
         <!-- Tokenized wa.me CTA, unique to /money-dysmorphia (see docs/wa-prefill-registry.md). -->
         <a class="btn-primary" href="https://wa.me/19096555215?text=hey%20cashbff%2C%20checking%20my%20balance%20always%20feels%20like%20bad%20news"><span>text cashbff about it</span><span aria-hidden="true">&rarr;</span></a>
         <a class="link-quiet" href="/is-cashbff-legit">is it safe? here's the honest answer</a>
