@@ -14,12 +14,12 @@
   <script src="/assets/js/sentry-init.js"></script>
 
   <title>What CashBFF costs: $12.99/mo or $99/yr, 3 days free first</title>
-  <meta name="description" content="what cashbff costs: a flat subscription, $12.99 a month or $99 a year, 3 days free first, cancel any time. it makes money one way, never from you staying stuck.">
+  <meta name="description" content="what cashbff costs: one flat subscription, $12.99 a month or $99 a year, the same cashbff either way. 3 days free first, cancel any time.">
   <meta property="og:title" content="What CashBFF costs: $12.99/mo or $99/yr, 3 days free first">
   <meta property="og:image" content="https://cashbff.com/icon.png">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:image" content="https://cashbff.com/icon.png">
-  <meta property="og:description" content="what cashbff costs: a flat subscription, $12.99 a month or $99 a year, 3 days free first, cancel any time. it makes money one way, never from you staying stuck.">
+  <meta property="og:description" content="what cashbff costs: one flat subscription, $12.99 a month or $99 a year, the same cashbff either way. 3 days free first, cancel any time.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://cashbff.com/pricing">
   <link rel="canonical" href="https://cashbff.com/pricing">
@@ -31,7 +31,7 @@
     "name": "CashBFF",
     "url": "https://cashbff.com",
     "logo": "https://cashbff.com/icon.png",
-    "description": "CashBFF is the money-nerd best friend you text on WhatsApp. It connects to your real accounts through Plaid, does the looking for you, and hands you one easy win at a time. It finds and surfaces; you act.",
+    "description": "CashBFF is a money assistant you text on WhatsApp. It connects to your real accounts through Plaid, does the looking for you, and hands you one easy win at a time. It finds and surfaces; you act.",
     "founder": {
       "@type": "Person",
       "name": "Daksh Khanna",
@@ -54,7 +54,7 @@
     "@context": "https://schema.org",
     "@type": "Product",
     "name": "CashBFF",
-    "description": "The money-nerd best friend you text on WhatsApp. It connects to your accounts through Plaid, does the looking for you, and hands you one easy win at a time.",
+    "description": "A money assistant you text on WhatsApp. It connects to your accounts through Plaid, does the looking for you, and hands you one easy win at a time.",
     "brand": { "@type": "Brand", "name": "CashBFF" },
     "offers": [
       {
@@ -436,8 +436,20 @@
       .hero, .cta, .felt, .plans, .plans-foot, .section, .faq-group { opacity: 1 !important; }
     }
 
-    /* pricing: plans as elevated cards; yearly carries the electric accent */
+    /* pricing (2026-06-11 copy-laws pass): the two cards sit in one warm mint
+       field, equal weight (same product, two ways to pay). the price figures
+       are the biggest type on the page. */
     .plans, .plans-foot { opacity: 1; animation: none; }
+    .price-field {
+      background: linear-gradient(150deg, rgba(211, 255, 180, 0.42), rgba(234, 244, 228, 0.65));
+      border: 1px solid rgba(1, 71, 81, 0.10);
+      border-radius: 30px;
+      padding: 1.5rem 1.4rem 1.2rem;
+      margin: 0 0 3rem;
+      box-shadow: 0 34px 70px -56px rgba(1, 71, 81, 0.55);
+    }
+    .price-field .plans { margin-bottom: 0.4rem; }
+    .price-field .plans-foot { margin: 0; padding: 0.6rem 0.3rem 0.2rem; }
     .plan {
       background: var(--card);
       border-radius: 22px;
@@ -446,10 +458,7 @@
       transition: transform .2s ease, box-shadow .2s ease;
     }
     .plan:hover { transform: translateY(-3px); box-shadow: 0 30px 60px -42px rgba(26,23,23,.6); }
-    .plans .plan:nth-child(2) {
-      background: linear-gradient(160deg, rgba(211,255,180,.34), rgba(252,250,242,0) 55%), var(--card);
-      border-color: rgba(1,71,81,.28);
-    }
+    .plan__price { font-size: clamp(3.2rem, 10vw, 4.4rem); }
     .plan .btn-primary { font-size: 1rem; padding: .95rem 1.7rem; }
   </style>
 
@@ -477,17 +486,20 @@
 
     <section class="hero">
       <h1 class="headline">
-        what cashbff costs (and how we make money)<span class="period">.</span>
+        one subscription<span class="period">.</span> that's the whole price<span class="period">.</span>
       </h1>
-      <p class="lede">one flat subscription. that's the whole pricing page. pick monthly or yearly, get 3 days free first, and cancel any time.</p>
-      <p class="lede muted">most money apps make their money when you're broke, on the advances, the fees, the late charges. cashbff doesn't do any of that. it makes money one way: a flat subscription. it has nothing to gain from you staying stuck.</p>
+      <p class="lede">pick monthly or yearly, get 3 days free first, and cancel any time.</p>
     </section>
 
+    <!-- pricing per the 2026-06-11 copy-laws pass: both prices on screen at
+         once, equal weight, one shared what-you-get list directly beneath.
+         the numbers are the biggest type on the page (L11). -->
+    <div class="price-field">
     <section class="plans" aria-label="plans">
       <div class="plan">
         <div class="plan__name">monthly</div>
         <div class="plan__price">$12.99<span class="plan__per">/mo</span></div>
-        <p class="plan__note"><strong>3 days free first</strong>, then $12.99 a month. cancel any time.</p>
+        <p class="plan__note"><strong>3 days free first</strong>, then $12.99 a month.</p>
         <!-- Logged-out visitors hit the bare Stripe link (correct: no uid to
              attach). pricing-checkout.js intercepts for logged-in users and
              appends ?client_reference_id=<uid> so the subscription reconciles
@@ -509,7 +521,7 @@
       <div class="plan">
         <div class="plan__name">yearly</div>
         <div class="plan__price">$99<span class="plan__per">/yr</span></div>
-        <p class="plan__note"><strong>3 days free first</strong>, then $99 a year. that's about $8.25 a month. cancel any time.</p>
+        <p class="plan__note"><strong>3 days free first</strong>, then $99 a year. a bit cheaper if you pay once a year.</p>
         <a class="btn-primary"
            id="annual-btn"
            data-checkout="stripe"
@@ -524,29 +536,24 @@
       </div>
     </section>
 
-    <p class="plans-foot">same cashbff either way. yearly just saves you a little. no surprise fees, no price that goes up when money's tight.</p>
+    <p class="plans-foot">same cashbff either way. yearly just saves you a little. takes about a minute to start.</p>
+    </div>
 
     <section class="section reveal" aria-labelledby="get">
-      <h2 id="get">what you get<span class="period">.</span></h2>
+      <h2 id="get">what you get, either way<span class="period">.</span></h2>
       <div class="ledger">
-        <p class="ledger__line"><span class="lead">the money-nerd best friend you text on whatsapp.</span></p>
-        <p class="ledger__line"><span class="lead">your accounts connected through plaid, up to 5 banks linked.</span></p>
-        <p class="ledger__line"><span class="lead">the forgotten subscriptions and quiet drains, found and flagged.</span></p>
-        <p class="ledger__line"><span class="lead">recurring expenses tracked and projected 3 months out.</span></p>
-        <p class="ledger__line"><span class="lead">a calendar that knows what's coming, so you see the tight spots early.</span></p>
+        <p class="ledger__line"><span class="lead">answers anything about your spending, right in whatsapp.</span></p>
+        <p class="ledger__line"><span class="lead">watches your subscriptions and flags the ones you forgot.</span></p>
+        <p class="ledger__line"><span class="lead">tells you your real breathing room before rent.</span></p>
+        <p class="ledger__line"><span class="lead">tracks what's recurring and projects it three months out.</span></p>
+        <p class="ledger__line"><span class="lead">connects up to 5 banks through plaid.</span></p>
       </div>
-      <p class="muted" style="margin-top:1.1rem;">it finds it and flags it. you do the cancelling, the paying, the deciding. cashbff never moves money out of your accounts, because it's your money.</p>
-    </section>
-
-    <section class="section reveal" aria-labelledby="model">
-      <h2 id="model">why it's on your side<span class="period">.</span></h2>
-      <p>you're the customer, not the product. there are no advances to sell you, no fees that climb when you're stretched, and nothing to gain from you staying stuck. you pay one flat price, and we tell you before you're ever charged.</p>
-      <p class="muted">it's not a lender. it doesn't move your money. it finds the cash you're already losing and hands you the win to keep it. still deciding? here's <a class="inline-link" href="/is-cashbff-legit">why it's legit →</a></p>
+      <p class="muted" style="margin-top:1.1rem;">billing details and the longer answers live in the <a class="inline-link" href="/faq">faq</a>.</p>
       <p class="updated">last updated june 2026.</p>
     </section>
 
     <footer class="footer">
-      <a href="/how-it-works">how it works</a><span class="sep">·</span><a href="/is-cashbff-legit">is cashbff legit?</a><span class="sep">·</span><a href="/pricing">pricing</a><span class="sep">·</span><a href="/start">start</a><span class="sep">·</span><a href="/privacy">privacy</a><span class="sep">·</span><a href="/terms">terms</a><span class="sep">·</span>Built by <a href="https://khannadaksh.com" rel="me">Daksh Khanna</a><span class="sep">·</span>Khanna's LLC
+      <a href="/how-it-works">how it works</a><span class="sep">·</span><a href="/faq">faq</a><span class="sep">·</span><a href="/is-cashbff-legit">is cashbff legit?</a><span class="sep">·</span><a href="/pricing">pricing</a><span class="sep">·</span><a href="/start">start</a><span class="sep">·</span><a href="/privacy">privacy</a><span class="sep">·</span><a href="/terms">terms</a><span class="sep">·</span>Built by <a href="https://khannadaksh.com" rel="me">Daksh Khanna</a><span class="sep">·</span>Khanna's LLC
     </footer>
 
   </main>

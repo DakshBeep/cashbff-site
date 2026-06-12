@@ -14,12 +14,12 @@
   <script src="/assets/js/sentry-init.js"></script>
 
   <title>CashBFF: the money stuff you've been avoiding? send it over.</title>
-  <meta name="description" content="the money-nerd best friend you text on whatsapp. it connects to your accounts, does the looking you've been dreading, and hands you one easy win. no judgment.">
+  <meta name="description" content="cashbff looks at your accounts and texts you on whatsapp: the forgotten subscription, your real breathing room, one easy win at a time. takes about a minute to start.">
   <meta property="og:title" content="CashBFF: the money stuff you've been avoiding? send it over.">
   <meta property="og:image" content="https://cashbff.com/icon.png">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:image" content="https://cashbff.com/icon.png">
-  <meta property="og:description" content="the money-nerd best friend you text on whatsapp. it connects to your accounts, does the looking you've been dreading, and hands you one easy win. no judgment.">
+  <meta property="og:description" content="cashbff looks at your accounts and texts you on whatsapp: the forgotten subscription, your real breathing room, one easy win at a time. takes about a minute to start.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://cashbff.com">
   <link rel="canonical" href="https://cashbff.com">
@@ -31,7 +31,7 @@
     "name": "CashBFF",
     "url": "https://cashbff.com",
     "logo": "https://cashbff.com/icon.png",
-    "description": "CashBFF is the money-nerd best friend you text on WhatsApp. It connects to your real accounts through Plaid, does the looking for you, and hands you one easy win at a time. It finds and surfaces; you act.",
+    "description": "CashBFF is a money assistant you text on WhatsApp. It connects to your real accounts through Plaid, does the looking for you, and hands you one easy win at a time. It finds and surfaces; you act.",
     "founder": {
       "@type": "Person",
       "name": "Daksh Khanna",
@@ -107,8 +107,7 @@
     }
     .hero { position: relative; z-index: 0; }
     .hero .headline { margin-bottom: 1.3rem; max-width: 12ch; }
-    .hero .sub { max-width: 34rem; margin-bottom: 1rem; }
-    .hero .safety { font-weight: 600; font-size: 1.02rem; margin-bottom: 1.8rem; max-width: 34rem; }
+    .hero .sub { max-width: 34rem; margin-bottom: 1.6rem; font-weight: 600; }
     .cta { display: flex; flex-direction: column; align-items: flex-start; gap: .9rem; }
 
     .phone-side { display: flex; justify-content: center; }
@@ -158,15 +157,14 @@
         <h1 class="headline">
           the money stuff you've been avoiding<span class="period">?</span> send it over<span class="period">.</span>
         </h1>
-        <p class="sub">i've got it from here. cashbff is the money-nerd best friend you text on whatsapp. it does the looking and hands you one easy win at a time.</p>
-        <p class="safety">it never moves money out of your accounts. you stay in charge.</p>
+        <p class="sub">i've got it from here.</p>
         <div class="cta">
           <!-- [[WA_LINK]] wired 2026-06-05: funnels to /start (the single click-to-WhatsApp endpoint). -->
           <a class="btn-primary" href="/start">
             <span>text cashbff on whatsapp</span>
             <span class="arrow" aria-hidden="true">→</span>
           </a>
-          <a class="link-quiet" href="/is-cashbff-legit">is it safe? here's the honest answer →</a>
+          <p class="cta-note">takes about a minute to start.</p>
         </div>
       </section>
 
@@ -179,34 +177,27 @@
             <div class="avatar" aria-hidden="true">c</div>
             <div class="who">
               <strong>cashbff</strong>
-              <span>your money-nerd best friend</span>
+              <span>online</span>
             </div>
           </div>
-          <ul class="chat-thread" aria-label="a sample cashbff conversation on whatsapp">
-            <li class="msg you">how long can i last lol <span class="stamp" aria-hidden="true">9:41</span></li>
-            <li class="msg bff">about 18 days at your pace, and payday lands first. you won't hit zero. breathe. <span class="stamp" aria-hidden="true">9:41</span></li>
-            <li class="msg you">wait really <span class="stamp" aria-hidden="true">9:42</span></li>
-            <li class="msg bff">really. also found a $14.99 subscription you stopped using in february. want to see it? <span class="stamp" aria-hidden="true">9:42</span></li>
+          <!-- real agent output, sandbox data, 2026-06-11 (claude-sonnet-4-6, prod prompt + tools, post-voice-fix) -->
+          <ul class="chat-thread" aria-label="a real cashbff conversation on whatsapp, sandbox data">
+            <li class="msg you">what subscriptions am i paying for? pretty sure there's stuff i forgot about <span class="stamp" aria-hidden="true">9:41</span></li>
+            <li class="msg bff">found 6 recurring charges, about $118/month. here they are:<br>- gym: $45.00/mo, next due jul 1<br>- hulu: $17.99/mo, next due jul 2<br>- netflix: $15.49/mo, next due jun 18<br>- apple: $14.99/mo, next due jun 29<br>- audible: $14.95/mo, next due jun 21<br>- spotify: $9.99/mo, next due jul 1<br>you can tweak the date or amount on any of these before we save, just tell me. would you like me to confirm all of them, or pick and choose? <span class="stamp" aria-hidden="true">9:41</span></li>
+            <li class="msg you">omg i totally forgot about audible. if i cut that and hulu what do i save? <span class="stamp" aria-hidden="true">9:42</span></li>
+            <li class="msg bff">that's $32.94/month back in your pocket, which is about $395 a year you could put toward that card debt instead.<br>want me to confirm the other four (gym, netflix, apple, spotify) and skip audible and hulu? <span class="stamp" aria-hidden="true">9:42</span></li>
             <li class="typing" aria-hidden="true"><i></i><i></i><i></i></li>
           </ul>
         </div>
       </div>
     </div>
 
-    <section class="section reveal" aria-labelledby="okay-not-looking">
-      <h2 id="okay-not-looking">it's okay that you haven't looked<span class="period">.</span></h2>
-      <p>your banking app has been sitting unopened for weeks. that's not failure, that's protection. cashbff does the looking, and hands you the one thing worth doing today.</p>
-      <details class="fold">
-        <summary>the longer story, if you want it</summary>
-        <div class="fold-body">
-          <p>you took your cards out of apple pay so you'd stop tapping without thinking. your banking app has been sitting there, unopened, longer than you'd admit. you've downloaded and quit every budgeting app, because opening it means looking, and looking feels like shame.</p>
-          <p>that's not you being bad with money. that's you never having a safe way to look.</p>
-          <p>cashbff is the safe way to look.</p>
-        </div>
-      </details>
+    <section class="section reveal" aria-labelledby="the-looking">
+      <h2 id="the-looking">the looking is the hard part<span class="period">.</span></h2>
+      <p>the banking app sits unopened. the budgeting apps turned into homework. cashbff does the looking for you and texts you the one thing worth doing today.</p>
     </section>
 
-    <section class="section reveal" aria-labelledby="what-it-does">
+    <section class="section reveal mint-band" aria-labelledby="what-it-does">
       <h2 id="what-it-does">what it actually does<span class="period">.</span></h2>
       <ul class="ledger">
         <li>finds the subscription you forgot you were paying.</li>
@@ -215,64 +206,32 @@
         <li>flags the payment that saves you the most interest.</li>
       </ul>
       <p class="muted">it finds and flags. you cancel, you pay, you decide.</p>
-      <details class="fold">
-        <summary>what it watches, in full</summary>
-        <div class="fold-body">
-          <p>you go live your life. cashbff keeps an eye on what's quietly draining your money and tells you in plain language. ask it anything, any time.</p>
-          <p>the subscription you forgot you were paying. how much breathing room you've actually got before rent. the day things get tight, before they do. the payment that saves you the most on interest, so you stop paying the banks more than you have to.</p>
-          <p>it finds it and flags it. you do the cancelling, the paying, the deciding. cashbff never moves money out of your accounts, because it's your money.</p>
-          <!-- [[$54 ANECDOTE]] real but person not yet asked: using anonymized in-story framing per Daksh's decision. -->
-          <p>one early user found about $54 a month in subscriptions they'd forgotten about, in the first conversation. (individual result, your numbers will be your own.)</p>
-        </div>
-      </details>
-      <details class="fold">
-        <summary>how it works, in three steps</summary>
-        <div class="fold-body">
-          <p>1. text it, like you'd text a friend. no app to download. cashbff lives in whatsapp, the chat you already have open.</p>
-          <!-- [[PLAID CLAIMS: confirm]] "bank login stays between you, your bank, and plaid" reflects the standard Plaid link flow; keep qualified, legal-confirm before hardening. -->
-          <p>2. connect your accounts. it links through plaid, the same service behind apps like venmo and chime. your bank login stays between you, your bank, and plaid.</p>
-          <p>3. get one easy win. it does the looking and hands you something you can actually do today. you decide what happens next.</p>
-          <p><a class="inline-link" href="/how-it-works">see exactly how it works →</a></p>
-        </div>
-      </details>
+      <p style="margin-top:.9rem;"><a class="inline-link" href="/how-it-works">see exactly how it works →</a></p>
     </section>
 
     <section class="section reveal" aria-labelledby="trust">
       <h2 id="trust">why you can trust it<span class="period">.</span></h2>
       <ul class="atoms">
-        <li>it never moves money out of your accounts.</li>
-        <li>flat subscription. it only wins when you get ahead.</li>
+        <li>your money stays where it is. cashbff reads your accounts and texts you what it finds.</li>
         <!-- [[PLAID CLAIMS: confirm]] keep qualified per the [F] gate; legal-confirm before hardening. -->
-        <li>plaid handles your bank login, cashbff never sees it.</li>
+        <li>plaid handles your bank login, the same service behind apps like venmo and chime.</li>
+        <li>one flat subscription is the whole price.</li>
       </ul>
-      <a class="inline-link" href="/is-cashbff-legit">is cashbff legit? the honest answer →</a>
-      <details class="fold">
-        <summary>how the money side works</summary>
-        <div class="fold-body">
-          <p>most money apps make their money when you're broke, on the advances, the fees, the late charges. cashbff doesn't do any of that. it makes money one way: a flat subscription. it has nothing to gain from you staying stuck.</p>
-          <p>it's not a lender. it doesn't move your money. it finds the cash you're already losing and hands you the win to keep it.</p>
-        </div>
-      </details>
+      <a class="inline-link" href="/faq">the longer answers live in the faq →</a>
     </section>
 
     <section class="section reveal" aria-labelledby="quiet">
       <h2 id="quiet">it stays quiet until you text<span class="period">.</span></h2>
-      <!-- Stance weave (2026-06-11): the no-notifications truth IS the calm-forecasting feature.
+      <!-- Stance weave (2026-06-11): the quiet IS the calm-forecasting feature.
            True today: the WhatsApp agent only ever replies, it never initiates. If proactive
            pings ever ship, this section must change the same day. -->
-      <p>no notifications, no nagging, no being graded. you set the pace. checking in happens on your terms.</p>
+      <p>you text first. it answers with your real numbers and waits for your next question. the pace is yours.</p>
       <p class="muted">if checking your balance feels like bad news even when it isn't, that feeling has a name. <a class="inline-link" href="/money-dysmorphia">money dysmorphia, explained →</a></p>
-      <details class="fold">
-        <summary>more on the quiet</summary>
-        <div class="fold-body">
-          <p>no notifications, no nagging. cashbff never pings you into a panic, because panic was the old way. you text it when you're ready, it answers with your real numbers, and checking in gets a little calmer every time you do it.</p>
-        </div>
-      </details>
     </section>
 
     <!-- the close, his way: companionship line, then the button, then quiet. -->
     <section class="final-cta reveal">
-      <p class="above">you're more okay than you think<span class="period">.</span> let's look together<span class="period">.</span></p>
+      <p class="above">ready when you are<span class="period">.</span> let's look together<span class="period">.</span></p>
       <div class="cta-row">
         <!-- [[WA_LINK]] wired 2026-06-05: funnels to /start. -->
         <a class="btn-primary" href="/start">
@@ -280,12 +239,11 @@
           <span class="arrow" aria-hidden="true">→</span>
         </a>
       </div>
-      <!-- price/trial: locked Terms values are $12.99/mo or $99/yr with a 3-day free trial; exact live price pending final Stripe reconciliation. Keeping the high-level "cancel any time" line here. -->
-      <p class="secondary-line">cancel any time.</p>
+      <p class="secondary-line">takes about a minute to start.</p>
     </section>
 
     <footer class="footer">
-      <a href="/how-it-works">how it works</a><span class="sep">·</span><a href="/is-cashbff-legit">is cashbff legit?</a><span class="sep">·</span><a href="/pricing">pricing</a><span class="sep">·</span><a href="/start">start</a><span class="sep">·</span><a href="/privacy">privacy</a><span class="sep">·</span><a href="/terms">terms</a><span class="sep">·</span>Built by <a href="https://khannadaksh.com" rel="me">Daksh Khanna</a><span class="sep">·</span>Khanna's LLC
+      <a href="/how-it-works">how it works</a><span class="sep">·</span><a href="/faq">faq</a><span class="sep">·</span><a href="/is-cashbff-legit">is cashbff legit?</a><span class="sep">·</span><a href="/pricing">pricing</a><span class="sep">·</span><a href="/start">start</a><span class="sep">·</span><a href="/privacy">privacy</a><span class="sep">·</span><a href="/terms">terms</a><span class="sep">·</span>Built by <a href="https://khannadaksh.com" rel="me">Daksh Khanna</a><span class="sep">·</span>Khanna's LLC
       <p class="updated">last updated june 2026.</p>
     </footer>
 
