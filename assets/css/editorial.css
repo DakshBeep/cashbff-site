@@ -104,6 +104,8 @@ a:focus-visible, button:focus-visible, summary:focus-visible {
   font-weight: 700; padding: .45rem 1.1rem; border-radius: 999px;
   border: 2px solid var(--ink); box-shadow: 2px 2px 0 var(--ink);
   transition: transform .12s ease, box-shadow .12s ease;
+  /* the start pill stays visible even when the mobile nav scrolls */
+  position: sticky; right: 0;
 }
 .topbar .nav a.nav-cta:hover { transform: translate(-1px,-1px); box-shadow: 3px 3px 0 var(--ink); }
 .topbar .nav a.nav-cta[aria-current="page"] { box-shadow: 2px 2px 0 var(--ink); }
@@ -411,7 +413,7 @@ a:focus-visible, button:focus-visible, summary:focus-visible {
   line-height: 1.12;
   letter-spacing: -0.01em;
   max-width: 22ch;
-  text-transform: lowercase;
+  /* no text-transform here: the one emphatic CAP per page must survive */
 }
 .pull .accent { color: var(--cash-green); font-style: normal; font-family: var(--font-display); font-weight: 700; }
 

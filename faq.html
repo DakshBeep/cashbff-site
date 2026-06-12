@@ -192,6 +192,14 @@
       },
       {
         "@type": "Question",
+        "name": "What is money dysmorphia?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "money dysmorphia is persistent financial self-perception that either partly or wholly resists correction from the outside world: feeling broke when the numbers say you're okay, or fine when you're not. it isn't a clinical diagnosis, and it's extremely common. naming it helps. the full explainer, the signs, and what actually helped are at money dysmorphia, explained."
+        }
+      },
+      {
+        "@type": "Question",
         "name": "How do I start?",
         "acceptedAnswer": {
           "@type": "Answer",
@@ -204,7 +212,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 
   <!-- PostHog product analytics. CSP-safe (no eval). -->
   <script src="/assets/js/posthog-init.js" defer></script>
@@ -214,300 +222,24 @@
   <script src="/assets/js/vercel-analytics-init.js" defer></script>
   <script defer src="/_vercel/insights/script.js"></script>
 
+  <!-- ── site v2, direction C: bold editorial honesty (2026-06-11) ──────────
+       Shared design system: /assets/css/editorial.css. Every question is a
+       visible summary h3; every answer folds (native details, real DOM at
+       load); all answers carried near-verbatim. FAQPage schema mirrored.
+       URLs, canonical, og tags: unchanged. -->
+  <link rel="stylesheet" href="/assets/css/editorial.css">
   <style>
-    @font-face {
-      font-family: 'Greed Condensed';
-      src: url('/fonts/GreedCondensed-Bold.woff2') format('woff2');
-      font-weight: 700;
-      font-display: swap;
-    }
-    @font-face {
-      font-family: 'Greed Condensed';
-      src: url('/fonts/GreedCondensed-Medium.woff2') format('woff2');
-      font-weight: 500;
-      font-display: swap;
-    }
-
-    :root {
-      --vanilla: #FCFAF2;
-      --off-black: #1A1717;
-      --cash-green: #014751;
-      --hairline: rgba(26, 23, 23, 0.12);
-      --soft-ink: rgba(26, 23, 23, 0.62);
-
-      --font-display: 'Greed Condensed', 'Archivo Narrow', 'Arial Narrow', Impact, sans-serif;
-      --font-body: 'Instrument Sans', system-ui, -apple-system, sans-serif;
-    }
-
-    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
-    body {
-      font-family: var(--font-body);
-      background: var(--vanilla);
-      color: var(--off-black);
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      line-height: 1.5;
-      min-height: 100dvh;
-    }
-    a { color: inherit; text-decoration: none; }
-    button { font-family: inherit; cursor: pointer; border: none; background: none; }
-
-    .stage {
-      max-width: 720px;
-      margin: 0 auto;
-      padding: 1.5rem 1.5rem 4rem;
-      display: flex;
-      flex-direction: column;
-      min-height: 100dvh;
-    }
-
-    /* ── top bar ── */
-    .bar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-shrink: 0;
-      margin-bottom: 4rem;
-    }
-    .wordmark {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: 1.5rem;
-      letter-spacing: -0.02em;
-      color: var(--cash-green);
-      text-transform: lowercase;
-    }
-    .nav { display: flex; gap: 1.4rem; font-size: 0.9rem; font-weight: 500; }
-    .nav a { opacity: 0.7; transition: opacity .15s; }
-    .nav a:hover { opacity: 1; }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(14px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    /* ── hero ── */
-    .hero {
-      margin: 0 0 2.4rem;
-      opacity: 0;
-      animation: fadeIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.05s forwards;
-    }
-    .headline {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: clamp(2.6rem, 8vw, 4.5rem);
-      line-height: 0.95;
-      letter-spacing: -0.02em;
-      text-transform: lowercase;
-      color: var(--off-black);
-      margin-bottom: 1.4rem;
-    }
-    .headline .period { color: var(--cash-green); }
-    .lede {
-      font-size: clamp(1.02rem, 1.8vw, 1.18rem);
-      line-height: 1.6;
-      max-width: 60ch;
-      margin-bottom: 1rem;
-    }
-    .lede:last-child { margin-bottom: 0; }
-
-    /* ── faq groups ── */
-    .faq-group {
-      margin: 0 0 2.8rem;
-      opacity: 0;
-      animation: fadeIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.18s forwards;
-    }
+    /* faq-only: groups read as editorial sections */
+    .intro p, .micro { color: var(--soft-ink); max-width: 62ch; }
+    .micro { margin-top: 2.5rem; }
+    .faq-group { border-top: 2px solid var(--ink); padding: 1.1rem 0 3rem; }
     .faq-group h2 {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: clamp(1.6rem, 4vw, 2.1rem);
-      letter-spacing: -0.02em;
-      text-transform: lowercase;
-      margin-bottom: 1.2rem;
+      font-family: var(--font-display); font-weight: 700;
+      font-size: clamp(2.1rem, 5vw, 3.4rem); line-height: .94;
+      letter-spacing: -0.02em; text-transform: lowercase;
+      margin-bottom: 1.3rem; scroll-margin-top: 5rem; max-width: 18ch;
     }
     .faq-group h2 .period { color: var(--cash-green); }
-    .qa {
-      padding: 1.1rem 0;
-      border-bottom: 1px solid var(--hairline);
-      max-width: 64ch;
-    }
-    .qa:first-of-type { border-top: 1px solid var(--hairline); }
-    .qa h3 {
-      font-size: 1.02rem;
-      font-weight: 600;
-      margin-bottom: 0.5rem;
-      letter-spacing: -0.005em;
-    }
-    .qa p { color: var(--soft-ink); line-height: 1.6; margin-bottom: 0.6rem; }
-    .qa p:last-child { margin-bottom: 0; }
-    .qa a.inline-link {
-      color: var(--off-black);
-      text-decoration: underline;
-      text-decoration-color: var(--hairline);
-      text-underline-offset: 3px;
-      transition: text-decoration-color .15s;
-    }
-    .qa a.inline-link:hover { text-decoration-color: var(--off-black); }
-    .intro { max-width: 64ch; margin-bottom: 2.4rem; }
-    .intro p { line-height: 1.6; margin-bottom: 0.9rem; }
-    .intro p:last-child { margin-bottom: 0; }
-    .intro .muted { color: var(--soft-ink); }
-
-    /* ── CTA ── */
-    .cta { margin: 0.4rem 0 0; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
-    .btn-primary {
-      background: var(--off-black);
-      color: var(--vanilla);
-      font-weight: 700;
-      font-size: 1.05rem;
-      padding: 0.95rem 1.9rem;
-      border-radius: 14px;
-      text-transform: lowercase;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.6rem;
-      transition: transform .12s ease, opacity .15s;
-    }
-    .btn-primary:hover { opacity: 0.92; transform: translateY(-1px); }
-    .btn-primary:active { transform: translateY(1px); }
-    .link-quiet { font-size: 0.95rem; opacity: 0.7; text-decoration: underline; text-decoration-color: var(--hairline); text-underline-offset: 3px; }
-    .link-quiet:hover { opacity: 1; text-decoration-color: var(--off-black); }
-
-    .micro { font-size: 0.9rem; color: var(--soft-ink); margin-top: 2rem; max-width: 60ch; }
-    .updated { font-size: 0.8rem; color: var(--soft-ink); margin-top: 0.6rem; }
-
-    /* ── footer ── */
-    .footer {
-      margin-top: auto;
-      padding-top: 2.5rem;
-      font-size: 0.85rem;
-      opacity: 0.5;
-      line-height: 1.7;
-      border-top: 1px solid var(--hairline);
-    }
-    .footer a {
-      text-decoration: underline;
-      text-decoration-color: var(--hairline);
-      text-underline-offset: 3px;
-      transition: text-decoration-color .15s, opacity .15s;
-    }
-    .footer a:hover { text-decoration-color: var(--off-black); opacity: 1; }
-    .footer .sep { margin: 0 0.5rem; opacity: 0.5; }
-
-    @media (prefers-reduced-motion: reduce) {
-      * { animation: none !important; transition: none !important; }
-    }
-  </style>
-
-  <!-- ── 2026-06-11 redesign layer ──────────────────────────────────────────
-       Presentation only: every word of body copy, every heading, every schema
-       block, and every URL is unchanged. This block restyles the shared chrome
-       (sticky nav, buttons, footer), adds calm ambient motion to the hero, and
-       arms scroll-reveals (see /assets/js/reveal.js; content is never hidden
-       without JS). Palette: the brand tokens already in this repo (vanilla,
-       off-black, cash-green) plus the electric-green + periwinkle accents from
-       the dynamic-era prototypes (home-bloom*.html). -->
-  <style>
-    :root {
-      --electric-green: #D3FFB4;
-      --periwinkle: #C5B6F1;
-      --card: #FFFFFF;
-    }
-    html, body { overflow-x: clip; }
-    body { font-size: 1.03rem; display: flex; flex-direction: column; }
-    a:focus-visible, button:focus-visible { outline: 2px solid var(--cash-green); outline-offset: 3px; border-radius: 4px; }
-
-    /* sticky top bar */
-    .topbar {
-      position: sticky; top: 0; z-index: 40;
-      background: rgba(252, 250, 242, 0.88);
-      -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
-      border-bottom: 1px solid transparent;
-      transition: border-color .25s ease, box-shadow .25s ease;
-    }
-    .topbar.is-scrolled { border-bottom-color: var(--hairline); box-shadow: 0 6px 24px -18px rgba(26,23,23,.35); }
-    .topbar__inner {
-      max-width: 960px; margin: 0 auto; padding: .85rem 1.5rem;
-      display: flex; align-items: center; justify-content: space-between; gap: 1rem;
-    }
-    .topbar .wordmark { font-size: 1.45rem; }
-    .topbar .nav { display: flex; align-items: center; gap: 1.3rem; font-size: .9rem; font-weight: 500; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
-    .topbar .nav::-webkit-scrollbar { display: none; }
-    .topbar .nav a { opacity: .72; white-space: nowrap; }
-    .topbar .nav a:hover, .topbar .nav a[aria-current="page"] { opacity: 1; }
-    .topbar .nav a.nav-cta {
-      opacity: 1; background: var(--cash-green); color: var(--vanilla);
-      font-weight: 600; padding: .42rem 1.05rem; border-radius: 999px;
-      transition: transform .12s ease, opacity .15s;
-    }
-    .topbar .nav a.nav-cta:hover { opacity: .92; transform: translateY(-1px); }
-    @media (max-width: 640px) { .topbar .nav { gap: 1rem; font-size: .86rem; } .topbar__inner { padding: .8rem 1.1rem; } }
-
-    /* stage sits under the bar now */
-    .stage { min-height: calc(100dvh - 62px); padding-top: 2.25rem; max-width: 760px; }
-
-    /* hero: calm ambient color behind the headline */
-    .hero { position: relative; z-index: 0; }
-    .hero::before, .hero::after {
-      content: ''; position: absolute; border-radius: 50%;
-      filter: blur(72px); z-index: -1; pointer-events: none;
-    }
-    .hero::before {
-      width: 24rem; height: 24rem; background: var(--electric-green); opacity: .42;
-      top: -10rem; right: -13rem; animation: orbA 18s ease-in-out infinite alternate;
-    }
-    .hero::after {
-      width: 19rem; height: 19rem; background: var(--periwinkle); opacity: .26;
-      top: 3rem; left: -12rem; animation: orbB 22s ease-in-out infinite alternate;
-    }
-    @keyframes orbA { from { transform: translate3d(0,0,0) scale(1); } to { transform: translate3d(-2.5rem, 1.5rem, 0) scale(1.07); } }
-    @keyframes orbB { from { transform: translate3d(0,0,0) scale(1); } to { transform: translate3d(2rem, -1.25rem, 0) scale(1.05); } }
-
-    /* primary CTA: the path to WhatsApp is THE action on every page */
-    .btn-primary {
-      background: var(--cash-green); color: var(--vanilla);
-      border-radius: 999px; padding: 1rem 2rem; font-size: 1.08rem;
-      box-shadow: 0 14px 30px -16px rgba(1, 71, 81, .55);
-      transition: transform .15s ease, box-shadow .2s ease, background-color .15s ease;
-    }
-    .btn-primary:hover { opacity: 1; transform: translateY(-2px); background: #02555F; box-shadow: 0 20px 42px -16px rgba(1,71,81,.6); }
-    .btn-primary:active { transform: translateY(0); }
-    .btn-primary .arrow, .btn-primary span[aria-hidden] { transition: transform .15s ease; }
-    .btn-primary:hover .arrow, .btn-primary:hover span[aria-hidden] { transform: translateX(3px); }
-
-    /* scroll reveals: armed only when reveal.js runs (html.has-reveal-js) */
-    .section, .cta { opacity: 1; animation: none; }
-    .has-reveal-js .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1); }
-    .has-reveal-js .reveal.is-in { opacity: 1; transform: none; }
-
-    /* roomier reading type */
-    .lede { font-size: clamp(1.05rem, 1.9vw, 1.22rem); }
-    .section p { font-size: clamp(1.02rem, 1.8vw, 1.15rem); }
-    .section h2 { font-size: clamp(1.8rem, 4.5vw, 2.4rem); margin-bottom: 1.2rem; }
-
-    /* footer: quiet but readable, with the legal links */
-    .footer { font-size: .88rem; line-height: 1.9; padding-top: 2.25rem; opacity: 1; color: var(--soft-ink); }
-
-    @media (prefers-reduced-motion: reduce) {
-      .hero::before, .hero::after { animation: none; }
-      .has-reveal-js .reveal { opacity: 1; transform: none; transition: none; }
-      /* the original pages animate .hero/.cta/.felt from opacity:0; with
-         animations disabled they would stay invisible. Force them on. */
-      .hero, .cta, .felt, .plans, .plans-foot, .section, .faq-group { opacity: 1 !important; }
-    }
-
-    /* faq: each Q+A as a quiet card */
-    .faq-group { opacity: 1; animation: none; }
-    .faq-group h2 { font-size: clamp(1.8rem, 4.5vw, 2.4rem); }
-    .qa {
-      background: var(--card); border: 1px solid var(--hairline); border-radius: 16px;
-      padding: 1.15rem 1.3rem; margin-bottom: .8rem; max-width: 70ch;
-      box-shadow: 0 16px 40px -38px rgba(26,23,23,.5);
-    }
-    .qa:first-of-type { border-top: 1px solid var(--hairline); }
-    .qa h3 { font-size: 1.06rem; }
-    .qa p { font-size: .98rem; }
   </style>
 </head>
 <body>
@@ -526,151 +258,211 @@
 
   <main class="stage">
 
-    <section class="hero">
+    <section class="ed-hero" aria-label="intro">
       <h1 class="headline">cashbff faq<span class="period">.</span></h1>
-      <p class="lede">cashbff is not another finance app. it's the money-nerd best friend you text on whatsapp. it connects to your real accounts, does the looking you've been dreading, and hands you one easy win at a time, so you get relief and agency without opening a dashboard or being judged. below are the questions people actually ask before they start. straight answers, no fine-print games.</p>
+      <p class="lede">cashbff is the money-nerd best friend you text on whatsapp. below: the questions people actually ask before they start, with straight answers. the big one first.</p>
+      <details class="fold">
+        <summary>the longer introduction</summary>
+        <div class="fold-body">
+          <p>cashbff is not another finance app. it's the money-nerd best friend you text on whatsapp. it connects to your real accounts, does the looking you've been dreading, and hands you one easy win at a time, so you get relief and agency without opening a dashboard or being judged. below are the questions people actually ask before they start. straight answers, no fine-print games.</p>
+          <p>big one first, because it's the one everyone wants to know:</p>
+        </div>
+      </details>
     </section>
 
-    <div class="intro">
-      <p>big one first, because it's the one everyone wants to know:</p>
-    </div>
 
     <section class="faq-group reveal" aria-labelledby="g-truth">
       <h2 id="g-truth">the honest part<span class="period">.</span></h2>
-
-      <div class="qa">
-        <h3>can cashbff cancel a subscription for me?</h3>
+      <div class="faq-acc">
+      <details>
+        <summary><h3>can cashbff cancel a subscription for me?</h3></summary>
+        <div class="faq-a">
         <p>no. and we want to be really clear about that. cashbff finds the forgotten subscription and shows it to you, the name, the amount, when it last hit. you do the cancelling. it can walk you through where to click, but it never does it for you. that's on purpose. it's your money, so you stay the one in charge.</p>
-      </div>
+        </div>
+      </details>
 
-      <div class="qa">
-        <h3>does cashbff move my money, pay my bills, or transfer anything?</h3>
+      <details>
+        <summary><h3>does cashbff move my money, pay my bills, or transfer anything?</h3></summary>
+        <div class="faq-a">
         <p>no. cashbff never moves money out of your accounts and never pays anyone on your behalf. it reads your money and reports back, and it finds what's worth your attention and flags it. the deciding and the doing stay yours. the only changes it ever makes are to things you set up inside cashbff, like a savings goal or a note, and only after it shows you a preview and you say yes.</p>
-      </div>
+        </div>
+      </details>
 
-      <div class="qa">
-        <h3>so what does cashbff actually do?</h3>
+      <details>
+        <summary><h3>so what does cashbff actually do?</h3></summary>
+        <div class="faq-a">
         <p>it does the scary looking for you. it connects to your real accounts, reads your balances and transactions, and then hands you things you can act on: a subscription you forgot you were paying, how much runway you've actually got before the next paycheck, which payment would save you the most on interest. you text it like a friend, it texts back. that's it.</p>
-      </div>
+        </div>
+      </details>
 
-      <div class="qa">
-        <h3>is cashbff a loan or a cash advance app?</h3>
+      <details>
+        <summary><h3>is cashbff a loan or a cash advance app?</h3></summary>
+        <div class="faq-a">
         <p>no. cashbff does not lend you money and does not give advances. a lot of the chat-money apps make their money on advances and fees, which means they do better when you're stuck. cashbff is the opposite of that. it finds cash you're already losing and helps you keep it.</p>
+        </div>
+      </details>
       </div>
     </section>
 
     <section class="faq-group reveal" aria-labelledby="g-safe">
       <h2 id="g-safe">is it safe<span class="period">?</span></h2>
-
-      <div class="qa">
-        <h3>is cashbff legit?</h3>
+      <div class="faq-acc">
+      <details>
+        <summary><h3>is cashbff legit?</h3></summary>
+        <div class="faq-a">
         <p>yes. short answer there. the longer answer, with how the security and the data and the money model actually work, lives on the <a class="inline-link" href="/is-cashbff-legit">is cashbff legit?</a> page. we wrote it out in full because if you've been burned before, you deserve more than a one-word promise.</p>
-      </div>
+        </div>
+      </details>
 
-      <div class="qa">
-        <h3>is it safe to connect my bank?</h3>
+      <details>
+        <summary><h3>is it safe to connect my bank?</h3></summary>
+        <div class="faq-a">
         <!-- [[PLAID CLAIMS: confirm]] -->
         <p>connecting your bank is the biggest ask in this whole thing, and it's fair to be cautious about it. cashbff connects through plaid, the same bank-connection service behind apps like venmo and robinhood. your bank login stays between you, your bank, and plaid. full security details are on the <a class="inline-link" href="/is-cashbff-legit#security">is cashbff legit?</a> page.</p>
-      </div>
+        </div>
+      </details>
 
-      <div class="qa">
-        <h3>can cashbff see my bank password?</h3>
+      <details>
+        <summary><h3>can cashbff see my bank password?</h3></summary>
+        <div class="faq-a">
         <!-- [[PLAID CLAIMS: confirm]] -->
         <p>no. plaid handles the bank login directly, so your username and password are never shared with cashbff.</p>
-      </div>
+        </div>
+      </details>
 
-      <div class="qa">
-        <h3>i got a message about my money on whatsapp. is that a scam?</h3>
+      <details>
+        <summary><h3>i got a message about my money on whatsapp. is that a scam?</h3></summary>
+        <div class="faq-a">
         <p>fair question, and good instinct, money messages on whatsapp are exactly the kind of thing scammers fake. cashbff only ever texts you from the number you started a conversation with, and it will never ask for your password, a one-time code, or a payment. it never moves money out of your accounts, so there's nothing for it to ask you to send. if anything ever feels off, stop and email <a class="inline-link" href="mailto:daksh@cashbff.com">daksh@cashbff.com</a>.</p>
+        </div>
+      </details>
       </div>
     </section>
 
     <section class="faq-group reveal" aria-labelledby="g-how">
       <h2 id="g-how">how it works<span class="period">.</span></h2>
-
-      <div class="qa">
-        <h3>how does cashbff work?</h3>
+      <div class="faq-acc">
+      <details>
+        <summary><h3>how does cashbff work?</h3></summary>
+        <div class="faq-a">
         <p>you text it on whatsapp. it connects to your accounts through plaid, reads your money, and answers in plain language: how much you've got, what's coming up, what's quietly draining you. when there's a win worth taking, it hands it to you, one at a time, so it never feels like homework. the full walk-through is on the <a class="inline-link" href="/how-it-works">how it works</a> page.</p>
-      </div>
+        </div>
+      </details>
 
-      <div class="qa">
-        <h3>do i have to download an app?</h3>
+      <details>
+        <summary><h3>do i have to download an app?</h3></summary>
+        <div class="faq-a">
         <p>no. cashbff lives in whatsapp, which you already have. nothing new to download, nothing new to learn, no app sitting on your phone making you feel bad for ignoring it.</p>
-      </div>
+        </div>
+      </details>
 
-      <div class="qa">
-        <h3>do i have to look at a dashboard or do a budget?</h3>
+      <details>
+        <summary><h3>do i have to look at a dashboard or do a budget?</h3></summary>
+        <div class="faq-a">
         <p>nope. there's no dashboard to open and no budget to build. you just ask, like you'd text a friend who happens to be great with money. that's the whole point: looking at your money shouldn't feel like a chore you keep putting off.</p>
-      </div>
+        </div>
+      </details>
 
-      <div class="qa">
-        <h3>what can i actually ask it?</h3>
+      <details>
+        <summary><h3>what can i actually ask it?</h3></summary>
+        <div class="faq-a">
         <p>stuff like "can i afford a $60 dinner this week," "how long until i run out before payday," "what subscriptions am i still paying for," "which card should i pay down first." if it's about your day-to-day cash, it's fair game. for investing or tax advice, it'll tell you that's outside its lane.</p>
-      </div>
+        </div>
+      </details>
 
-      <div class="qa">
-        <h3>which banks does it work with?</h3>
+      <details>
+        <summary><h3>which banks does it work with?</h3></summary>
+        <div class="faq-a">
         <!-- [[CONFIRM bank count / Plaid coverage]] -->
         <p>most major us banks, through plaid. you can link more than one.</p>
+        </div>
+      </details>
       </div>
     </section>
 
     <!-- MONEY + PRICING: [[$12.99/mo or $99/yr, 3-day free trial]] are the locked Terms values; exact live price pending final Stripe reconciliation. The two price-stating answers below use the high-level "flat subscription" framing and defer the exact number to /pricing so we never ship a wrong price. -->
     <section class="faq-group reveal" aria-labelledby="g-money">
       <h2 id="g-money">money + pricing<span class="period">.</span></h2>
-
-      <div class="qa">
-        <h3>is cashbff free?</h3>
+      <div class="faq-acc">
+      <details>
+        <summary><h3>is cashbff free?</h3></summary>
+        <div class="faq-a">
         <p>it's free to start, with a 3-day free trial. after that it's a flat subscription, and we tell you before you're ever charged. full breakdown on <a class="inline-link" href="/pricing">pricing</a>.</p>
-      </div>
+        </div>
+      </details>
 
-      <div class="qa">
-        <h3>how much does cashbff cost?</h3>
+      <details>
+        <summary><h3>how much does cashbff cost?</h3></summary>
+        <div class="faq-a">
         <p>a flat subscription, no surprise fees. the exact number and what's included are on <a class="inline-link" href="/pricing">pricing</a>.</p>
-      </div>
+        </div>
+      </details>
 
-      <div class="qa">
-        <h3>how does cashbff make money? am i the product?</h3>
+      <details>
+        <summary><h3>how does cashbff make money? am i the product?</h3></summary>
+        <div class="faq-a">
         <p>it makes money one way: a flat subscription. that's it. it has nothing to gain from you staying stuck, no advances to sell you, no fees that go up when you're broke. you're the customer, not the product.</p>
-      </div>
+        </div>
+      </details>
 
-      <div class="qa">
-        <h3>can i cancel anytime?</h3>
+      <details>
+        <summary><h3>can i cancel anytime?</h3></summary>
+        <div class="faq-a">
         <p>yes. no hoops, no retention maze. details on <a class="inline-link" href="/pricing">pricing</a>.</p>
+        </div>
+      </details>
       </div>
     </section>
 
     <section class="faq-group reveal" aria-labelledby="g-who">
       <h2 id="g-who">who it's for<span class="period">.</span></h2>
-
-      <div class="qa">
-        <h3>who is cashbff for?</h3>
+      <div class="faq-acc">
+      <details>
+        <summary><h3>who is cashbff for?</h3></summary>
+        <div class="faq-a">
         <p>it's for the people every budgeting app quietly failed. maybe you pulled your cards out of apple pay to slow yourself down, maybe your banking app has gone unopened for weeks, maybe you've started and quit a dozen budgeting apps because opening one means looking, and looking feels like shame. that's not being bad with money. that's never having had a safe way to look. this was built for you.</p>
-      </div>
+        </div>
+      </details>
 
-      <div class="qa">
-        <h3>i'm scared to check my bank account. will this make it worse?</h3>
+      <details>
+        <summary><h3>i'm scared to check my bank account. will this make it worse?</h3></summary>
+        <div class="faq-a">
         <p>a lot of people feel exactly that, and it's a real thing, not a character flaw. when checking your balance feels like bad news even when it isn't, that pattern has a name: <a class="inline-link" href="/money-dysmorphia">money dysmorphia</a>. cashbff is built to take the dread off you. it does the looking, it leads with what's okay, not just what's wrong, and it sends no notifications, so you check in when you're ready. you're usually more okay than you think, and it'll show you that before anything else.</p>
-      </div>
+        </div>
+      </details>
 
-      <div class="qa">
-        <h3>will it judge how i spend?</h3>
+      <details>
+        <summary><h3>will it judge how i spend?</h3></summary>
+        <div class="faq-a">
         <p>never. zero judgment, zero lectures, zero "you spent how much on coffee." it's on your side, full stop.</p>
+        </div>
+      </details>
+      <details>
+        <summary><h3>what is money dysmorphia?</h3></summary>
+        <div class="faq-a">
+        <p>money dysmorphia is persistent financial self-perception that either partly or wholly resists correction from the outside world: feeling broke when the numbers say you're okay, or fine when you're not. it isn't a clinical diagnosis, and it's extremely common. naming it helps. the full explainer, the signs, and what actually helped are at <a class="inline-link" href="/money-dysmorphia">money dysmorphia, explained</a>.</p>
+        </div>
+      </details>
       </div>
     </section>
 
     <section class="faq-group reveal" aria-labelledby="g-start">
       <h2 id="g-start">getting started<span class="period">.</span></h2>
-
-      <div class="qa">
-        <h3>how do i start?</h3>
+      <div class="faq-acc">
+      <details>
+        <summary><h3>how do i start?</h3></summary>
+        <div class="faq-a">
         <p>head to the <a class="inline-link" href="/start">start</a> page and text cashbff on whatsapp. you connect your bank through plaid, and you can ask your first question right away. most people surface something worth knowing in the first few minutes.</p>
-      </div>
+        </div>
+      </details>
 
-      <div class="qa">
-        <h3>can i delete my data?</h3>
+      <details>
+        <summary><h3>can i delete my data?</h3></summary>
+        <div class="faq-a">
         <!-- [[LEGAL DOCS]] this answer + the privacy-policy link are gated until the privacy policy is rewritten to cover WhatsApp + correct the analytics claim (separate legal branch). Trust pointer kept to /is-cashbff-legit#privacy for now. -->
         <p>yes. you can disconnect your accounts and have your data removed. how that works is covered on the <a class="inline-link" href="/is-cashbff-legit#privacy">is cashbff legit?</a> page.</p>
+        </div>
+      </details>
       </div>
     </section>
 
@@ -678,7 +470,7 @@
 
     <div class="cta" style="margin-top:1.6rem;">
       <!-- [[WA_LINK]] wired 2026-06-05: funnels to /start (the single click-to-WhatsApp endpoint). -->
-      <a class="btn-primary" href="/start"><span>start texting cashbff</span><span aria-hidden="true">&rarr;</span></a>
+      <a class="btn-primary" href="/start"><span>text cashbff on whatsapp</span><span aria-hidden="true">&rarr;</span></a>
       <a class="link-quiet" href="/is-cashbff-legit">still deciding? see if it's legit →</a>
     </div>
     <p class="updated">last updated june 2026.</p>

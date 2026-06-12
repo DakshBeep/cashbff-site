@@ -56,7 +56,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 
   <!-- PostHog product analytics. CSP-safe (no eval). -->
   <script src="/assets/js/posthog-init.js" defer></script>
@@ -66,318 +66,26 @@
   <script src="/assets/js/vercel-analytics-init.js" defer></script>
   <script defer src="/_vercel/insights/script.js"></script>
 
+  <!-- ── site v2, direction C: bold editorial honesty (2026-06-11) ──────────
+       Shared design system: /assets/css/editorial.css. Trust page: strict
+       register, presentation only. Every word of body copy, schema, URLs:
+       unchanged. -->
+  <link rel="stylesheet" href="/assets/css/editorial.css">
   <style>
-    @font-face {
-      font-family: 'Greed Condensed';
-      src: url('/fonts/GreedCondensed-Bold.woff2') format('woff2');
-      font-weight: 700;
-      font-display: swap;
-    }
-    @font-face {
-      font-family: 'Greed Condensed';
-      src: url('/fonts/GreedCondensed-Medium.woff2') format('woff2');
-      font-weight: 500;
-      font-display: swap;
-    }
-
-    :root {
-      --vanilla: #FCFAF2;
-      --off-black: #1A1717;
-      --cash-green: #014751;
-      --hairline: rgba(26, 23, 23, 0.12);
-      --soft-ink: rgba(26, 23, 23, 0.62);
-
-      --font-display: 'Greed Condensed', 'Archivo Narrow', 'Arial Narrow', Impact, sans-serif;
-      --font-body: 'Instrument Sans', system-ui, -apple-system, sans-serif;
-    }
-
-    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
-    body {
-      font-family: var(--font-body);
-      background: var(--vanilla);
-      color: var(--off-black);
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      line-height: 1.5;
-      min-height: 100dvh;
-    }
-    a { color: inherit; text-decoration: none; }
-    button { font-family: inherit; cursor: pointer; border: none; background: none; }
-
-    .stage {
-      max-width: 720px;
-      margin: 0 auto;
-      padding: 1.5rem 1.5rem 4rem;
-      display: flex;
-      flex-direction: column;
-      min-height: 100dvh;
-    }
-
-    /* ── top bar ── */
-    .bar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-shrink: 0;
-      margin-bottom: 4rem;
-    }
-    .wordmark {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: 1.5rem;
-      letter-spacing: -0.02em;
-      color: var(--cash-green);
-      text-transform: lowercase;
-    }
-    .nav { display: flex; gap: 1.4rem; font-size: 0.9rem; font-weight: 500; }
-    .nav a { opacity: 0.7; transition: opacity .15s; }
-    .nav a:hover { opacity: 1; }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(14px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    /* ── hero ── */
-    .hero {
-      margin: 0 0 2.4rem;
-      opacity: 0;
-      animation: fadeIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.05s forwards;
-    }
-    .headline {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: clamp(2.6rem, 8vw, 4.5rem);
-      line-height: 0.95;
-      letter-spacing: -0.02em;
-      text-transform: lowercase;
-      color: var(--off-black);
-      margin-bottom: 1.4rem;
-    }
-    .headline .period { color: var(--cash-green); }
-    .lede {
-      font-size: clamp(1.02rem, 1.8vw, 1.18rem);
-      line-height: 1.6;
-      max-width: 60ch;
-      margin-bottom: 1rem;
-    }
-    .lede:last-child { margin-bottom: 0; }
-    .lede.muted { color: var(--soft-ink); }
-
-    /* ── sections ── */
-    .section {
-      margin: 0 0 3rem;
-      opacity: 0;
-      animation: fadeIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.18s forwards;
-    }
+    /* legit-only: existing markup reads as editorial sections */
+    .hero { padding: clamp(2.6rem, 7vh, 5rem) 0 2.4rem; }
+    .hero .lede { margin-bottom: 1rem; }
+    .section { border-top: 2px solid var(--ink); padding: 1.1rem 0 3.2rem; }
     .section h2 {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: clamp(1.6rem, 4vw, 2.1rem);
-      letter-spacing: -0.02em;
-      text-transform: lowercase;
-      margin-bottom: 1.1rem;
-      scroll-margin-top: 1.5rem;
+      font-family: var(--font-display); font-weight: 700;
+      font-size: clamp(2.1rem, 5vw, 3.4rem); line-height: .94;
+      letter-spacing: -0.02em; text-transform: lowercase;
+      margin-bottom: 1.3rem; scroll-margin-top: 5rem; max-width: 18ch;
     }
     .section h2 .period { color: var(--cash-green); }
-    .section p { max-width: 60ch; margin-bottom: 0.9rem; }
+    .section p { max-width: 62ch; margin-bottom: .95rem; line-height: 1.6; font-size: clamp(1.02rem, 1.8vw, 1.15rem); }
     .section p:last-child { margin-bottom: 0; }
-    .section .muted { color: var(--soft-ink); }
-
-    /* ── key/value list ── */
-    .kv { border-top: 1px solid var(--hairline); }
-    .kv div {
-      display: grid;
-      grid-template-columns: 13rem 1fr;
-      gap: 1rem;
-      padding: 0.8rem 0;
-      border-bottom: 1px solid var(--hairline);
-      font-size: 0.95rem;
-    }
-    .kv dt { font-weight: 600; }
-    .kv dd { color: var(--soft-ink); }
-    @media (max-width: 560px) {
-      .kv div { grid-template-columns: 1fr; gap: 0.2rem; }
-    }
-
-    /* ── jump nav ── */
-    .jump { display: flex; gap: 1rem; flex-wrap: wrap; margin: 0 0 3rem; font-size: 0.95rem; }
-    .jump a {
-      text-decoration: underline;
-      text-decoration-color: var(--hairline);
-      text-underline-offset: 3px;
-      opacity: 0.75;
-      transition: opacity .15s, text-decoration-color .15s;
-    }
-    .jump a:hover { opacity: 1; text-decoration-color: var(--off-black); }
-
-    /* ── CTA ── */
-    .cta { margin: 0.4rem 0 0; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
-    .btn-primary {
-      background: var(--off-black);
-      color: var(--vanilla);
-      font-weight: 700;
-      font-size: 1.05rem;
-      padding: 0.95rem 1.9rem;
-      border-radius: 14px;
-      text-transform: lowercase;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.6rem;
-      transition: transform .12s ease, opacity .15s;
-    }
-    .btn-primary:hover { opacity: 0.92; transform: translateY(-1px); }
-    .btn-primary:active { transform: translateY(1px); }
-    .link-quiet { font-size: 0.95rem; opacity: 0.7; text-decoration: underline; text-decoration-color: var(--hairline); text-underline-offset: 3px; }
-    .link-quiet:hover { opacity: 1; text-decoration-color: var(--off-black); }
-    .inline-link {
-      text-decoration: underline;
-      text-decoration-color: var(--hairline);
-      text-underline-offset: 3px;
-      transition: text-decoration-color .15s;
-    }
-    .inline-link:hover { text-decoration-color: var(--off-black); }
-
-    .updated { font-size: 0.8rem; color: var(--soft-ink); margin-top: 2rem; }
-
-    /* ── footer ── */
-    .footer {
-      margin-top: auto;
-      padding-top: 2.5rem;
-      font-size: 0.85rem;
-      opacity: 0.5;
-      line-height: 1.7;
-      border-top: 1px solid var(--hairline);
-    }
-    .footer a {
-      text-decoration: underline;
-      text-decoration-color: var(--hairline);
-      text-underline-offset: 3px;
-      transition: text-decoration-color .15s, opacity .15s;
-    }
-    .footer a:hover { text-decoration-color: var(--off-black); opacity: 1; }
-    .footer .sep { margin: 0 0.5rem; opacity: 0.5; }
-
-    @media (prefers-reduced-motion: reduce) {
-      * { animation: none !important; transition: none !important; }
-    }
-  </style>
-
-  <!-- ── 2026-06-11 redesign layer ──────────────────────────────────────────
-       Presentation only: every word of body copy, every heading, every schema
-       block, and every URL is unchanged. This block restyles the shared chrome
-       (sticky nav, buttons, footer), adds calm ambient motion to the hero, and
-       arms scroll-reveals (see /assets/js/reveal.js; content is never hidden
-       without JS). Palette: the brand tokens already in this repo (vanilla,
-       off-black, cash-green) plus the electric-green + periwinkle accents from
-       the dynamic-era prototypes (home-bloom*.html). -->
-  <style>
-    :root {
-      --electric-green: #D3FFB4;
-      --periwinkle: #C5B6F1;
-      --card: #FFFFFF;
-    }
-    html, body { overflow-x: clip; }
-    body { font-size: 1.03rem; display: flex; flex-direction: column; }
-    a:focus-visible, button:focus-visible { outline: 2px solid var(--cash-green); outline-offset: 3px; border-radius: 4px; }
-
-    /* sticky top bar */
-    .topbar {
-      position: sticky; top: 0; z-index: 40;
-      background: rgba(252, 250, 242, 0.88);
-      -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
-      border-bottom: 1px solid transparent;
-      transition: border-color .25s ease, box-shadow .25s ease;
-    }
-    .topbar.is-scrolled { border-bottom-color: var(--hairline); box-shadow: 0 6px 24px -18px rgba(26,23,23,.35); }
-    .topbar__inner {
-      max-width: 960px; margin: 0 auto; padding: .85rem 1.5rem;
-      display: flex; align-items: center; justify-content: space-between; gap: 1rem;
-    }
-    .topbar .wordmark { font-size: 1.45rem; }
-    .topbar .nav { display: flex; align-items: center; gap: 1.3rem; font-size: .9rem; font-weight: 500; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
-    .topbar .nav::-webkit-scrollbar { display: none; }
-    .topbar .nav a { opacity: .72; white-space: nowrap; }
-    .topbar .nav a:hover, .topbar .nav a[aria-current="page"] { opacity: 1; }
-    .topbar .nav a.nav-cta {
-      opacity: 1; background: var(--cash-green); color: var(--vanilla);
-      font-weight: 600; padding: .42rem 1.05rem; border-radius: 999px;
-      transition: transform .12s ease, opacity .15s;
-    }
-    .topbar .nav a.nav-cta:hover { opacity: .92; transform: translateY(-1px); }
-    @media (max-width: 640px) { .topbar .nav { gap: 1rem; font-size: .86rem; } .topbar__inner { padding: .8rem 1.1rem; } }
-
-    /* stage sits under the bar now */
-    .stage { min-height: calc(100dvh - 62px); padding-top: 2.25rem; max-width: 760px; }
-
-    /* hero: calm ambient color behind the headline */
-    .hero { position: relative; z-index: 0; }
-    .hero::before, .hero::after {
-      content: ''; position: absolute; border-radius: 50%;
-      filter: blur(72px); z-index: -1; pointer-events: none;
-    }
-    .hero::before {
-      width: 24rem; height: 24rem; background: var(--electric-green); opacity: .42;
-      top: -10rem; right: -13rem; animation: orbA 18s ease-in-out infinite alternate;
-    }
-    .hero::after {
-      width: 19rem; height: 19rem; background: var(--periwinkle); opacity: .26;
-      top: 3rem; left: -12rem; animation: orbB 22s ease-in-out infinite alternate;
-    }
-    @keyframes orbA { from { transform: translate3d(0,0,0) scale(1); } to { transform: translate3d(-2.5rem, 1.5rem, 0) scale(1.07); } }
-    @keyframes orbB { from { transform: translate3d(0,0,0) scale(1); } to { transform: translate3d(2rem, -1.25rem, 0) scale(1.05); } }
-
-    /* primary CTA: the path to WhatsApp is THE action on every page */
-    .btn-primary {
-      background: var(--cash-green); color: var(--vanilla);
-      border-radius: 999px; padding: 1rem 2rem; font-size: 1.08rem;
-      box-shadow: 0 14px 30px -16px rgba(1, 71, 81, .55);
-      transition: transform .15s ease, box-shadow .2s ease, background-color .15s ease;
-    }
-    .btn-primary:hover { opacity: 1; transform: translateY(-2px); background: #02555F; box-shadow: 0 20px 42px -16px rgba(1,71,81,.6); }
-    .btn-primary:active { transform: translateY(0); }
-    .btn-primary .arrow, .btn-primary span[aria-hidden] { transition: transform .15s ease; }
-    .btn-primary:hover .arrow, .btn-primary:hover span[aria-hidden] { transform: translateX(3px); }
-
-    /* scroll reveals: armed only when reveal.js runs (html.has-reveal-js) */
-    .section, .cta { opacity: 1; animation: none; }
-    .has-reveal-js .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1); }
-    .has-reveal-js .reveal.is-in { opacity: 1; transform: none; }
-
-    /* roomier reading type */
-    .lede { font-size: clamp(1.05rem, 1.9vw, 1.22rem); }
-    .section p { font-size: clamp(1.02rem, 1.8vw, 1.15rem); }
-    .section h2 { font-size: clamp(1.8rem, 4.5vw, 2.4rem); margin-bottom: 1.2rem; }
-
-    /* footer: quiet but readable, with the legal links */
-    .footer { font-size: .88rem; line-height: 1.9; padding-top: 2.25rem; opacity: 1; color: var(--soft-ink); }
-
-    @media (prefers-reduced-motion: reduce) {
-      .hero::before, .hero::after { animation: none; }
-      .has-reveal-js .reveal { opacity: 1; transform: none; transition: none; }
-      /* the original pages animate .hero/.cta/.felt from opacity:0; with
-         animations disabled they would stay invisible. Force them on. */
-      .hero, .cta, .felt, .plans, .plans-foot, .section, .faq-group { opacity: 1 !important; }
-    }
-
-    /* legit page: carded key/value spine + pill jump-nav */
-    .kv {
-      border: 1px solid var(--hairline); border-top: 1px solid var(--hairline);
-      border-radius: 16px; background: var(--card);
-      padding: .35rem 1.15rem;
-      box-shadow: 0 18px 44px -40px rgba(26,23,23,.5);
-    }
-    .kv div:last-child { border-bottom: none; }
-    .jump { gap: .6rem; }
-    .jump a {
-      text-decoration: none; opacity: 1;
-      border: 1px solid var(--hairline); background: var(--card);
-      padding: .4rem .95rem; border-radius: 999px;
-      font-size: .9rem; font-weight: 500;
-      transition: border-color .15s, background-color .15s, transform .12s;
-    }
-    .jump a:hover { border-color: var(--cash-green); background: rgba(211,255,180,.25); transform: translateY(-1px); }
+    .section[aria-labelledby="cta"] { border-top: none; padding-top: 0; }
   </style>
 </head>
 <body>
@@ -451,7 +159,7 @@
       <p class="muted">that's the honest version. you're more okay than you think, and looking shouldn't feel like a risk.</p>
       <div class="cta">
         <!-- [[WA_LINK]] wired 2026-06-05: already funnels to /start (the single click-to-WhatsApp endpoint). -->
-        <a class="btn-primary" href="/start"><span>start texting cashbff</span><span aria-hidden="true">&rarr;</span></a>
+        <a class="btn-primary" href="/start"><span>text cashbff on whatsapp</span><span aria-hidden="true">&rarr;</span></a>
         <a class="link-quiet" href="/how-it-works">see how it works</a>
       </div>
       <p class="updated">last updated may 2026.</p>
