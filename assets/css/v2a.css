@@ -67,11 +67,11 @@ body::before {
   z-index: -2;
   pointer-events: none;
   background:
-    radial-gradient(42% 36% at 16% 6%, rgba(211, 255, 180, 0.50), transparent 70%),
-    radial-gradient(38% 32% at 88% 2%, rgba(220, 237, 210, 0.62), transparent 70%),
+    radial-gradient(42% 36% at 16% 6%, rgba(211, 255, 180, 0.58), transparent 70%),
+    radial-gradient(38% 32% at 88% 2%, rgba(220, 237, 210, 0.70), transparent 70%),
     radial-gradient(48% 40% at 82% 64%, rgba(246, 237, 218, 0.72), transparent 72%),
-    radial-gradient(40% 36% at 6% 88%, rgba(211, 255, 180, 0.26), transparent 70%),
-    radial-gradient(30% 26% at 50% 40%, rgba(234, 244, 228, 0.45), transparent 75%);
+    radial-gradient(40% 36% at 6% 88%, rgba(211, 255, 180, 0.36), transparent 70%),
+    radial-gradient(30% 26% at 50% 40%, rgba(234, 244, 228, 0.55), transparent 75%);
   animation: atmosphere 30s var(--ease-calm) infinite alternate;
 }
 @keyframes atmosphere {
@@ -383,6 +383,62 @@ a:focus-visible, button:focus-visible, summary:focus-visible {
 .footer a:hover { color: var(--off-black); text-decoration-color: var(--off-black); opacity: 1; }
 .footer .sep { margin: 0 .5rem; opacity: .5; }
 .updated { font-size: .8rem; color: var(--soft-ink); margin-top: 2rem; }
+
+/* ── mint amplification (2026-06-11 copy-laws pass, L13) ──────────────────
+   "a mint tea place, i feel safe." Shared utilities that bring the
+   light-green field into the page body, not just the atmosphere:
+   - .mint-band: a soft mint panel that holds a whole section.
+   - .pull-quote: a big display-type breath between text sections.
+   - .duo: two side-by-side cards (stacks on mobile).
+   - .cta-note: the quiet caption next to a primary button
+     ("takes about a minute to start"). */
+.mint-band {
+  background: linear-gradient(150deg, rgba(211, 255, 180, 0.36), rgba(234, 244, 228, 0.62));
+  border: 1px solid rgba(1, 71, 81, 0.09);
+  border-radius: 28px;
+  padding: 2rem 1.7rem;
+  box-shadow: 0 30px 64px -52px rgba(1, 71, 81, 0.5);
+}
+@media (max-width: 560px) { .mint-band { padding: 1.5rem 1.2rem; border-radius: 22px; } }
+.pull-quote {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(1.7rem, 5vw, 2.5rem);
+  line-height: 1.08;
+  letter-spacing: -0.015em;
+  text-transform: lowercase;
+  max-width: 24ch;
+  margin: 2.4rem 0;
+  padding: 1.1rem 0 1.1rem 1.5rem;
+  border-left: 7px solid var(--mint);
+}
+.pull-quote .period { color: var(--cash-green); }
+.duo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin: 0 0 1.4rem;
+  max-width: 64ch;
+}
+@media (max-width: 560px) { .duo { grid-template-columns: 1fr; } }
+.duo .duo-card {
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(1, 71, 81, 0.09);
+  border-radius: 22px;
+  padding: 1.4rem 1.3rem;
+  box-shadow: 0 28px 60px -46px rgba(1, 71, 81, 0.55);
+}
+.duo .duo-card h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.45rem;
+  letter-spacing: -0.015em;
+  text-transform: lowercase;
+  color: var(--cash-green);
+  margin: 0 0 .55rem;
+}
+.duo .duo-card p { margin: 0; line-height: 1.6; }
+.cta-note { font-size: .94rem; color: var(--soft-ink); }
 
 /* ── calm, always: reduced motion = still air, everything visible ── */
 @media (prefers-reduced-motion: reduce) {
