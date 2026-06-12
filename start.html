@@ -61,262 +61,23 @@
   <script src="/assets/js/vercel-analytics-init.js" defer></script>
   <script defer src="/_vercel/insights/script.js"></script>
 
-  <style>
-    @font-face {
-      font-family: 'Greed Condensed';
-      src: url('/fonts/GreedCondensed-Bold.woff2') format('woff2');
-      font-weight: 700;
-      font-display: swap;
-    }
-    @font-face {
-      font-family: 'Greed Condensed';
-      src: url('/fonts/GreedCondensed-Medium.woff2') format('woff2');
-      font-weight: 500;
-      font-display: swap;
-    }
-
-    :root {
-      --vanilla: #FCFAF2;
-      --off-black: #1A1717;
-      --cash-green: #014751;
-      --hairline: rgba(26, 23, 23, 0.12);
-      --soft-ink: rgba(26, 23, 23, 0.62);
-
-      --font-display: 'Greed Condensed', 'Archivo Narrow', 'Arial Narrow', Impact, sans-serif;
-      --font-body: 'Instrument Sans', system-ui, -apple-system, sans-serif;
-    }
-
-    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
-    body {
-      font-family: var(--font-body);
-      background: var(--vanilla);
-      color: var(--off-black);
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      line-height: 1.5;
-      min-height: 100dvh;
-    }
-    a { color: inherit; text-decoration: none; }
-    button { font-family: inherit; cursor: pointer; border: none; background: none; }
-
-    .stage {
-      max-width: 720px;
-      margin: 0 auto;
-      padding: 1.5rem 1.5rem 4rem;
-      display: flex;
-      flex-direction: column;
-      min-height: 100dvh;
-    }
-
-    /* ── top bar ── */
-    .bar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-shrink: 0;
-      margin-bottom: 4rem;
-    }
-    .wordmark {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: 1.5rem;
-      letter-spacing: -0.02em;
-      color: var(--cash-green);
-      text-transform: lowercase;
-    }
-    .nav { display: flex; gap: 1.4rem; font-size: 0.9rem; font-weight: 500; }
-    .nav a { opacity: 0.7; transition: opacity .15s; }
-    .nav a:hover { opacity: 1; }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(14px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    /* ── hero ── */
-    .hero {
-      margin: 0 0 2.4rem;
-      opacity: 0;
-      animation: fadeIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.05s forwards;
-    }
-    .headline {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: clamp(2.6rem, 8vw, 4.5rem);
-      line-height: 0.95;
-      letter-spacing: -0.02em;
-      text-transform: lowercase;
-      color: var(--off-black);
-      margin-bottom: 1.4rem;
-    }
-    .headline .period { color: var(--cash-green); }
-    .lede {
-      font-size: clamp(1.02rem, 1.8vw, 1.18rem);
-      line-height: 1.6;
-      max-width: 56ch;
-      margin-bottom: 1rem;
-    }
-    .lede:last-child { margin-bottom: 0; }
-    .lede.muted { color: var(--soft-ink); }
-
-    /* ── CTA ── */
-    .cta { margin: 0.4rem 0 0; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
-    .btn-primary {
-      background: var(--off-black);
-      color: var(--vanilla);
-      font-weight: 700;
-      font-size: 1.05rem;
-      padding: 0.95rem 1.9rem;
-      border-radius: 14px;
-      text-transform: lowercase;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.6rem;
-      transition: transform .12s ease, opacity .15s;
-    }
-    .btn-primary:hover { opacity: 0.92; transform: translateY(-1px); }
-    .btn-primary:active { transform: translateY(1px); }
-    .link-quiet { font-size: 0.95rem; opacity: 0.7; text-decoration: underline; text-decoration-color: var(--hairline); text-underline-offset: 3px; }
-    .link-quiet:hover { opacity: 1; text-decoration-color: var(--off-black); }
-    .inline-link {
-      text-decoration: underline;
-      text-decoration-color: var(--hairline);
-      text-underline-offset: 3px;
-      transition: text-decoration-color .15s;
-    }
-    .inline-link:hover { text-decoration-color: var(--off-black); }
-
-    .updated { font-size: 0.8rem; color: var(--soft-ink); margin-top: 2rem; }
-
-    /* ── footer ── */
-    .footer {
-      margin-top: auto;
-      padding-top: 2.5rem;
-      font-size: 0.85rem;
-      opacity: 0.5;
-      line-height: 1.7;
-      border-top: 1px solid var(--hairline);
-    }
-    .footer a {
-      text-decoration: underline;
-      text-decoration-color: var(--hairline);
-      text-underline-offset: 3px;
-      transition: text-decoration-color .15s, opacity .15s;
-    }
-    .footer a:hover { text-decoration-color: var(--off-black); opacity: 1; }
-    .footer .sep { margin: 0 0.5rem; opacity: 0.5; }
-
-    @media (prefers-reduced-motion: reduce) {
-      * { animation: none !important; transition: none !important; }
-    }
-  </style>
-
-  <!-- ── 2026-06-11 redesign layer ──────────────────────────────────────────
-       Presentation only: every word of body copy, every heading, every schema
-       block, and every URL is unchanged. This block restyles the shared chrome
-       (sticky nav, buttons, footer), adds calm ambient motion to the hero, and
-       arms scroll-reveals (see /assets/js/reveal.js; content is never hidden
-       without JS). Palette: the brand tokens already in this repo (vanilla,
-       off-black, cash-green) plus the electric-green + periwinkle accents from
-       the dynamic-era prototypes (home-bloom*.html). -->
-  <style>
-    :root {
-      --electric-green: #D3FFB4;
-      --periwinkle: #C5B6F1;
-      --card: #FFFFFF;
-    }
-    html, body { overflow-x: clip; }
-    body { font-size: 1.03rem; display: flex; flex-direction: column; }
-    a:focus-visible, button:focus-visible { outline: 2px solid var(--cash-green); outline-offset: 3px; border-radius: 4px; }
-
-    /* sticky top bar */
-    .topbar {
-      position: sticky; top: 0; z-index: 40;
-      background: rgba(252, 250, 242, 0.88);
-      -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
-      border-bottom: 1px solid transparent;
-      transition: border-color .25s ease, box-shadow .25s ease;
-    }
-    .topbar.is-scrolled { border-bottom-color: var(--hairline); box-shadow: 0 6px 24px -18px rgba(26,23,23,.35); }
-    .topbar__inner {
-      max-width: 960px; margin: 0 auto; padding: .85rem 1.5rem;
-      display: flex; align-items: center; justify-content: space-between; gap: 1rem;
-    }
-    .topbar .wordmark { font-size: 1.45rem; }
-    .topbar .nav { display: flex; align-items: center; gap: 1.3rem; font-size: .9rem; font-weight: 500; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
-    .topbar .nav::-webkit-scrollbar { display: none; }
-    .topbar .nav a { opacity: .72; white-space: nowrap; }
-    .topbar .nav a:hover, .topbar .nav a[aria-current="page"] { opacity: 1; }
-    .topbar .nav a.nav-cta {
-      opacity: 1; background: var(--cash-green); color: var(--vanilla);
-      font-weight: 600; padding: .42rem 1.05rem; border-radius: 999px;
-      transition: transform .12s ease, opacity .15s;
-    }
-    .topbar .nav a.nav-cta:hover { opacity: .92; transform: translateY(-1px); }
-    @media (max-width: 640px) { .topbar .nav { gap: 1rem; font-size: .86rem; } .topbar__inner { padding: .8rem 1.1rem; } }
-
-    /* stage sits under the bar now */
-    .stage { min-height: calc(100dvh - 62px); padding-top: 2.25rem; max-width: 760px; }
-
-    /* hero: calm ambient color behind the headline */
-    .hero { position: relative; z-index: 0; }
-    .hero::before, .hero::after {
-      content: ''; position: absolute; border-radius: 50%;
-      filter: blur(72px); z-index: -1; pointer-events: none;
-    }
-    .hero::before {
-      width: 24rem; height: 24rem; background: var(--electric-green); opacity: .42;
-      top: -10rem; right: -13rem; animation: orbA 18s ease-in-out infinite alternate;
-    }
-    .hero::after {
-      width: 19rem; height: 19rem; background: var(--periwinkle); opacity: .26;
-      top: 3rem; left: -12rem; animation: orbB 22s ease-in-out infinite alternate;
-    }
-    @keyframes orbA { from { transform: translate3d(0,0,0) scale(1); } to { transform: translate3d(-2.5rem, 1.5rem, 0) scale(1.07); } }
-    @keyframes orbB { from { transform: translate3d(0,0,0) scale(1); } to { transform: translate3d(2rem, -1.25rem, 0) scale(1.05); } }
-
-    /* primary CTA: the path to WhatsApp is THE action on every page */
-    .btn-primary {
-      background: var(--cash-green); color: var(--vanilla);
-      border-radius: 999px; padding: 1rem 2rem; font-size: 1.08rem;
-      box-shadow: 0 14px 30px -16px rgba(1, 71, 81, .55);
-      transition: transform .15s ease, box-shadow .2s ease, background-color .15s ease;
-    }
-    .btn-primary:hover { opacity: 1; transform: translateY(-2px); background: #02555F; box-shadow: 0 20px 42px -16px rgba(1,71,81,.6); }
-    .btn-primary:active { transform: translateY(0); }
-    .btn-primary .arrow, .btn-primary span[aria-hidden] { transition: transform .15s ease; }
-    .btn-primary:hover .arrow, .btn-primary:hover span[aria-hidden] { transform: translateX(3px); }
-
-    /* scroll reveals: armed only when reveal.js runs (html.has-reveal-js) */
-    .section, .cta { opacity: 1; animation: none; }
-    .has-reveal-js .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1); }
-    .has-reveal-js .reveal.is-in { opacity: 1; transform: none; }
-
-    /* roomier reading type */
-    .lede { font-size: clamp(1.05rem, 1.9vw, 1.22rem); }
-    .section p { font-size: clamp(1.02rem, 1.8vw, 1.15rem); }
-    .section h2 { font-size: clamp(1.8rem, 4.5vw, 2.4rem); margin-bottom: 1.2rem; }
-
-    /* footer: quiet but readable, with the legal links */
-    .footer { font-size: .88rem; line-height: 1.9; padding-top: 2.25rem; opacity: 1; color: var(--soft-ink); }
-
-    @media (prefers-reduced-motion: reduce) {
-      .hero::before, .hero::after { animation: none; }
-      .has-reveal-js .reveal { opacity: 1; transform: none; transition: none; }
-      /* the original pages animate .hero/.cta/.felt from opacity:0; with
-         animations disabled they would stay invisible. Force them on. */
-      .hero, .cta, .felt, .plans, .plans-foot, .section, .faq-group { opacity: 1 !important; }
-    }
-
-    /* start: keep the funnel tight; quiet link reads larger */
-    .link-quiet { font-size: 1rem; }
-  </style>
+  <!-- ── site v2, direction B: chat-native ─────────────────────────────────
+       The start page is the open thread: say hi, that's the whole first step.
+       Copy follows the v2 punchy pack; the previous page's sign-up detail and
+       contact lines survive inside a native details fold. URLs, JSON-LD,
+       canonical and og tags unchanged. -->
+  <link rel="stylesheet" href="/assets/css/chat-native.css">
 </head>
-<body>
+<body class="chat-page">
   <header class="topbar">
     <div class="topbar__inner">
-      <a href="/" class="wordmark">cashbff</a>
+      <a href="/" class="chat-id" aria-label="cashbff home">
+        <span class="chat-id__avatar"><img src="/icon.png" alt="" width="40" height="40"></span>
+        <span class="chat-id__name">
+          <span class="wordmark">cashbff</span>
+          <span class="chat-id__status">quiet until you text</span>
+        </span>
+      </a>
       <nav class="nav" aria-label="primary">
         <a href="/">home</a>
         <a href="/how-it-works">how it works</a>
@@ -331,21 +92,48 @@
 
     <section class="hero">
       <h1 class="headline">
-        start texting cashbff<span class="period">.</span>
+        say hi<span class="period">.</span> that's the whole first step<span class="period">.</span>
       </h1>
-      <p class="lede">cashbff is the money-nerd best friend you text on whatsapp. it connects to your real accounts, does the looking you've been dreading, and hands you one easy win at a time. starting is one message, and there's nothing to download. and once you're in, it stays quiet until you text. no notifications, no nagging. you set the pace.</p>
-      <p class="lede muted">self-serve is open. you can create your account right now and be talking to cashbff in minutes.</p>
+      <p class="sub">no download, no forms, no facing anything tonight. text cashbff on whatsapp, ask one question, and let it do the looking from there.</p>
+      <!-- trust line: no jokes. -->
+      <!-- [[PLAID CLAIMS: confirm]] keep qualified per the [F] gate; legal-confirm before hardening. -->
+      <p class="safety">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        <span>it never moves money out of your accounts. plaid handles your bank login, cashbff never sees it.</span>
+      </p>
+      <p class="sub muted">it stays quiet until you text. no notifications, no nagging. you set the pace.</p>
     </section>
 
-    <section class="hero" aria-label="start">
-      <div class="cta">
-        <a class="btn-primary" href="/signup"><span>create your account</span><span aria-hidden="true">&rarr;</span></a>
+    <!-- this is, literally, the message the button sends. show, don't tell. -->
+    <section aria-label="the first message">
+      <div class="divider divider--meta" aria-hidden="true"><span class="h2">today</span></div>
+      <div class="thread chat-seq">
+        <p class="bubble bubble--out bubble--tail" style="--i:0"><span class="speaker">you: </span>hey cashbff, ready to start <span class="meta" aria-hidden="true">now <span class="ticks">✓✓</span></span></p>
+        <p class="sysnote" style="--i:1">that's the whole message. the button below sends it for you.</p>
+      </div>
+      <div class="cta" style="margin-top:1.4rem;">
         <!-- Tokenized wa.me CTA, unique to /start (see docs/wa-prefill-registry.md). The bare
              "hey cashbff" prefill stays reserved for /signup completion. -->
-        <a class="link-quiet" href="https://wa.me/19096555215?text=hey%20cashbff%2C%20ready%20to%20start">or text cashbff on whatsapp</a>
+        <a class="btn-primary" href="https://wa.me/19096555215?text=hey%20cashbff%2C%20ready%20to%20start">
+          <span>text cashbff on whatsapp</span>
+          <span class="arrow" aria-hidden="true">→</span>
+        </a>
+        <a class="link-quiet" href="/signup">already subscribed? create your account →</a>
+        <a class="link-quiet" href="/is-cashbff-legit">is it safe? here's the honest answer</a>
       </div>
-      <p class="lede muted" style="margin-top:1.4rem;">sign up to connect your bank, get your 3-day free trial, and start getting one easy money win a day. takes about two minutes. prefer to talk first? <a class="inline-link" href="mailto:daksh@cashbff.com">daksh@cashbff.com</a>.</p>
-      <p class="lede muted">still deciding? here's <a class="inline-link" href="/is-cashbff-legit">why it's safe</a>. and if checking your balance feels like bad news lately, <a class="inline-link" href="/money-dysmorphia">this page is for you</a>.</p>
+      <details class="fold" style="margin-top:1.6rem;">
+        <summary>the longer version, if you want it</summary>
+        <div class="fold-body">
+          <p>cashbff is the money-nerd best friend you text on whatsapp. it connects to your real accounts, does the looking you've been dreading, and hands you one easy win at a time. starting is one message, and there's nothing to download.</p>
+          <p>self-serve is open. you can create your account right now and be talking to cashbff in minutes.</p>
+          <p>sign up to connect your bank, get your 3-day free trial, and start getting one easy money win a day. takes about two minutes. prefer to talk first? <a href="mailto:daksh@cashbff.com">daksh@cashbff.com</a>.</p>
+          <p>and if checking your balance feels like bad news lately, <a href="/money-dysmorphia">this page is for you</a>.</p>
+        </div>
+      </details>
+    </section>
+
+    <section class="close" aria-label="say hi">
+      <p class="above">you don't have to look tonight. just say hi. i've got it from here.</p>
       <p class="updated">last updated june 2026.</p>
     </section>
 
@@ -354,6 +142,15 @@
     </footer>
 
   </main>
-  <script src="/assets/js/reveal.js" defer></script>
+
+  <!-- the composer is the cta. on /start it sends the page's registered prefill. -->
+  <div class="msgbar">
+    <a class="msgbar__inner" href="https://wa.me/19096555215?text=hey%20cashbff%2C%20ready%20to%20start" aria-label="text cashbff on whatsapp">
+      <span class="msgbar__field"><span>hey cashbff, ready to start</span><span class="msgbar__hint">tap to send</span></span>
+      <span class="msgbar__send" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3.4 20.4l17.8-8.4L3.4 3.6v6.53l12 1.87-12 1.87z"/></svg></span>
+    </a>
+  </div>
+
+  <script src="/assets/js/chat-native.js" defer></script>
 </body>
 </html>

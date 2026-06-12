@@ -291,11 +291,22 @@
     /* about: essay sizing */
     .prose p { font-size: clamp(1.05rem, 1.9vw, 1.2rem); }
   </style>
+  <!-- ── site v2, direction B: chat-native chrome ──────────────────────────
+       Loaded after the page's inline styles so the shared chat chrome (header
+       as a chat thread top, composer-bar cta, wallpaper) wins the cascade.
+       Body copy, schema, URLs and section layout on this page are unchanged. -->
+  <link rel="stylesheet" href="/assets/css/chat-native.css">
 </head>
 <body>
   <header class="topbar">
     <div class="topbar__inner">
-      <a href="/" class="wordmark">cashbff</a>
+      <a href="/" class="chat-id" aria-label="cashbff home">
+        <span class="chat-id__avatar"><img src="/icon.png" alt="" width="40" height="40"></span>
+        <span class="chat-id__name">
+          <span class="wordmark">cashbff</span>
+          <span class="chat-id__status">quiet until you text</span>
+        </span>
+      </a>
       <nav class="nav" aria-label="primary">
         <a href="/">home</a>
         <a href="/how-it-works">how it works</a>
@@ -331,6 +342,14 @@
   </main>
 
   <script src="/assets/js/auth-banner.js" defer></script>
+  <!-- the composer is the cta: the smallest possible step is a message. -->
+  <div class="msgbar">
+    <a class="msgbar__inner" href="/start" aria-label="text cashbff on whatsapp">
+      <span class="msgbar__field"><span>hey cashbff</span><span class="msgbar__hint">tap to send</span></span>
+      <span class="msgbar__send" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3.4 20.4l17.8-8.4L3.4 3.6v6.53l12 1.87-12 1.87z"/></svg></span>
+    </a>
+  </div>
+
   <script src="/assets/js/reveal.js" defer></script>
 </body>
 </html>
