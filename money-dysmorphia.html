@@ -438,6 +438,23 @@
     .faq-acc .faq-a p { margin-bottom: .7rem; max-width: 60ch; }
     .faq-acc .faq-a p:last-child { margin-bottom: 0; }
   </style>
+
+  <!-- ── site v2, direction A: warm immersive calm (2026-06-11) ─────────────
+       Presentation ONLY on this page: the dysmorphia voice rewrite shipped to
+       prod today and every word, schema block, and URL below stays
+       byte-identical. This link restyles the shared chrome (atmosphere,
+       topbar, type scale, buttons, accordion) into the warm-immersive
+       direction; it loads after the inline styles so it wins ties. -->
+  <link rel="stylesheet" href="/assets/css/v2a.css">
+  <style>
+    /* page tuning for the warm layer: calmer jump pills, roomier sections */
+    .stage { padding-top: 2.5rem; }
+    .hero { margin-bottom: 3rem; }
+    .headline { max-width: 16ch; }
+    .section { margin-bottom: 4.5rem; }
+    .jump a:hover { border-color: rgba(1, 71, 81, 0.35); background: var(--mist); transform: translateY(-1px); }
+    .faq-acc details { background: transparent; }
+  </style>
 </head>
 <body>
   <header class="topbar">

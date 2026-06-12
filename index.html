@@ -57,413 +57,84 @@
        browser handles autocapture + pageviews. CSP-safe (no eval). -->
   <script src="/assets/js/posthog-init.js" defer></script>
 
-  <!-- Vercel Analytics + Speed Insights — cookieless edge-collected pageviews + web vitals. -->
+  <!-- Vercel Analytics + Speed Insights: cookieless edge-collected pageviews + web vitals. -->
   <script src="/assets/js/vercel-analytics-init.js" defer></script>
   <script defer src="/_vercel/insights/script.js"></script>
 
-  <!-- Ahrefs Web Analytics — site verification + cookieless analytics. -->
+  <!-- Ahrefs Web Analytics: site verification + cookieless analytics. -->
   <script src="https://analytics.ahrefs.com/analytics.js" data-key="VVGz3n14q6Xh0BWgHrV3hw" async></script>
   <script src="/assets/js/vercel-speed-insights-init.js" defer></script>
   <script defer src="/_vercel/speed-insights/script.js"></script>
 
+  <!-- ── site v2, direction A: warm immersive calm (2026-06-11) ─────────────
+       Presentation + copy compression per the v2 brief: the punchy copy pack
+       is the visible layer, the live long-form, query-bearing copy is carried
+       near-verbatim inside native details/summary folds (real DOM at load).
+       URLs, schema, canonical, og tags: unchanged. -->
+  <link rel="stylesheet" href="/assets/css/v2a.css">
   <style>
-    @font-face {
-      font-family: 'Greed Condensed';
-      src: url('fonts/GreedCondensed-Bold.woff2') format('woff2');
-      font-weight: 700;
-      font-display: swap;
-    }
-    @font-face {
-      font-family: 'Greed Condensed';
-      src: url('fonts/GreedCondensed-Medium.woff2') format('woff2');
-      font-weight: 500;
-      font-display: swap;
-    }
-
-    /* B&W brand. cash-green is used ONLY on .period spans + the wordmark
-       + the step numbers. everything else is monochrome. */
-    :root {
-      --vanilla: #FCFAF2;
-      --off-black: #1A1717;
-      --cash-green: #014751;
-      --hairline: rgba(26, 23, 23, 0.12);
-      --soft-ink: rgba(26, 23, 23, 0.62);
-
-      --font-display: 'Greed Condensed', 'Archivo Narrow', 'Arial Narrow', Impact, sans-serif;
-      --font-body: 'Instrument Sans', system-ui, -apple-system, sans-serif;
-    }
-
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
     body {
-      font-family: var(--font-body);
-      background: var(--vanilla);
-      color: var(--off-black);
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
       line-height: 1.5;
       min-height: 100dvh;
+      display: flex; flex-direction: column;
+      font-size: 1.03rem;
     }
     a { color: inherit; text-decoration: none; }
     button { font-family: inherit; cursor: pointer; border: none; background: none; }
 
     .stage {
-      max-width: 720px;
+      width: 100%;
+      max-width: 1080px;
       margin: 0 auto;
-      padding: 1.5rem 1.5rem 4rem;
-      display: flex;
-      flex-direction: column;
-      min-height: 100dvh;
+      padding: 2.5rem 1.4rem 4rem;
+      display: flex; flex-direction: column;
+      min-height: calc(100dvh - 62px);
     }
 
-    /* ── top bar ── */
-    .bar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-shrink: 0;
-      margin-bottom: 4rem;
-    }
-    .wordmark {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: 1.5rem;
-      letter-spacing: -0.02em;
-      color: var(--cash-green);
-      text-transform: lowercase;
-    }
-    .nav {
-      display: flex;
-      gap: 1.4rem;
-      font-size: 0.9rem;
-      font-weight: 500;
-    }
-    .nav a {
-      opacity: 0.7;
-      transition: opacity .15s;
-    }
-    .nav a:hover { opacity: 1; }
-
-    /* ── hero ── */
-    .hero {
-      text-align: left;
-      margin: 0 0 2.25rem;
-      opacity: 0;
-      animation: fadeIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.05s forwards;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(14px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-    .headline {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: clamp(2.8rem, 9vw, 5.25rem);
-      line-height: 0.93;
-      letter-spacing: -0.02em;
-      text-transform: lowercase;
-      color: var(--off-black);
-      margin-bottom: 1.1rem;
-    }
-    .headline .period { color: var(--cash-green); }
-    .sub {
-      font-size: clamp(0.98rem, 1.7vw, 1.12rem);
-      max-width: 40rem;
-      line-height: 1.6;
-    }
-
-    /* ── CTA stack ── */
-    .cta {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 0.85rem;
-      margin: 0 0 4rem;
-      opacity: 0;
-      animation: fadeIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.2s forwards;
-    }
-    .btn-primary {
-      background: var(--off-black);
-      color: var(--vanilla);
-      font-weight: 700;
-      font-size: 1.1rem;
-      padding: 1.05rem 2rem;
-      border-radius: 14px;
-      text-transform: lowercase;
-      letter-spacing: -0.005em;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.65rem;
-      transition: transform .12s ease, opacity .15s;
-    }
-    .btn-primary:hover { opacity: 0.92; transform: translateY(-1px); }
-    .btn-primary:active { transform: translateY(1px); }
-    .btn-primary .arrow { font-size: 1.15rem; }
-
-    .secondary-link {
-      font-size: 0.92rem;
-      opacity: 0.6;
-      transition: opacity .15s;
-    }
-    .secondary-link a {
-      color: var(--off-black);
-      text-decoration: underline;
-      text-decoration-color: var(--hairline);
-      text-underline-offset: 3px;
-    }
-    .secondary-link a:hover { text-decoration-color: var(--off-black); }
-
-    /* ── felt-need strip ── */
-    .felt {
-      margin: 0 0 4rem;
-      max-width: 60ch;
-      font-size: clamp(1.02rem, 1.8vw, 1.18rem);
-      line-height: 1.7;
-      opacity: 0;
-      animation: fadeIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.28s forwards;
-    }
-    .felt p { margin-bottom: 1.1rem; }
-    .felt p:last-child { margin-bottom: 0; font-weight: 600; }
-
-    /* ── how it works — 3 steps ── */
-    .eyebrow {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: clamp(1.6rem, 4vw, 2.1rem);
-      letter-spacing: -0.02em;
-      text-transform: lowercase;
-      margin-bottom: 1.4rem;
-    }
-    .eyebrow .period { color: var(--cash-green); }
-    .steps {
+    /* ── hero: the seen moment + the living phone ── */
+    .hero-wrap {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 1.5rem;
-      margin: 0 0 1.4rem;
+      grid-template-columns: 1fr;
+      gap: 2.75rem;
+      align-items: center;
+      margin: 1rem 0 5.5rem;
     }
-    @media (max-width: 640px) {
-      .steps { grid-template-columns: 1fr; gap: 1.5rem; }
+    @media (min-width: 880px) {
+      .hero-wrap { grid-template-columns: 1.08fr 0.92fr; gap: 3.5rem; margin-top: 2.5rem; }
     }
-    .step {
-      display: flex;
-      flex-direction: column;
-      gap: 0.45rem;
-    }
-    .step__num {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: 2rem;
-      color: var(--cash-green);
-      line-height: 1;
-      letter-spacing: -0.02em;
-    }
-    .step__title {
-      font-weight: 600;
-      font-size: 1rem;
-      letter-spacing: -0.005em;
-    }
-    .step__sub {
-      font-size: 0.88rem;
-      opacity: 0.62;
-      line-height: 1.5;
-    }
-
-    /* ── sections ── */
-    .section {
-      margin: 0 0 4rem;
-    }
-    .section h2 {
-      font-family: var(--font-display);
-      font-weight: 700;
-      font-size: clamp(1.6rem, 4vw, 2.1rem);
-      letter-spacing: -0.02em;
-      text-transform: lowercase;
-      margin-bottom: 1.1rem;
-    }
-    .section h2 .period { color: var(--cash-green); }
-    .section p { max-width: 60ch; margin-bottom: 0.9rem; line-height: 1.6; }
-    .section p:last-child { margin-bottom: 0; }
-    .section .muted { color: var(--soft-ink); }
-    .ledger {
-      list-style: none;
-      margin: 0 0 1.1rem;
-      padding: 0;
-      max-width: 60ch;
-    }
-    .ledger li {
-      padding: 0.7rem 0;
-      border-bottom: 1px solid var(--hairline);
-      line-height: 1.5;
-    }
-    .ledger li:first-child { border-top: 1px solid var(--hairline); }
-    .inline-link {
-      text-decoration: underline;
-      text-decoration-color: var(--hairline);
-      text-underline-offset: 3px;
-      transition: text-decoration-color .15s;
-    }
-    .inline-link:hover { text-decoration-color: var(--off-black); }
-
-    .link-quiet { font-size: 0.95rem; opacity: 0.7; text-decoration: underline; text-decoration-color: var(--hairline); text-underline-offset: 3px; }
-    .link-quiet:hover { opacity: 1; text-decoration-color: var(--off-black); }
-
-    /* ── final CTA ── */
-    .final-cta { margin: 0 0 1rem; }
-    .final-cta .above {
-      font-size: clamp(1.1rem, 2vw, 1.3rem);
-      font-weight: 600;
-      margin-bottom: 1.2rem;
-      max-width: 50ch;
-    }
-    .final-cta .cta-row { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
-    .final-cta .secondary-line { font-size: 0.92rem; opacity: 0.6; margin-top: 0.9rem; }
-
-    /* ── footer ── */
-    .footer {
-      margin-top: auto;
-      padding-top: 2.5rem;
-      font-size: 0.85rem;
-      opacity: 0.5;
-      line-height: 1.7;
-      border-top: 1px solid var(--hairline);
-      text-align: left;
-    }
-    .footer a {
-      text-decoration: underline;
-      text-decoration-color: var(--hairline);
-      text-underline-offset: 3px;
-      transition: text-decoration-color .15s, opacity .15s;
-    }
-    .footer a:hover { text-decoration-color: var(--off-black); opacity: 1; }
-    .footer .sep { margin: 0 0.5rem; opacity: 0.5; }
-    .updated { font-size: 0.8rem; color: var(--soft-ink); margin-top: 2rem; }
-
-    /* ── reduced motion ── */
-    @media (prefers-reduced-motion: reduce) {
-      * { animation: none !important; transition: none !important; }
-    }
-  </style>
-
-  <!-- ── 2026-06-11 redesign layer ──────────────────────────────────────────
-       Presentation only: every word of body copy, every heading, every schema
-       block, and every URL is unchanged. This block restyles the shared chrome
-       (sticky nav, buttons, footer), adds calm ambient motion to the hero, and
-       arms scroll-reveals (see /assets/js/reveal.js; content is never hidden
-       without JS). Palette: the brand tokens already in this repo (vanilla,
-       off-black, cash-green) plus the electric-green + periwinkle accents from
-       the dynamic-era prototypes (home-bloom*.html). -->
-  <style>
-    :root {
-      --electric-green: #D3FFB4;
-      --periwinkle: #C5B6F1;
-      --card: #FFFFFF;
-    }
-    html, body { overflow-x: clip; }
-    body { font-size: 1.03rem; display: flex; flex-direction: column; }
-    a:focus-visible, button:focus-visible { outline: 2px solid var(--cash-green); outline-offset: 3px; border-radius: 4px; }
-
-    /* sticky top bar */
-    .topbar {
-      position: sticky; top: 0; z-index: 40;
-      background: rgba(252, 250, 242, 0.88);
-      -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
-      border-bottom: 1px solid transparent;
-      transition: border-color .25s ease, box-shadow .25s ease;
-    }
-    .topbar.is-scrolled { border-bottom-color: var(--hairline); box-shadow: 0 6px 24px -18px rgba(26,23,23,.35); }
-    .topbar__inner {
-      max-width: 960px; margin: 0 auto; padding: .85rem 1.5rem;
-      display: flex; align-items: center; justify-content: space-between; gap: 1rem;
-    }
-    .topbar .wordmark { font-size: 1.45rem; }
-    .topbar .nav { display: flex; align-items: center; gap: 1.3rem; font-size: .9rem; font-weight: 500; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
-    .topbar .nav::-webkit-scrollbar { display: none; }
-    .topbar .nav a { opacity: .72; white-space: nowrap; }
-    .topbar .nav a:hover, .topbar .nav a[aria-current="page"] { opacity: 1; }
-    .topbar .nav a.nav-cta {
-      opacity: 1; background: var(--cash-green); color: var(--vanilla);
-      font-weight: 600; padding: .42rem 1.05rem; border-radius: 999px;
-      transition: transform .12s ease, opacity .15s;
-    }
-    .topbar .nav a.nav-cta:hover { opacity: .92; transform: translateY(-1px); }
-    @media (max-width: 640px) { .topbar .nav { gap: 1rem; font-size: .86rem; } .topbar__inner { padding: .8rem 1.1rem; } }
-
-    /* stage sits under the bar now */
-    .stage { min-height: calc(100dvh - 62px); padding-top: 2.25rem; max-width: 760px; }
-
-    /* hero: calm ambient color behind the headline */
     .hero { position: relative; z-index: 0; }
-    .hero::before, .hero::after {
-      content: ''; position: absolute; border-radius: 50%;
-      filter: blur(72px); z-index: -1; pointer-events: none;
-    }
-    .hero::before {
-      width: 24rem; height: 24rem; background: var(--electric-green); opacity: .42;
-      top: -10rem; right: -13rem; animation: orbA 18s ease-in-out infinite alternate;
-    }
-    .hero::after {
-      width: 19rem; height: 19rem; background: var(--periwinkle); opacity: .26;
-      top: 3rem; left: -12rem; animation: orbB 22s ease-in-out infinite alternate;
-    }
-    @keyframes orbA { from { transform: translate3d(0,0,0) scale(1); } to { transform: translate3d(-2.5rem, 1.5rem, 0) scale(1.07); } }
-    @keyframes orbB { from { transform: translate3d(0,0,0) scale(1); } to { transform: translate3d(2rem, -1.25rem, 0) scale(1.05); } }
+    .hero .headline { margin-bottom: 1.3rem; max-width: 12ch; }
+    .hero .sub { max-width: 34rem; margin-bottom: 1rem; }
+    .hero .safety { font-weight: 600; font-size: 1.02rem; margin-bottom: 1.8rem; max-width: 34rem; }
+    .cta { display: flex; flex-direction: column; align-items: flex-start; gap: .9rem; }
 
-    /* primary CTA: the path to WhatsApp is THE action on every page */
-    .btn-primary {
-      background: var(--cash-green); color: var(--vanilla);
-      border-radius: 999px; padding: 1.05rem 2.1rem; font-size: 1.1rem;
-      box-shadow: 0 14px 30px -16px rgba(1, 71, 81, .55);
-      transition: transform .15s ease, box-shadow .2s ease, background-color .15s ease;
+    .phone-side { display: flex; justify-content: center; }
+    @media (min-width: 880px) { .phone-side { justify-content: flex-end; } }
+
+    /* ── sections: generous, single calm column ── */
+    .section { margin: 0 0 5rem; }
+    .section h2 { margin-bottom: 1.1rem; max-width: 22ch; }
+    .section p { max-width: 60ch; margin-bottom: .9rem; }
+    .section p:last-of-type { margin-bottom: 0; }
+
+    /* ── final close ── */
+    .final-cta { margin: 0 0 1.5rem; }
+    .final-cta .above {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: clamp(1.9rem, 5vw, 2.7rem);
+      text-transform: lowercase;
+      letter-spacing: -0.015em;
+      line-height: 1.05;
+      margin-bottom: 1.4rem;
+      max-width: 22ch;
     }
-    .btn-primary:hover { opacity: 1; transform: translateY(-2px); background: #02555F; box-shadow: 0 20px 42px -16px rgba(1,71,81,.6); }
-    .btn-primary:active { transform: translateY(0); }
-    .btn-primary .arrow { transition: transform .15s ease; }
-    .btn-primary:hover .arrow { transform: translateX(3px); }
-
-    /* scroll reveals: armed only when reveal.js runs (html.has-reveal-js) */
-    .cta, .felt, .section { opacity: 1; animation: none; }
-    .has-reveal-js .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s cubic-bezier(.22,1,.36,1), transform .7s cubic-bezier(.22,1,.36,1); }
-    .has-reveal-js .reveal.is-in { opacity: 1; transform: none; }
-
-    /* roomier reading type */
-    .sub, .felt { font-size: clamp(1.05rem, 1.9vw, 1.2rem); }
-    .section p { font-size: clamp(1.02rem, 1.8vw, 1.15rem); }
-    .section h2, .eyebrow { font-size: clamp(1.8rem, 4.5vw, 2.4rem); }
-
-    /* the 3 steps as soft cards with green number chips */
-    .steps { gap: 1rem; }
-    .step {
-      background: var(--card);
-      border: 1px solid var(--hairline);
-      border-radius: 18px;
-      padding: 1.3rem 1.25rem 1.4rem;
-      gap: 0.55rem;
-      box-shadow: 0 18px 40px -36px rgba(26, 23, 23, .5);
-      transition: transform .2s ease, box-shadow .2s ease;
-    }
-    .step:hover { transform: translateY(-3px); box-shadow: 0 24px 48px -34px rgba(26, 23, 23, .55); }
-    .step__num {
-      width: 2.4rem; height: 2.4rem;
-      display: flex; align-items: center; justify-content: center;
-      background: var(--electric-green); color: var(--cash-green);
-      border-radius: 10px; font-size: 1.4rem;
-    }
-    .step__title { font-size: 1.05rem; }
-    .step__sub { font-size: .92rem; opacity: .7; }
-
-    /* ledger lines breathe a little more */
-    .ledger li { padding: .85rem 0; font-size: 1.02rem; }
-
-    /* footer: keep it quiet but readable, with the legal links */
-    .footer { font-size: .88rem; line-height: 1.9; padding-top: 2.25rem; opacity: 1; color: var(--soft-ink); }
-
-    @media (prefers-reduced-motion: reduce) {
-      .hero::before, .hero::after { animation: none; }
-      .has-reveal-js .reveal { opacity: 1; transform: none; transition: none; }
-      /* the original pages animate .hero/.cta/.felt from opacity:0; with
-         animations disabled they would stay invisible. Force them on. */
-      .hero, .cta, .felt, .plans, .plans-foot, .section, .faq-group { opacity: 1 !important; }
-    }
+    .final-cta .above .period { color: var(--cash-green); }
+    .final-cta .cta-row { display: flex; gap: 1.1rem; align-items: center; flex-wrap: wrap; }
+    .final-cta .secondary-line { font-size: .92rem; color: var(--soft-ink); margin-top: 1rem; }
   </style>
 </head>
 <body>
@@ -482,64 +153,106 @@
 
   <main class="stage">
 
-    <section class="hero">
-      <h1 class="headline">
-        the money stuff you've been avoiding<span class="period">?</span> send it over<span class="period">.</span> i've got it from here<span class="period">.</span>
-      </h1>
-      <p class="sub">cashbff is not another finance app. it's the money-nerd best friend you text on whatsapp. it connects to your real accounts, does the looking you've been dreading, and hands you one easy win at a time. no dashboard to open. no one judging the number.</p>
-    </section>
-
-    <section class="cta">
-      <!-- [[WA_LINK]] wired 2026-06-05: funnels to /start (the single click-to-WhatsApp endpoint). -->
-      <a class="btn-primary" href="/start">
-        <span>text cashbff on whatsapp</span>
-        <span class="arrow" aria-hidden="true">→</span>
-      </a>
-      <!-- price/trial copy uses the locked Terms values ($12.99/mo or $99/yr, 3-day free trial); exact live price pending final Stripe reconciliation. Home keeps it to the high-level "safe to try" line. -->
-      <p class="secondary-link">safe to try. yes, really. <a href="/is-cashbff-legit">(here's why →)</a></p>
-    </section>
-
-    <section class="felt">
-      <p>you took your cards out of apple pay so you'd stop tapping without thinking. your banking app has been sitting there, unopened, longer than you'd admit. you've downloaded and quit every budgeting app, because opening it means looking, and looking feels like shame.</p>
-      <p>that's not you being bad with money. that's you never having a safe way to look.</p>
-      <p>cashbff is the safe way to look.</p>
-    </section>
-
-    <section aria-label="how it works" class="reveal">
-      <div class="eyebrow">how it works<span class="period">.</span></div>
-      <div class="steps">
-        <div class="step">
-          <div class="step__num">1</div>
-          <div class="step__title">text it, like you'd text a friend.</div>
-          <div class="step__sub">no app to download. cashbff lives in whatsapp, the chat you already have open.</div>
+    <div class="hero-wrap">
+      <section class="hero">
+        <h1 class="headline">
+          the money stuff you've been avoiding<span class="period">?</span> send it over<span class="period">.</span>
+        </h1>
+        <p class="sub">i've got it from here. cashbff is the money-nerd best friend you text on whatsapp. it does the looking and hands you one easy win at a time.</p>
+        <p class="safety">it never moves money out of your accounts. you stay in charge.</p>
+        <div class="cta">
+          <!-- [[WA_LINK]] wired 2026-06-05: funnels to /start (the single click-to-WhatsApp endpoint). -->
+          <a class="btn-primary" href="/start">
+            <span>text cashbff on whatsapp</span>
+            <span class="arrow" aria-hidden="true">→</span>
+          </a>
+          <a class="link-quiet" href="/is-cashbff-legit">is it safe? here's the honest answer →</a>
         </div>
-        <div class="step">
-          <div class="step__num">2</div>
-          <div class="step__title">connect your accounts.</div>
-          <!-- [[PLAID CLAIMS: confirm]] "bank login stays between you, your bank, and plaid" reflects the standard Plaid link flow; keep qualified, legal-confirm before hardening. -->
-          <div class="step__sub">it links through plaid, the same service behind apps like venmo and chime. your bank login stays between you, your bank, and plaid.</div>
-        </div>
-        <div class="step">
-          <div class="step__num">3</div>
-          <div class="step__title">get one easy win.</div>
-          <div class="step__sub">it does the looking and hands you something you can actually do today. you decide what happens next.</div>
+      </section>
+
+      <!-- the 2-to-5-second beat: a chat thread is self-explaining in a way no
+           paragraph is. real text in the DOM; v2a.js types it out gently.
+           the page's one softener lives here, never in headings. -->
+      <div class="phone-side">
+        <div class="chat-card chat-float" data-chat-script data-drift="-0.02">
+          <div class="chat-head">
+            <div class="avatar" aria-hidden="true">c</div>
+            <div class="who">
+              <strong>cashbff</strong>
+              <span>your money-nerd best friend</span>
+            </div>
+          </div>
+          <ul class="chat-thread" aria-label="a sample cashbff conversation on whatsapp">
+            <li class="msg you">how long can i last lol <span class="stamp" aria-hidden="true">9:41</span></li>
+            <li class="msg bff">about 18 days at your pace, and payday lands first. you won't hit zero. breathe. <span class="stamp" aria-hidden="true">9:41</span></li>
+            <li class="msg you">wait really <span class="stamp" aria-hidden="true">9:42</span></li>
+            <li class="msg bff">really. also found a $14.99 subscription you stopped using in february. want to see it? <span class="stamp" aria-hidden="true">9:42</span></li>
+            <li class="typing" aria-hidden="true"><i></i><i></i><i></i></li>
+          </ul>
         </div>
       </div>
-      <a class="link-quiet" href="/how-it-works">see exactly how it works →</a>
+    </div>
+
+    <section class="section reveal" aria-labelledby="okay-not-looking">
+      <h2 id="okay-not-looking">it's okay that you haven't looked<span class="period">.</span></h2>
+      <p>your banking app has been sitting unopened for weeks. that's not failure, that's protection. cashbff does the looking, and hands you the one thing worth doing today.</p>
+      <details class="fold">
+        <summary>the longer story, if you want it</summary>
+        <div class="fold-body">
+          <p>you took your cards out of apple pay so you'd stop tapping without thinking. your banking app has been sitting there, unopened, longer than you'd admit. you've downloaded and quit every budgeting app, because opening it means looking, and looking feels like shame.</p>
+          <p>that's not you being bad with money. that's you never having a safe way to look.</p>
+          <p>cashbff is the safe way to look.</p>
+        </div>
+      </details>
     </section>
 
-    <section class="section reveal" style="margin-top:4rem;" aria-labelledby="what-it-does">
+    <section class="section reveal" aria-labelledby="what-it-does">
       <h2 id="what-it-does">what it actually does<span class="period">.</span></h2>
-      <p>you go live your life. cashbff keeps an eye on what's quietly draining your money and tells you in plain language. ask it anything, any time.</p>
       <ul class="ledger">
-        <li>the subscription you forgot you were paying.</li>
-        <li>how much breathing room you've actually got before rent.</li>
-        <li>the day things get tight, before they do.</li>
-        <li>the payment that saves you the most on interest, so you stop paying the banks more than you have to.</li>
+        <li>finds the subscription you forgot you were paying.</li>
+        <li>tells you your real breathing room before rent.</li>
+        <li>spots the tight day before it arrives.</li>
+        <li>flags the payment that saves you the most interest.</li>
       </ul>
-      <p class="muted">it finds it and flags it. you do the cancelling, the paying, the deciding. cashbff never moves money out of your accounts, because it's your money.</p>
-      <!-- [[$54 ANECDOTE]] real but person not yet asked: using anonymized in-story framing per Daksh's decision. -->
-      <p class="muted">one early user found about $54 a month in subscriptions they'd forgotten about, in the first conversation. (individual result, your numbers will be your own.)</p>
+      <p class="muted">it finds and flags. you cancel, you pay, you decide.</p>
+      <details class="fold">
+        <summary>what it watches, in full</summary>
+        <div class="fold-body">
+          <p>you go live your life. cashbff keeps an eye on what's quietly draining your money and tells you in plain language. ask it anything, any time.</p>
+          <p>the subscription you forgot you were paying. how much breathing room you've actually got before rent. the day things get tight, before they do. the payment that saves you the most on interest, so you stop paying the banks more than you have to.</p>
+          <p>it finds it and flags it. you do the cancelling, the paying, the deciding. cashbff never moves money out of your accounts, because it's your money.</p>
+          <!-- [[$54 ANECDOTE]] real but person not yet asked: using anonymized in-story framing per Daksh's decision. -->
+          <p>one early user found about $54 a month in subscriptions they'd forgotten about, in the first conversation. (individual result, your numbers will be your own.)</p>
+        </div>
+      </details>
+      <details class="fold">
+        <summary>how it works, in three steps</summary>
+        <div class="fold-body">
+          <p>1. text it, like you'd text a friend. no app to download. cashbff lives in whatsapp, the chat you already have open.</p>
+          <!-- [[PLAID CLAIMS: confirm]] "bank login stays between you, your bank, and plaid" reflects the standard Plaid link flow; keep qualified, legal-confirm before hardening. -->
+          <p>2. connect your accounts. it links through plaid, the same service behind apps like venmo and chime. your bank login stays between you, your bank, and plaid.</p>
+          <p>3. get one easy win. it does the looking and hands you something you can actually do today. you decide what happens next.</p>
+          <p><a class="inline-link" href="/how-it-works">see exactly how it works →</a></p>
+        </div>
+      </details>
+    </section>
+
+    <section class="section reveal" aria-labelledby="trust">
+      <h2 id="trust">why you can trust it<span class="period">.</span></h2>
+      <ul class="atoms">
+        <li>it never moves money out of your accounts.</li>
+        <li>flat subscription. it only wins when you get ahead.</li>
+        <!-- [[PLAID CLAIMS: confirm]] keep qualified per the [F] gate; legal-confirm before hardening. -->
+        <li>plaid handles your bank login, cashbff never sees it.</li>
+      </ul>
+      <a class="inline-link" href="/is-cashbff-legit">is cashbff legit? the honest answer →</a>
+      <details class="fold">
+        <summary>how the money side works</summary>
+        <div class="fold-body">
+          <p>most money apps make their money when you're broke, on the advances, the fees, the late charges. cashbff doesn't do any of that. it makes money one way: a flat subscription. it has nothing to gain from you staying stuck.</p>
+          <p>it's not a lender. it doesn't move your money. it finds the cash you're already losing and hands you the win to keep it.</p>
+        </div>
+      </details>
     </section>
 
     <section class="section reveal" aria-labelledby="quiet">
@@ -547,19 +260,19 @@
       <!-- Stance weave (2026-06-11): the no-notifications truth IS the calm-forecasting feature.
            True today: the WhatsApp agent only ever replies, it never initiates. If proactive
            pings ever ship, this section must change the same day. -->
-      <p>no notifications, no nagging. cashbff never pings you into a panic, because panic was the old way. you text it when you're ready, it answers with your real numbers, and checking in gets a little calmer every time you do it.</p>
+      <p>no notifications, no nagging, no being graded. you set the pace. checking in happens on your terms.</p>
       <p class="muted">if checking your balance feels like bad news even when it isn't, that feeling has a name. <a class="inline-link" href="/money-dysmorphia">money dysmorphia, explained →</a></p>
+      <details class="fold">
+        <summary>more on the quiet</summary>
+        <div class="fold-body">
+          <p>no notifications, no nagging. cashbff never pings you into a panic, because panic was the old way. you text it when you're ready, it answers with your real numbers, and checking in gets a little calmer every time you do it.</p>
+        </div>
+      </details>
     </section>
 
-    <section class="section reveal" aria-labelledby="on-your-side">
-      <h2 id="on-your-side">it's on your side, for real<span class="period">.</span></h2>
-      <p>most money apps make their money when you're broke, on the advances, the fees, the late charges. cashbff doesn't do any of that. it makes money one way: a flat subscription. it has nothing to gain from you staying stuck.</p>
-      <p class="muted">it's not a lender. it doesn't move your money. it finds the cash you're already losing and hands you the win to keep it.</p>
-      <a class="inline-link" href="/is-cashbff-legit">is cashbff legit? short answer, yes →</a>
-    </section>
-
+    <!-- the close, his way: companionship line, then the button, then quiet. -->
     <section class="final-cta reveal">
-      <p class="above">you're more okay than you think. let's go look together.</p>
+      <p class="above">you're more okay than you think<span class="period">.</span> let's look together<span class="period">.</span></p>
       <div class="cta-row">
         <!-- [[WA_LINK]] wired 2026-06-05: funnels to /start. -->
         <a class="btn-primary" href="/start">
@@ -581,5 +294,6 @@
   <!-- auth-banner.js still routes already-logged-in users to the dashboard. The old "open in chat" flow is intentionally dropped: the product is now the WhatsApp agent. -->
   <script src="/assets/js/auth-banner.js" defer></script>
   <script src="/assets/js/reveal.js" defer></script>
+  <script src="/assets/js/v2a.js" defer></script>
 </body>
 </html>
