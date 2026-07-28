@@ -29,8 +29,9 @@
  *     renderBankList (institution + ····mask). "add another bank →"
  *     is a plain <a> in markup, no JS needed.
  *
- *   - "manage subscription" + "add another bank" + footer links are all
- *     plain <a> elements with hrefs — no event handlers.
+ *   - "manage subscription" is an <a> whose click is intercepted to POST
+ *     /api/billing-portal and redirect to the returned Stripe portal URL.
+ *     "add another bank" + footer links are plain <a> elements with hrefs.
  *
  * PostHog event:
  *   - home_loaded { talk_status, has_bank } — fires once on every render
@@ -146,6 +147,44 @@
     };
   }
 
+  /** Manage subscription: mint a real (live-mode) Stripe Customer Portal
+   *  session for the signed-in user via POST /api/billing-portal and redirect
+   *  there. Replaces the old hardcoded TEST-mode portal URL, which 404'd for
+   *  real subscribers. CSP-safe: attached via addEventListener, not inline. */
+  async function onManageClick(e) {
+    if (e && typeof e.preventDefault === "function") e.preventDefault();
+    const link = $("manage-link");
+    const original = link ? link.textContent : null;
+    if (link) link.textContent = "opening billing…";
+    track("home_manage_subscription_clicked", {});
+    try {
+      const res = await fetch(API_BASE + "/api/billing-portal", {
+        method: "POST",
+        credentials: "include",
+      });
+      const body = await res.json().catch(function () { return null; });
+      if (res.ok && body && body.url) {
+        window.location.href = body.url;
+        return;
+      }
+      // Non-OK or missing url: surface the backend's message when present.
+      showToast((body && body.error) || "couldn't open billing. refresh and try again.");
+    } catch (err) {
+      showToast("couldn't open billing. check your connection and try again.");
+    }
+    if (link && original !== null) link.textContent = original;
+  }
+
+  /** Minimal toast — reuses the #toast element + `.toast.show` CSS already in
+   *  home.html (same reveal convention as signup.js). */
+  function showToast(msg) {
+    const t = $("toast");
+    if (!t) return;
+    t.textContent = msg;
+    t.classList.add("show");
+    setTimeout(function () { t.classList.remove("show"); }, 4000);
+  }
+
   /** Logout: POST /api/logout with credentials. Backend clears the session
    *  cookie and returns 200; we then send the user to / (marketing home).
    *  We disable the button while in flight so a double-click doesn't fire
@@ -229,6 +268,10 @@
     // call the user should be able to sign out.
     const logoutBtn = $("logout-btn");
     if (logoutBtn) logoutBtn.addEventListener("click", onLogoutClick);
+
+    // Manage-subscription link → Stripe Customer Portal (via /api/billing-portal).
+    const manageLink = $("manage-link");
+    if (manageLink) manageLink.addEventListener("click", onManageClick);
 
     fetchMe().then(function (me) {
       if (me.status === 401) {
