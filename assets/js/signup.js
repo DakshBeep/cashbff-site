@@ -38,6 +38,19 @@
 
   const API_BASE = 'https://api.cashbff.com';
   const STRIPE_PAYMENT_LINK = 'https://buy.stripe.com/14A9ATdOeen7aKA8BT1sQ01';
+  const STRIPE_PAYMENT_LINK_YEARLY = 'https://buy.stripe.com/9B600j7pQgvf6uk19r1sQ02';
+
+  // Anonymous visitors who pick a plan on /pricing are routed here as
+  // /signup?plan=yearly so the account exists before checkout. Honor that
+  // choice, otherwise a yearly buyer silently lands on the monthly link.
+  function paymentLinkForPlan() {
+    try {
+      const plan = new URLSearchParams(window.location.search).get('plan');
+      return plan === 'yearly' ? STRIPE_PAYMENT_LINK_YEARLY : STRIPE_PAYMENT_LINK;
+    } catch (_) {
+      return STRIPE_PAYMENT_LINK;
+    }
+  }
 
   // ── states ──────────────────────────────────────
   const STATE_PHONE            = 'phone';
@@ -440,8 +453,9 @@
 
     track('signup_trial_started', { has_user_id: true });
 
-    const sep = STRIPE_PAYMENT_LINK.includes('?') ? '&' : '?';
-    const url = STRIPE_PAYMENT_LINK + sep + 'client_reference_id=' + encodeURIComponent(uid);
+    const paymentLink = paymentLinkForPlan();
+    const sep = paymentLink.includes('?') ? '&' : '?';
+    const url = paymentLink + sep + 'client_reference_id=' + encodeURIComponent(uid);
 
     // SAME-tab navigation: the redirect from Stripe lands back on /signup?subscribed=1
     // and our smart routing pushes the user into STATE_PLAID.
