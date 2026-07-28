@@ -253,6 +253,23 @@
     }
   }
 
+  /** Poll /api/me until talk_status becomes trialing/active, or give up.
+   *  Covers the gap between returning from Stripe checkout and the webhook
+   *  landing. Returns true once activated, false if it never did within the
+   *  budget (~5 tries over ~7.5s). */
+  async function waitForActivation() {
+    for (let i = 0; i < 5; i++) {
+      await new Promise((r) => setTimeout(r, 1500));
+      const me = await fetchMe();
+      const s = me.data && me.data.talk_status ? String(me.data.talk_status).toLowerCase() : null;
+      if (s === 'trialing' || s === 'active') {
+        window.__authedUser = me.data || window.__authedUser;
+        return true;
+      }
+    }
+    return false;
+  }
+
   // ── Plaid SDK guard ─────────────────────────────
   function waitForPlaid(timeoutMs) {
     const deadline = Date.now() + (timeoutMs || 4000);
@@ -711,10 +728,11 @@
     const me = await fetchMe();
 
     if (me.status === 401 || !me.ok) {
-      // Anonymous (or network blip). Start at the top of the funnel.
+      // Anonymous (or network blip). Start at the top of the funnel. Do NOT
+      // paint the "my home" pill here — an anonymous visitor has no home, and
+      // clicking it ejects them from the funnel. The pill is painted only on
+      // the authenticated branch below.
       showState(STATE_PHONE);
-      // Auto-paint the auth-banner pill if a session shows up later.
-      try { if (typeof window.showAuthHomeButton === 'function') window.showAuthHomeButton(); } catch (_) {}
       return;
     }
 
@@ -732,6 +750,17 @@
     // just paid and it's time for their first bank, even if some stale
     // banks[] data exists.
     if (justSubscribed) {
+      // The activation webhook may not have landed yet. If talk_status hasn't
+      // flipped to trialing/active, poll /api/me briefly before proceeding so
+      // we don't advance on a payment that silently failed to attribute. If it
+      // still hasn't activated, surface a recoverable message (rather than
+      // pretending it worked) and let them continue to the bank step.
+      if (!subscribed) {
+        const activated = await waitForActivation();
+        if (!activated) {
+          showToast("payment received. still activating — if this sticks, email daksh@cashbff.com.");
+        }
+      }
       renderBankList([]);
       showState(STATE_PLAID);
       return;
